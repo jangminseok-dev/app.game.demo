@@ -12,3 +12,7 @@ backend/.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# 아트 도구 (flutter/tools/)
+flutter/tools/.venv/
+flutter/tools/frames/
