@@ -30,4 +30,6 @@ async def fetch_balance(
         offlineCapSeconds=r.offline_cap_seconds,
         offlineEfficiency=r.offline_efficiency,
         offlineMinSeconds=r.offline_min_seconds,
+        bossCaptureMultiplier=r.boss_capture_multiplier,
+        maxStars=r.max_stars,
     )

@@ -9,8 +9,14 @@ class OfflineRewardSchema(BaseModel):
     gold: float
 
 
+class CodexEntrySchema(BaseModel):
+    monsterId: int
+    stars: int
+
+
 class LoadResponseSchema(BaseModel):
     state: dict[str, Any] = Field(description="클라이언트 세이브 형식 그대로")
     syncedAt: datetime
     created: bool
     offlineReward: OfflineRewardSchema | None = Field(description="보상이 없으면 null")
+    codex: list[CodexEntrySchema] = Field(description="도감 등록 목록 — 서버 정본")

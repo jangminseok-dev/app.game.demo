@@ -13,6 +13,7 @@ root_packages =
     auth
     save
     masterdata
+    codex
 include_external_packages = True
 
 [importlinter:contract:clean-architecture]
@@ -27,6 +28,7 @@ containers =
     auth
     save
     masterdata
+    codex
 
 [importlinter:contract:spoke-independence]
 name = 스포크 상호 독립 (스포크 ↔ 스포크 직접 참조 금지)
@@ -35,6 +37,7 @@ modules =
     auth
     save
     masterdata
+    codex
 
 [importlinter:contract:framework-isolation]
 name = 프레임워크 격리 (app·domain → fastapi/sqlalchemy import 금지)
@@ -47,6 +50,8 @@ source_modules =
     save.domain
     masterdata.app
     masterdata.domain
+    codex.app
+    codex.domain
 forbidden_modules =
     fastapi
     sqlalchemy
@@ -59,6 +64,7 @@ source_modules =
     auth.domain
     save.domain
     masterdata.domain
+    codex.domain
 forbidden_modules =
     pydantic
 
@@ -71,3 +77,5 @@ forbidden_modules =
     auth
     save
     masterdata
+    codex
+    codex

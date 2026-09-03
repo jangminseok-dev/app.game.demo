@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hub.app.dtos.balance_dto import Balance
-from save.domain.balance.formulas import gold_reward, monster_hp, stats_of
+from hub.app.dtos.codex_dto import Passives
+from save.domain.balance.formulas import NO_PASSIVES, gold_reward, monster_hp, stats_of
 from save.domain.snapshot import Snapshot
 
 
@@ -22,11 +23,11 @@ class OfflineReward:
 NONE = OfflineReward(elapsed_seconds=0.0, gold=0.0)
 
 
-def calculate(s: Snapshot, raw_elapsed_seconds: float, b: Balance) -> OfflineReward:
+def calculate(s: Snapshot, raw_elapsed_seconds: float, b: Balance, p: Passives = NO_PASSIVES) -> OfflineReward:
     if raw_elapsed_seconds < b.offline_min_seconds:
         return NONE
     seconds = min(raw_elapsed_seconds, b.offline_cap_seconds)
-    stats = stats_of(s)
+    stats = stats_of(s, p)
     kills = stats.dps(b) * seconds / monster_hp(s.stage, b)
     gold = kills * gold_reward(s.stage, b) * stats.gold_multiplier * b.offline_efficiency
     return OfflineReward(elapsed_seconds=seconds, gold=gold)

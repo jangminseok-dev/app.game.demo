@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from hub.app.dtos.balance_dto import Balance
+from hub.app.dtos.codex_dto import CaptureEvent, CodexEntry, Passives
 from save.app.ports.output.save_repository import SaveRecord
 
 BALANCE = Balance(
@@ -23,6 +24,8 @@ BALANCE = Balance(
     offline_cap_seconds=8 * 3600,
     offline_efficiency=0.5,
     offline_min_seconds=60,
+    boss_capture_multiplier=4.0,
+    max_stars=5,
 )
 
 T0 = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
@@ -67,3 +70,26 @@ class StubRejections:
 
     async def record(self, player_id, rule, detail):
         self.records.append((player_id, rule, detail))
+
+
+class StubCodex:
+    """도감 포트 스텁 — 패시브·목록은 고정, register_kills는 보고를 기록하고 미리 정한 포획을 돌려준다."""
+
+    def __init__(self, passives: Passives | None = None, entries=(), captures=()):
+        self.passives = passives or Passives()
+        self.entries = tuple(entries)
+        self.captures = tuple(captures)
+        self.reports = []  # (player_id, KillReport, capture_rate)
+
+    async def get_entries(self, player_id):
+        return self.entries
+
+    async def get_passives(self, player_id):
+        return self.passives
+
+    async def register_kills(self, player_id, report, capture_rate):
+        self.reports.append((player_id, report, capture_rate))
+        return self.captures
+
+
+__all__ = ["BALANCE", "T0", "state", "StubBalance", "StubSaves", "StubRejections", "StubCodex", "CaptureEvent", "CodexEntry", "Passives"]

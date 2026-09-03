@@ -22,3 +22,5 @@ class Balance:
     offline_cap_seconds: float
     offline_efficiency: float
     offline_min_seconds: float
+    boss_capture_multiplier: float
+    max_stars: int

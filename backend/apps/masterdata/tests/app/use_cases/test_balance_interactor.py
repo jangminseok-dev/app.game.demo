@@ -17,6 +17,8 @@ RECORD = BalanceRecord(
     offline_cap_seconds=28800,
     offline_efficiency=0.5,
     offline_min_seconds=60,
+    boss_capture_multiplier=4.0,
+    max_stars=5,
 )
 
 

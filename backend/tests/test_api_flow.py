@@ -21,7 +21,7 @@ from save.app.use_cases.load_interactor import LoadInteractor
 from save.app.use_cases.sync_interactor import SyncInteractor
 from save.dependencies.load_provider import get_load_use_case
 from save.dependencies.sync_provider import get_sync_use_case
-from save.tests.support import StubBalance, StubRejections, StubSaves
+from save.tests.support import StubBalance, StubCodex, StubRejections, StubSaves
 
 
 class _Players:
@@ -60,19 +60,19 @@ def client():
         return await fake_guard(credentials)
 
     main.app.dependency_overrides[get_guest_use_case] = lambda: GuestInteractor(players=players, tokens=issuer)
-    main.app.dependency_overrides[get_load_use_case] = lambda: LoadInteractor(saves=saves, balance=StubBalance())
+    main.app.dependency_overrides[get_load_use_case] = lambda: LoadInteractor(saves=saves, balance=StubBalance(), codex=StubCodex())
     main.app.dependency_overrides[get_sync_use_case] = lambda: SyncInteractor(
-        saves=saves, balance=StubBalance(), rejections=StubRejections()
+        saves=saves, balance=StubBalance(), rejections=StubRejections(), codex=StubCodex()
     )
     main.app.dependency_overrides[get_current_player_id] = guard
     # lifespan(DB 엔진)은 띄우지 않는다 — TestClient를 컨텍스트 없이 쓴다.
     yield TestClient(main.app)
     main.app.dependency_overrides.clear()
-    main.app.dependency_overrides[main.get_balance_port] = main.get_balance_gateway
+    main.app.dependency_overrides.update(main.HUB_BINDINGS)
 
 
-def test_자기소개_3종은_인증_없이_열려_있다(client):
-    for path in ("/auth/myself", "/save/myself", "/masterdata/myself"):
+def test_자기소개_4종은_인증_없이_열려_있다(client):
+    for path in ("/auth/myself", "/save/myself", "/masterdata/myself", "/codex/myself"):
         r = client.get(path)
         assert r.status_code == 200, path
         assert "introduction" in r.json()
@@ -82,8 +82,10 @@ def test_마스터데이터는_인증_없이_버전과_계수를_준다(client):
     r = client.get("/masterdata/balance")
     assert r.status_code == 200
     body = r.json()
-    assert body["version"] == 1 and body["monsterHpGrowth"] == 1.18
-    assert client.get("/masterdata/balance", params={"version": 1}).json()["unchanged"] is True
+    assert body["version"] == 2 and body["monsterHpGrowth"] == 1.18
+    assert client.get("/masterdata/balance", params={"version": 2}).json()["unchanged"] is True
+    monsters = client.get("/masterdata/monsters").json()
+    assert len(monsters["monsters"]) == 30 and [r["id"] for r in monsters["regions"]] == ["forest", "cave", "volcano"]
 
 
 def test_세이브는_토큰_없이_막힌다(client):
@@ -105,12 +107,14 @@ def test_게스트_시작_후_load와_sync_왕복(client):
     assert loaded.status_code == 200
     assert loaded.json()["created"] is True
     assert loaded.json()["offlineReward"] is None
+    assert loaded.json()["codex"] == []
     state = loaded.json()["state"]
 
     state.update({"gold": 30, "totalKills": 6, "levels": {"attack": 1}})
     synced = client.put("/save", json={"state": state}, headers=auth)
     assert synced.status_code == 200
     assert synced.json()["accepted"] is True
+    assert synced.json()["captures"] == []
 
     state.update({"gold": 10**9})
     rejected = client.put("/save", json={"state": state}, headers=auth)

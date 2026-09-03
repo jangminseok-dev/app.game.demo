@@ -17,3 +17,5 @@ class BalanceResponseSchema(BaseModel):
     offlineCapSeconds: float
     offlineEfficiency: float
     offlineMinSeconds: float
+    bossCaptureMultiplier: float
+    maxStars: int

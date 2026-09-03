@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "regions": [
+    {"id": "forest", "name": "숲", "stageFrom": 1, "stageTo": 50, "completionBonus": {"kind": "attack", "value": 20}},
+    {"id": "cave", "name": "동굴", "stageFrom": 51, "stageTo": 120, "completionBonus": {"kind": "gold", "value": 20}},
+    {"id": "volcano", "name": "화산", "stageFrom": 121, "stageTo": null, "completionBonus": {"kind": "crit", "value": 5}}
+  ],
+  "monsters": [
+    {"id": 1, "name": "초록 슬라임", "region": "forest", "element": "neutral", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 2, "name": "숲쥐", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
+    {"id": 3, "name": "버섯돌이", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 4, "name": "꽃요정", "region": "forest", "element": "wind", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 5, "name": "멧돼지", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 6, "name": "회색 늑대", "region": "forest", "element": "wind", "rarity": 0.6, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
+    {"id": 7, "name": "나무 정령", "region": "forest", "element": "earth", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 8, "name": "연못 개구리", "region": "forest", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
+    {"id": 9, "name": "벌떼", "region": "forest", "element": "wind", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 10, "name": "숲의 수호자", "region": "forest", "element": "earth", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}},
+
+    {"id": 11, "name": "동굴 박쥐", "region": "cave", "element": "wind", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
+    {"id": 12, "name": "동굴 거미", "region": "cave", "element": "earth", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 13, "name": "고블린", "region": "cave", "element": "neutral", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 14, "name": "바위 골렘", "region": "cave", "element": "earth", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 15, "name": "수정 도마뱀", "region": "cave", "element": "water", "rarity": 0.6, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 16, "name": "지하 뱀", "region": "cave", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
+    {"id": 17, "name": "해골 병사", "region": "cave", "element": "neutral", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 18, "name": "두더지", "region": "cave", "element": "earth", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 19, "name": "어둠 유령", "region": "cave", "element": "wind", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 20, "name": "동굴 군주", "region": "cave", "element": "earth", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}},
+
+    {"id": 21, "name": "불도마뱀", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 22, "name": "용암 슬라임", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 23, "name": "화염새", "region": "volcano", "element": "fire", "rarity": 0.6, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
+    {"id": 24, "name": "재의 늑대", "region": "volcano", "element": "wind", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 25, "name": "마그마 골렘", "region": "volcano", "element": "fire", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
+    {"id": 26, "name": "증기 정령", "region": "volcano", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
+    {"id": 27, "name": "화산 박쥐", "region": "volcano", "element": "wind", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
+    {"id": 28, "name": "흑요석 전갈", "region": "volcano", "element": "earth", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
+    {"id": 29, "name": "불꽃 임프", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
+    {"id": 30, "name": "화산 용", "region": "volcano", "element": "fire", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}}
+  ]
+}

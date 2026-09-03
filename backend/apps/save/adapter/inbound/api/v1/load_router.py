@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends
 
 from core.security import get_current_player_id
-from save.adapter.inbound.api.schemas.load_schema import LoadResponseSchema, OfflineRewardSchema
+from save.adapter.inbound.api.schemas.load_schema import (
+    CodexEntrySchema,
+    LoadResponseSchema,
+    OfflineRewardSchema,
+)
 from save.app.dtos.load_dto import LoadQuery
 from save.app.ports.input.load_use_case import LoadUseCase
 from save.dependencies.load_provider import get_load_use_case
@@ -26,4 +30,5 @@ async def load_save(
             if r.offline_gold > 0
             else None
         ),
+        codex=[CodexEntrySchema(monsterId=e.monster_id, stars=e.stars) for e in r.codex],
     )

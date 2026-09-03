@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.security import get_current_player_id
-from save.adapter.inbound.api.schemas.sync_schema import SyncRequestSchema, SyncResponseSchema
+from save.adapter.inbound.api.schemas.sync_schema import (
+    CaptureEventSchema,
+    SyncRequestSchema,
+    SyncResponseSchema,
+)
 from save.app.dtos.sync_dto import SyncCommand
 from save.app.ports.input.sync_use_case import SyncUseCase
 from save.app.use_cases.sync_interactor import NoSaveToSync
@@ -28,5 +32,9 @@ async def sync_save(
             status_code=status.HTTP_409_CONFLICT, detail="세이브가 없습니다. 먼저 GET /save를 부르세요."
         )
     return SyncResponseSchema(
-        accepted=r.accepted, state=r.state, syncedAt=r.synced_at, rejectedRule=r.rejected_rule
+        accepted=r.accepted,
+        state=r.state,
+        syncedAt=r.synced_at,
+        rejectedRule=r.rejected_rule,
+        captures=[CaptureEventSchema(monsterId=c.monster_id, stars=c.stars, first=c.first) for c in r.captures],
     )

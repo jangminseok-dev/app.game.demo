@@ -26,6 +26,7 @@ from core.database import Base  # noqa: E402
 
 import auth.adapter.outbound.orm.player_orm  # noqa: E402, F401
 import save.adapter.outbound.orm.save_orm  # noqa: E402, F401
+import codex.adapter.outbound.orm.codex_entry_orm  # noqa: E402, F401
 
 target_metadata = Base.metadata
 

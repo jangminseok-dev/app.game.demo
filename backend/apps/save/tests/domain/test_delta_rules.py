@@ -48,3 +48,18 @@ def test_구매한_업그레이드는_골드_보존에_반영된다():
 
 def test_아주_짧은_간격도_최소_5초는_인정한다():
     assert _v(state(), state(totalKills=8), 0.1) is None
+
+
+def test_처치_보고가_누적_증가분을_넘으면_거부():
+    ok = state(totalKills=5, killLog={"normal": {"1": 3}, "boss": {"1": 2}})
+    assert _v(state(), ok, 30) is None
+    over = state(totalKills=5, killLog={"normal": {"1": 4}, "boss": {"1": 2}})
+    assert _v(state(), over, 30).rule == "kill_report_exceeds_delta"
+
+
+def test_패시브가_처치_상한과_골드_상한을_넓힌다():
+    from save.tests.support import Passives
+    fast = Passives(attack_speed=100)  # 공속 2배
+    prev, new = parse_snapshot(state()), parse_snapshot(state(totalKills=60))
+    assert delta_rules.validate(prev, new, 30, BALANCE).rule == "too_many_kills"
+    assert delta_rules.validate(prev, new, 30, BALANCE, fast) is None
