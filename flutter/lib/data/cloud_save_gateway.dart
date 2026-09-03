@@ -14,10 +14,11 @@ abstract class CloudSaveGateway {
 }
 
 class CloudLoad {
-  const CloudLoad({required this.state, required this.offlineReward, required this.codex});
+  const CloudLoad({required this.state, required this.offlineReward, required this.codex, this.pity = const {}});
   final GameState state;
   final OfflineReward? offlineReward;
   final Map<int, int> codex;
+  final Map<int, int> pity;
 }
 
 class CloudSync {
@@ -26,11 +27,17 @@ class CloudSync {
     required this.state,
     required this.rejectedRule,
     this.captures = const [],
+    this.codex,
+    this.pity,
   });
   final bool accepted;
   final GameState state;
   final String? rejectedRule;
   final List<CaptureEvent> captures;
+
+  /// 수락 시 서버가 돌려준 도감 전체(성급·천장 진행). null이면 이벤트만으로 갱신한다.
+  final Map<int, int>? codex;
+  final Map<int, int>? pity;
 }
 
 /// 서버 세이브 형식이 깨졌을 때. 로컬 경로로 폴백한다.
@@ -47,7 +54,7 @@ class ApiCloudSaveGateway implements CloudSaveGateway {
     final r = await _api.load(_session);
     final state = decodeState(r.state);
     if (state == null) throw CorruptRemoteSave();
-    return CloudLoad(state: state, offlineReward: r.offlineReward, codex: r.codex);
+    return CloudLoad(state: state, offlineReward: r.offlineReward, codex: r.codex.stars, pity: r.codex.pity);
   }
 
   @override
@@ -55,6 +62,13 @@ class ApiCloudSaveGateway implements CloudSaveGateway {
     final r = await _api.sync(_session, encodeState(state));
     final server = decodeState(r.state);
     if (server == null) throw CorruptRemoteSave();
-    return CloudSync(accepted: r.accepted, state: server, rejectedRule: r.rejectedRule, captures: r.captures);
+    return CloudSync(
+      accepted: r.accepted,
+      state: server,
+      rejectedRule: r.rejectedRule,
+      captures: r.captures,
+      codex: r.codex?.stars,
+      pity: r.codex?.pity,
+    );
   }
 }

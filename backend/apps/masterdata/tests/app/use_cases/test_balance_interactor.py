@@ -19,6 +19,9 @@ RECORD = BalanceRecord(
     offline_min_seconds=60,
     boss_capture_multiplier=4.0,
     max_stars=5,
+    base_capture_rate=0.005,
+    capture_rate_per_level=0.0005,
+    capture_pity_kills=400,
 )
 
 

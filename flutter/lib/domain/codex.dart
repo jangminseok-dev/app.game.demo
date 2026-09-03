@@ -32,10 +32,13 @@ class Passives {
 
 /// 서버가 동기화 응답으로 돌려주는 포획 이벤트.
 class CaptureEvent {
-  const CaptureEvent({required this.monsterId, required this.stars, required this.first});
+  const CaptureEvent({required this.monsterId, required this.stars, required this.first, this.byPity = false});
   final int monsterId;
   final int stars;
   final bool first;
+
+  /// 천장(확정 포획)으로 잡혔는지.
+  final bool byPity;
 }
 
 /// 도감(몬스터 id → 성급)에서 패시브 합계를 구한다.

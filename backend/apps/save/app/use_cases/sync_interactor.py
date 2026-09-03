@@ -6,7 +6,7 @@ from save.app.dtos.sync_dto import SyncCommand, SyncResponse
 from save.app.ports.input.sync_use_case import SyncUseCase
 from save.app.ports.output.save_repository import SaveRepository
 from save.app.ports.output.sync_rejection_port import SyncRejectionPort
-from save.domain.balance.formulas import stats_of
+from save.domain.balance.formulas import capture_rate_of
 from save.domain.snapshot import parse_snapshot, with_kill_log_cleared
 from save.domain.validation import delta_rules
 
@@ -33,21 +33,21 @@ class SyncInteractor(SyncUseCase):
 
         new_snapshot = parse_snapshot(command.state)  # InvalidSnapshot → 라우터가 400
         passives = await self._codex.get_passives(command.player_id)
+        balance = await self._balance.get_balance()
         elapsed = (command.now - prev.synced_at).total_seconds()
-        violation = delta_rules.validate(
-            parse_snapshot(prev.state), new_snapshot, elapsed, await self._balance.get_balance(), passives
-        )
+        violation = delta_rules.validate(parse_snapshot(prev.state), new_snapshot, elapsed, balance, passives)
         if violation is not None:
             await self._rejections.record(command.player_id, violation.rule, violation.detail)
             return SyncResponse(
                 accepted=False, state=prev.state, synced_at=prev.synced_at,
-                rejected_rule=violation.rule, captures=(),
+                rejected_rule=violation.rule, captures=(), codex=(),
             )
 
-        captures = await self._codex.register_kills(
-            command.player_id, new_snapshot.kill_report, stats_of(new_snapshot, passives).capture_rate
+        captures, codex = await self._codex.register_kills(
+            command.player_id, new_snapshot.kill_report, capture_rate_of(new_snapshot, balance, passives)
         )
         saved = await self._saves.upsert(command.player_id, with_kill_log_cleared(command.state), command.now)
         return SyncResponse(
-            accepted=True, state=saved.state, synced_at=saved.synced_at, rejected_rule=None, captures=captures
+            accepted=True, state=saved.state, synced_at=saved.synced_at, rejected_rule=None,
+            captures=captures, codex=codex,
         )

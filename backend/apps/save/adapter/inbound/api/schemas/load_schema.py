@@ -12,6 +12,7 @@ class OfflineRewardSchema(BaseModel):
 class CodexEntrySchema(BaseModel):
     monsterId: int
     stars: int
+    pityKills: int = Field(description="마지막 포획 이후 처치 수 — 천장 진행")
 
 
 class LoadResponseSchema(BaseModel):

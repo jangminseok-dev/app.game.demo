@@ -13,7 +13,9 @@ class CodexPort(ABC):
     """
 
     @abstractmethod
-    async def get_entries(self, player_id: int) -> tuple[CodexEntry, ...]: ...
+    async def get_entries(self, player_id: int) -> tuple[CodexEntry, ...]:
+        """미등록(stars 0)이라도 천장 카운트가 있는 행은 포함한다."""
+        ...
 
     @abstractmethod
     async def get_passives(self, player_id: int) -> Passives: ...
@@ -21,6 +23,9 @@ class CodexPort(ABC):
     @abstractmethod
     async def register_kills(
         self, player_id: int, report: KillReport, capture_rate: float
-    ) -> tuple[CaptureEvent, ...]:
-        """처치 보고를 받아 포획을 굴리고 도감을 갱신한다. `capture_rate`는 플레이어의 기본 포획률(0~1)."""
+    ) -> tuple[tuple[CaptureEvent, ...], tuple[CodexEntry, ...]]:
+        """처치 보고를 받아 포획을 굴리고 도감을 갱신한다.
+
+        `capture_rate`는 플레이어의 기본 포획률(0~1). 돌려주는 것: (포획 이벤트, 갱신 후 도감 전체).
+        """
         ...

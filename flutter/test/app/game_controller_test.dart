@@ -105,6 +105,27 @@ void main() {
     expect(container.read(captureFeedProvider), isEmpty);
   });
 
+  test('서버가 도감 스냅샷을 주면 그것이 정본 — 천장 진행까지 반영', () async {
+    final cloud = FakeCloudSaveGateway()
+      ..captures = const [CaptureEvent(monsterId: 1, stars: 2, first: false, byPity: true)]
+      ..codex = {1: 2, 3: 1}
+      ..pity = {2: 37};
+    final container = make(
+      repo: InMemorySaveRepository(),
+      cloud: cloud,
+      initial: GameState.initial(c).copyWith(codex: const {1: 1}, killLog: const {1: 3, 2: 2}),
+    );
+
+    await container.read(gameControllerProvider.notifier).saveNow();
+
+    final s = container.read(gameControllerProvider);
+    expect(s.codex, {1: 2, 3: 1});
+    expect(s.pity, {2: 37});
+    expect(s.killLog, isEmpty);
+    expect(s.passives.crit, closeTo(0.2, 1e-9));
+    expect(container.read(captureFeedProvider).single.byPity, true);
+  });
+
   test('거부되면 도감은 유지한 채 서버 상태로 롤백한다', () async {
     final cloud = FakeCloudSaveGateway(rejectWith: 'gold_conservation')
       ..rejectedState = GameState.initial(c).copyWith(gold: 30);

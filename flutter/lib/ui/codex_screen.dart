@@ -92,17 +92,17 @@ class _RegionHeader extends StatelessWidget {
   }
 }
 
-class _MonsterCell extends StatelessWidget {
+class _MonsterCell extends ConsumerWidget {
   const _MonsterCell({required this.monster, required this.stars});
   final Monster monster;
   final int stars;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final known = stars > 0;
     final muted = Theme.of(context).colorScheme.outline;
     return InkWell(
-      onTap: () => _showDetail(context),
+      onTap: () => _showDetail(context, ref),
       borderRadius: BorderRadius.circular(10),
       child: Container(
         decoration: BoxDecoration(
@@ -130,8 +130,12 @@ class _MonsterCell extends StatelessWidget {
     );
   }
 
-  void _showDetail(BuildContext context) {
+  void _showDetail(BuildContext context, WidgetRef ref) {
     final known = stars > 0;
+    final config = ref.read(balanceConfigProvider);
+    final state = ref.read(gameControllerProvider);
+    final progress = (state.pity[monster.id] ?? 0) + (state.killLog[monster.id] ?? 0) + (state.bossKillLog[monster.id] ?? 0);
+    final threshold = config.pityThreshold(monster.rarity);
     showModalBottomSheet<void>(
       context: context,
       builder: (context) => Padding(
@@ -154,6 +158,11 @@ class _MonsterCell extends StatelessWidget {
                         : '등록하면 ${monster.passiveKind.label} ★당 ${monster.passiveKind.format(monster.passivePerStar)}',
                   ),
                   Text('★' * stars + '☆' * (5 - stars), style: const TextStyle(color: Colors.amber, fontSize: 18)),
+                  if (stars < config.maxStars)
+                    Text(
+                      '확정 포획까지 ${(threshold - progress).clamp(0, threshold)}마리  ($progress / $threshold)',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
+                    ),
                 ],
               ),
             ),

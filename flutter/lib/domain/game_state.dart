@@ -21,6 +21,7 @@ class GameState {
     this.killLog = const {},
     this.bossKillLog = const {},
     this.codex = const {},
+    this.pity = const {},
     this.passives = Passives.none,
   });
 
@@ -65,6 +66,9 @@ class GameState {
   /// 도감(몬스터 id → 성급). 서버가 정본이며 전생해도 남는다.
   final Map<int, int> codex;
 
+  /// 몬스터별 천장 진행(마지막 포획 이후 서버가 센 처치 수). 표시용이며 서버 응답으로만 갱신한다.
+  final Map<int, int> pity;
+
   /// [codex]에서 계산한 패시브 합계. codex가 바뀔 때 [BattleEngine.withCodex]가 함께 갱신한다.
   final Passives passives;
 
@@ -90,6 +94,7 @@ class GameState {
     Map<int, int>? killLog,
     Map<int, int>? bossKillLog,
     Map<int, int>? codex,
+    Map<int, int>? pity,
     Passives? passives,
   }) {
     return GameState(
@@ -108,6 +113,7 @@ class GameState {
       killLog: killLog ?? this.killLog,
       bossKillLog: bossKillLog ?? this.bossKillLog,
       codex: codex ?? this.codex,
+      pity: pity ?? this.pity,
       passives: passives ?? this.passives,
     );
   }

@@ -47,6 +47,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'monsterId': s.monsterId,
       'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
       'codex': _encodeIntMap(s.codex),
+      'pity': _encodeIntMap(s.pity),
     };
 
 /// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
@@ -76,6 +77,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       killLog: _decodeIntMap(killLog['normal']),
       bossKillLog: _decodeIntMap(killLog['boss']),
       codex: _decodeIntMap(j['codex']),
+      pity: _decodeIntMap(j['pity']),
     );
   } on TypeError {
     return null;

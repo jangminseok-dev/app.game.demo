@@ -27,3 +27,6 @@ class BalanceResponse:
     offline_min_seconds: float
     boss_capture_multiplier: float
     max_stars: int
+    base_capture_rate: float
+    capture_rate_per_level: float
+    capture_pity_kills: int  # 희귀도 1.0 기준. 실제 천장 = pity / rarity

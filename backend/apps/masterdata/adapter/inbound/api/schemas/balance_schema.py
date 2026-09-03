@@ -19,3 +19,6 @@ class BalanceResponseSchema(BaseModel):
     offlineMinSeconds: float
     bossCaptureMultiplier: float
     maxStars: int
+    baseCaptureRate: float
+    captureRatePerLevel: float
+    capturePityKills: int = Field(description="희귀도 1.0 기준 확정 포획 처치 수. 실제 천장 = 이 값 / 희귀도")

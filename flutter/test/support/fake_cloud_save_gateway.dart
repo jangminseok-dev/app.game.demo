@@ -15,8 +15,10 @@ class FakeCloudSaveGateway implements CloudSaveGateway {
   GameState? rejectedState;
   Object? syncError;
 
-  /// 수락 응답에 실을 포획 이벤트.
+  /// 수락 응답에 실을 포획 이벤트와 도감 스냅샷(null이면 이벤트만).
   List<CaptureEvent> captures = const [];
+  Map<int, int>? codex;
+  Map<int, int>? pity;
 
   final synced = <GameState>[];
 
@@ -33,7 +35,7 @@ class FakeCloudSaveGateway implements CloudSaveGateway {
     if (rejectWith != null) {
       return CloudSync(accepted: false, state: rejectedState!, rejectedRule: rejectWith);
     }
-    return CloudSync(accepted: true, state: state, rejectedRule: null, captures: captures);
+    return CloudSync(accepted: true, state: state, rejectedRule: null, captures: captures, codex: codex, pity: pity);
   }
 }
 

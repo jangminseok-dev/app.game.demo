@@ -85,22 +85,27 @@ void main() {
   test('load: 도감 목록을 맵으로 받는다', () async {
     rec.responses['GET /save'] = http.Response(
       '{"state":{"stage":1},"syncedAt":"2026-09-03T03:00:00Z","created":false,"offlineReward":null,'
-      '"codex":[{"monsterId":1,"stars":3},{"monsterId":9,"stars":1}]}',
+      '"codex":[{"monsterId":1,"stars":3,"pityKills":12},{"monsterId":9,"stars":1,"pityKills":0},{"monsterId":4,"stars":0,"pityKills":77}]}',
       200,
     );
     final r = await api.load(const GuestSession(playerId: 1, accessToken: 'tok'));
-    expect(r.codex, {1: 3, 9: 1});
+    expect(r.codex.stars, {1: 3, 9: 1}, reason: '성급 0은 미등록');
+    expect(r.codex.pity, {1: 12, 4: 77});
   });
 
   test('sync: 포획 이벤트를 받는다', () async {
     rec.responses['PUT /save'] = http.Response(
       '{"accepted":true,"state":{"stage":1},"syncedAt":"2026-09-03T03:00:00Z","rejectedRule":null,'
-      '"captures":[{"monsterId":1,"stars":1,"first":true}]}',
+      '"captures":[{"monsterId":1,"stars":1,"first":true,"byPity":true}],'
+      '"codex":[{"monsterId":1,"stars":1,"pityKills":0},{"monsterId":2,"stars":0,"pityKills":5}]}',
       200,
     );
     final r = await api.sync(const GuestSession(playerId: 1, accessToken: 'tok'), {'stage': 1});
     expect(r.captures.single.monsterId, 1);
     expect(r.captures.single.first, true);
+    expect(r.captures.single.byPity, true);
+    expect(r.codex!.stars, {1: 1});
+    expect(r.codex!.pity, {2: 5});
   });
 
   test('load: 보상이 null이면 null', () async {
@@ -113,12 +118,13 @@ void main() {
 
   test('sync: 상태를 PUT 하고 거부 규칙을 받는다', () async {
     rec.responses['PUT /save'] =
-        http.Response('{"accepted":false,"state":{"stage":1,"gold":30},"syncedAt":"2026-09-03T03:00:00Z","rejectedRule":"gold_conservation"}', 200);
+        http.Response('{"accepted":false,"state":{"stage":1,"gold":30},"syncedAt":"2026-09-03T03:00:00Z","rejectedRule":"gold_conservation","captures":[],"codex":[]}', 200);
     final r = await api.sync(const GuestSession(playerId: 1, accessToken: 'tok'), {'stage': 1, 'gold': 999});
     expect(jsonDecode(rec.requests.single.body), {'state': {'stage': 1, 'gold': 999}});
     expect(r.accepted, false);
     expect(r.rejectedRule, 'gold_conservation');
     expect(r.state['gold'], 30);
+    expect(r.codex, isNull, reason: '거부 시 도감 스냅샷 없음');
   });
 
   test('2xx가 아니면 ApiException', () async {

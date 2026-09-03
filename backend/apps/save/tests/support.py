@@ -26,6 +26,9 @@ BALANCE = Balance(
     offline_min_seconds=60,
     boss_capture_multiplier=4.0,
     max_stars=5,
+    base_capture_rate=0.005,
+    capture_rate_per_level=0.0005,
+    capture_pity_kills=400,
 )
 
 T0 = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
@@ -89,7 +92,7 @@ class StubCodex:
 
     async def register_kills(self, player_id, report, capture_rate):
         self.reports.append((player_id, report, capture_rate))
-        return self.captures
+        return self.captures, self.entries
 
 
 __all__ = ["BALANCE", "T0", "state", "StubBalance", "StubSaves", "StubRejections", "StubCodex", "CaptureEvent", "CodexEntry", "Passives"]

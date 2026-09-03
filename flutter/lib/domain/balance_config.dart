@@ -20,6 +20,9 @@ class BalanceConfig {
     this.offlineMinSeconds = 60,
     this.bossCaptureMultiplier = 4.0,
     this.maxStars = 5,
+    this.baseCaptureRate = 0.005,
+    this.captureRatePerLevel = 0.0005,
+    this.capturePityKills = 400,
   });
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
@@ -46,4 +49,12 @@ class BalanceConfig {
   /// 포획 (GAME_DESIGN 6장): 보스는 별도 배율, 성급 상한.
   final double bossCaptureMultiplier;
   final int maxStars;
+
+  /// 기본 포획률과 레벨당 증가. 천장은 희귀도 1.0 기준이며 실제 천장 = pity / 희귀도.
+  final double baseCaptureRate;
+  final double captureRatePerLevel;
+  final int capturePityKills;
+
+  /// 몬스터 희귀도에 맞춘 확정 포획 처치 수. 서버 `pity_threshold`와 같은 식.
+  int pityThreshold(double rarity) => (capturePityKills / rarity).round().clamp(1, 1 << 30);
 }

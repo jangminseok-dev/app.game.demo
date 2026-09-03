@@ -29,7 +29,6 @@ class Stats {
     required this.attacksPerSecond,
     required this.critChance,
     required this.goldMultiplier,
-    required this.captureRate,
   });
 
   factory Stats.fromLevels(Map<UpgradeType, int> levels, [Passives p = Passives.none]) {
@@ -39,7 +38,6 @@ class Stats {
       attacksPerSecond: (1.0 + 0.1 * lv(UpgradeType.attackSpeed)) * (1 + p.attackSpeed / 100),
       critChance: min(1.0, 0.05 + 0.01 * lv(UpgradeType.critChance) + p.crit / 100),
       goldMultiplier: (1.0 + 0.05 * lv(UpgradeType.goldGain)) * (1 + p.gold / 100),
-      captureRate: (0.005 + 0.0005 * lv(UpgradeType.captureRate)) * (1 + p.capture / 100),
     );
   }
 
@@ -48,10 +46,11 @@ class Stats {
   final double critChance;
   final double goldMultiplier;
 
-  /// 기본 포획률(0~1). 실제 판정은 서버가 몬스터 희귀도·보스 배율을 곱해 굴린다.
-  final double captureRate;
-
   /// 치명타 기대값을 반영한 초당 피해량. 화면 표시와 오프라인 보상 계산에 쓴다.
   double dps(BalanceConfig config) =>
       attack * (1 + critChance * (config.critMultiplier - 1)) * attacksPerSecond;
 }
+
+/// 기본 포획률(0~1). 계수는 마스터 데이터(4장). 실제 판정은 서버가 희귀도·보스 배율을 곱해 굴린다.
+double captureRateOf(Map<UpgradeType, int> levels, BalanceConfig c, [Passives p = Passives.none]) =>
+    (c.baseCaptureRate + c.captureRatePerLevel * (levels[UpgradeType.captureRate] ?? 0)) * (1 + p.capture / 100);

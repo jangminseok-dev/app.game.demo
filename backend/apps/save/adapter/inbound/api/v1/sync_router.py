@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.security import get_current_player_id
 from save.adapter.inbound.api.schemas.sync_schema import (
     CaptureEventSchema,
+    CodexEntrySchema,
     SyncRequestSchema,
     SyncResponseSchema,
 )
@@ -36,5 +37,9 @@ async def sync_save(
         state=r.state,
         syncedAt=r.synced_at,
         rejectedRule=r.rejected_rule,
-        captures=[CaptureEventSchema(monsterId=c.monster_id, stars=c.stars, first=c.first) for c in r.captures],
+        captures=[
+            CaptureEventSchema(monsterId=c.monster_id, stars=c.stars, first=c.first, byPity=c.by_pity)
+            for c in r.captures
+        ],
+        codex=[CodexEntrySchema(monsterId=e.monster_id, stars=e.stars, pityKills=e.pity_kills) for e in r.codex],
     )

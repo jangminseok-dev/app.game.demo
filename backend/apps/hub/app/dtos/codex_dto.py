@@ -3,8 +3,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CodexEntry:
+    """도감 행. `stars == 0`이면 아직 미등록이지만 천장 카운트(`pity_kills`)가 쌓이는 중이다."""
+
     monster_id: int
-    stars: int  # 1~5
+    stars: int  # 0~5
+    pity_kills: int = 0  # 마지막 포획 이후 처치 수 — 천장(확정 포획)까지의 진행
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,7 @@ class CaptureEvent:
     monster_id: int
     stars: int  # 포획 후 성급
     first: bool  # 이번에 처음 등록됐는지
+    by_pity: bool = False  # 천장으로 확정 포획됐는지
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,27 @@ class GuestSession {
   final String accessToken;
 }
 
+/// 서버 도감 응답 — 성급(0이면 미등록)과 천장 진행.
+class RemoteCodex {
+  const RemoteCodex({required this.stars, required this.pity});
+  final Map<int, int> stars;
+  final Map<int, int> pity;
+
+  static const empty = RemoteCodex(stars: {}, pity: {});
+
+  static RemoteCodex parse(List? entries) => RemoteCodex(
+        stars: {
+          for (final e in entries ?? const [])
+            if ((e['stars'] as num).toInt() > 0) (e['monsterId'] as num).toInt(): (e['stars'] as num).toInt(),
+        },
+        pity: {
+          for (final e in entries ?? const [])
+            if (((e['pityKills'] as num?) ?? 0).toInt() > 0)
+              (e['monsterId'] as num).toInt(): (e['pityKills'] as num).toInt(),
+        },
+      );
+}
+
 class RemoteLoad {
   const RemoteLoad({
     required this.state,
@@ -32,7 +53,7 @@ class RemoteLoad {
   final Map<String, dynamic> state;
   final OfflineReward? offlineReward;
   final bool created;
-  final Map<int, int> codex;
+  final RemoteCodex codex;
 }
 
 class RemoteSync {
@@ -41,11 +62,15 @@ class RemoteSync {
     required this.state,
     required this.rejectedRule,
     required this.captures,
+    required this.codex,
   });
   final bool accepted;
   final Map<String, dynamic> state;
   final String? rejectedRule;
   final List<CaptureEvent> captures;
+
+  /// 수락 시 갱신 후 도감 전체. 거부 시 null.
+  final RemoteCodex? codex;
 }
 
 /// 백엔드 API 호출. 경로·JSON 필드는 backend/apps/*/adapter/inbound/api 스키마와 1:1.
@@ -90,10 +115,7 @@ class IdleApiClient {
               elapsed: Duration(seconds: (reward['elapsedSeconds'] as num).round()),
               gold: (reward['gold'] as num).toDouble(),
             ),
-      codex: {
-        for (final e in (j['codex'] as List? ?? const []))
-          (e['monsterId'] as num).toInt(): (e['stars'] as num).toInt(),
-      },
+      codex: RemoteCodex.parse(j['codex'] as List?),
     );
   }
 
@@ -109,8 +131,10 @@ class IdleApiClient {
             monsterId: (c['monsterId'] as num).toInt(),
             stars: (c['stars'] as num).toInt(),
             first: c['first'] as bool,
+            byPity: (c['byPity'] as bool?) ?? false,
           ),
       ],
+      codex: j['accepted'] == true ? RemoteCodex.parse(j['codex'] as List?) : null,
     );
   }
 

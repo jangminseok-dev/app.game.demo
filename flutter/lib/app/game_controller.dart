@@ -130,10 +130,11 @@ class GameController extends Notifier<GameState> {
     try {
       final result = await cloud.sync(sent);
       if (result.accepted) {
-        state = _engine.applyCaptures(
-          _engine.consumeKillLog(state, sent.killLog, sent.bossKillLog),
-          result.captures,
-        );
+        final consumed = _engine.consumeKillLog(state, sent.killLog, sent.bossKillLog);
+        // 서버가 도감 전체를 돌려주면 그것이 정본(천장 진행 포함). 없으면 이벤트만 반영.
+        state = result.codex != null
+            ? _engine.withCodex(consumed, result.codex!, pity: result.pity ?? const {})
+            : _engine.applyCaptures(consumed, result.captures);
         ref.read(saveStatusProvider.notifier).synced(DateTime.now());
         if (result.captures.isNotEmpty) ref.read(captureFeedProvider.notifier).push(result.captures);
       } else {

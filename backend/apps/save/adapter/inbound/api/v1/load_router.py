@@ -30,5 +30,5 @@ async def load_save(
             if r.offline_gold > 0
             else None
         ),
-        codex=[CodexEntrySchema(monsterId=e.monster_id, stars=e.stars) for e in r.codex],
+        codex=[CodexEntrySchema(monsterId=e.monster_id, stars=e.stars, pityKills=e.pity_kills) for e in r.codex],
     )

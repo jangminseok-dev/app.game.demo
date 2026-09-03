@@ -32,7 +32,7 @@ class Bootstrap {
     if (cloud != null) {
       try {
         final remote = await cloud.load();
-        final state = engine.withCodex(remote.state, remote.codex);
+        final state = engine.withCodex(remote.state, remote.codex, pity: remote.pity);
         await local.save(SaveData(state: state, savedAt: now));
         return Bootstrap(state: state, offlineReward: remote.offlineReward, fromCloud: true);
       } on Object {

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from hub.app.dtos.codex_dto import CaptureEvent
+from hub.app.dtos.codex_dto import CaptureEvent, CodexEntry
 
 
 @dataclass(frozen=True)
@@ -19,3 +19,4 @@ class SyncResponse:
     synced_at: datetime
     rejected_rule: str | None
     captures: tuple[CaptureEvent, ...]  # 이번 보고로 굴린 포획 결과
+    codex: tuple[CodexEntry, ...]  # 갱신 후 도감 전체(천장 카운트 포함). 거부 시 빈 튜플

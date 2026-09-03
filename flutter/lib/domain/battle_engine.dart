@@ -118,8 +118,8 @@ class BattleEngine {
   }
 
   /// 도감을 바꾸고 패시브를 다시 계산한다. 도감은 항상 이 메서드로만 바꾼다.
-  GameState withCodex(GameState s, Map<int, int> codex) =>
-      s.copyWith(codex: codex, passives: computePassives(codex, catalog));
+  GameState withCodex(GameState s, Map<int, int> codex, {Map<int, int>? pity}) =>
+      s.copyWith(codex: codex, pity: pity, passives: computePassives(codex, catalog));
 
   /// 서버 포획 이벤트를 도감에 반영한다.
   GameState applyCaptures(GameState s, List<CaptureEvent> captures) {

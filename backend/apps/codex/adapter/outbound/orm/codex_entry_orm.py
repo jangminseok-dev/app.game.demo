@@ -17,6 +17,8 @@ class CodexEntryOrm(Base):
     player_id: Mapped[int] = mapped_column(Integer, ForeignKey("players.id"), index=True)
     monster_id: Mapped[int] = mapped_column(Integer)
     stars: Mapped[int] = mapped_column(Integer)
+    # 마지막 포획 이후 처치 수 — 천장(확정 포획) 진행. 성급 0인 행도 이 카운트 때문에 존재할 수 있다.
+    pity_kills: Mapped[int] = mapped_column(Integer, server_default="0")
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

@@ -57,6 +57,7 @@ async def test_처치_보고를_도감에_넘기고_포획_결과를_돌려주�
     r = await _sut(saves, codex=codex).sync(SyncCommand(player_id=1, state=new, now=T0 + timedelta(seconds=30)))
     assert r.accepted is True
     assert r.captures == (CaptureEvent(1, 1, True),)
+    assert r.codex == ()
     player_id, report, rate = codex.reports[0]
     assert player_id == 1 and report.normal == {1: 4} and report.boss == {1: 1}
     assert abs(rate - 0.005) < 1e-9
