@@ -18,6 +18,8 @@ class BalanceConfig {
     this.offlineCapSeconds = 8 * 3600,
     this.offlineEfficiency = 0.5,
     this.offlineMinSeconds = 60,
+    this.bossCaptureMultiplier = 4.0,
+    this.maxStars = 5,
   });
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
@@ -40,4 +42,8 @@ class BalanceConfig {
 
   /// 이보다 짧은 이탈은 보상 없음. 팝업이 너무 자주 뜨는 것을 막는다(가정값).
   final double offlineMinSeconds;
+
+  /// 포획 (GAME_DESIGN 6장): 보스는 별도 배율, 성급 상한.
+  final double bossCaptureMultiplier;
+  final int maxStars;
 }

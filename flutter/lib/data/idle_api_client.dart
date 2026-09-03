@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../domain/balance_config.dart';
+import '../domain/codex.dart';
 import '../domain/offline_reward.dart';
 import 'balance_codec.dart';
 
@@ -22,17 +23,29 @@ class GuestSession {
 }
 
 class RemoteLoad {
-  const RemoteLoad({required this.state, required this.offlineReward, required this.created});
+  const RemoteLoad({
+    required this.state,
+    required this.offlineReward,
+    required this.created,
+    required this.codex,
+  });
   final Map<String, dynamic> state;
   final OfflineReward? offlineReward;
   final bool created;
+  final Map<int, int> codex;
 }
 
 class RemoteSync {
-  const RemoteSync({required this.accepted, required this.state, required this.rejectedRule});
+  const RemoteSync({
+    required this.accepted,
+    required this.state,
+    required this.rejectedRule,
+    required this.captures,
+  });
   final bool accepted;
   final Map<String, dynamic> state;
   final String? rejectedRule;
+  final List<CaptureEvent> captures;
 }
 
 /// 백엔드 API 호출. 경로·JSON 필드는 backend/apps/*/adapter/inbound/api 스키마와 1:1.
@@ -57,6 +70,14 @@ class IdleApiClient {
     return balanceFromJson(j);
   }
 
+  /// 몬스터 표(원본 JSON). 캐시 버전이 같으면 null.
+  Future<Map<String, dynamic>?> monsters({int? cachedVersion}) async {
+    final query = cachedVersion == null ? '' : '?version=$cachedVersion';
+    final j = await _get('/masterdata/monsters$query');
+    if (j['unchanged'] == true && cachedVersion != null) return null;
+    return j;
+  }
+
   Future<RemoteLoad> load(GuestSession s) async {
     final j = await _get('/save', token: s.accessToken);
     final reward = j['offlineReward'] as Map<String, dynamic>?;
@@ -69,6 +90,10 @@ class IdleApiClient {
               elapsed: Duration(seconds: (reward['elapsedSeconds'] as num).round()),
               gold: (reward['gold'] as num).toDouble(),
             ),
+      codex: {
+        for (final e in (j['codex'] as List? ?? const []))
+          (e['monsterId'] as num).toInt(): (e['stars'] as num).toInt(),
+      },
     );
   }
 
@@ -78,6 +103,14 @@ class IdleApiClient {
       accepted: j['accepted'] as bool,
       state: j['state'] as Map<String, dynamic>,
       rejectedRule: j['rejectedRule'] as String?,
+      captures: [
+        for (final c in (j['captures'] as List? ?? const []))
+          CaptureEvent(
+            monsterId: (c['monsterId'] as num).toInt(),
+            stars: (c['stars'] as num).toInt(),
+            first: c['first'] as bool,
+          ),
+      ],
     );
   }
 

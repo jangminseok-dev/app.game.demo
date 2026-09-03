@@ -5,6 +5,7 @@ import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/offline_reward.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
 
+import '../support/catalog.dart';
 import '../support/fake_cloud_save_gateway.dart';
 import '../support/in_memory_save_repository.dart';
 
@@ -58,6 +59,25 @@ void main() {
       expect(boot.offlineReward, same(reward));
       expect(repo.stored!.state.stage, 7, reason: '로컬 캐시가 서버 값으로 바뀐다');
       expect(repo.stored!.savedAt, now);
+    });
+
+    test('서버 도감을 상태에 싣고 패시브를 계산한다', () async {
+      final repo = InMemorySaveRepository();
+      final cloud = FakeCloudSaveGateway(loadResult: cloudLoad(GameState.initial(c), codex: {1: 2, 2: 1}));
+
+      final boot = await Bootstrap.load(local: repo, cloud: cloud, config: c, now: now, catalog: smallCatalog);
+
+      expect(boot.state.codex, {1: 2, 2: 1});
+      expect(boot.state.passives.attack, 20, reason: '숲 완성');
+      expect(repo.stored!.state.codex, {1: 2, 2: 1}, reason: '로컬 캐시에도 도감이 남는다');
+    });
+
+    test('로컬 폴백 시 저장된 도감으로 패시브를 다시 계산한다', () async {
+      final repo = InMemorySaveRepository(
+        SaveData(state: GameState.initial(c).copyWith(codex: const {3: 2}), savedAt: now),
+      );
+      final boot = await Bootstrap.load(local: repo, cloud: null, config: c, now: now, catalog: smallCatalog);
+      expect(boot.state.passives.crit, closeTo(0.4, 1e-9));
     });
 
     test('서버 호출이 실패하면 로컬 경로로 폴백한다', () async {

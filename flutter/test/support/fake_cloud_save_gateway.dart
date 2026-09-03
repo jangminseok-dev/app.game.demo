@@ -1,4 +1,5 @@
 import 'package:idle_fantasy/data/cloud_save_gateway.dart';
+import 'package:idle_fantasy/domain/codex.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/offline_reward.dart';
 
@@ -13,6 +14,9 @@ class FakeCloudSaveGateway implements CloudSaveGateway {
   String? rejectWith;
   GameState? rejectedState;
   Object? syncError;
+
+  /// 수락 응답에 실을 포획 이벤트.
+  List<CaptureEvent> captures = const [];
 
   final synced = <GameState>[];
 
@@ -29,8 +33,9 @@ class FakeCloudSaveGateway implements CloudSaveGateway {
     if (rejectWith != null) {
       return CloudSync(accepted: false, state: rejectedState!, rejectedRule: rejectWith);
     }
-    return CloudSync(accepted: true, state: state, rejectedRule: null);
+    return CloudSync(accepted: true, state: state, rejectedRule: null, captures: captures);
   }
 }
 
-CloudLoad cloudLoad(GameState s, {OfflineReward? reward}) => CloudLoad(state: s, offlineReward: reward);
+CloudLoad cloudLoad(GameState s, {OfflineReward? reward, Map<int, int> codex = const {}}) =>
+    CloudLoad(state: s, offlineReward: reward, codex: codex);

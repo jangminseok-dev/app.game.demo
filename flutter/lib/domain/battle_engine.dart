@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'balance_config.dart';
+import 'codex.dart';
 import 'formulas.dart';
 import 'game_state.dart';
+import 'monster.dart';
 import 'upgrade.dart';
 
 /// 코어 루프의 전투 부분. GAME_DESIGN.md 2장·15장.
@@ -13,10 +15,13 @@ import 'upgrade.dart';
 /// 스테이지 흐름:
 ///   일반 몬스터 [killsPerStage]마리 → 보스 등장(30초 제한)
 ///   보스 처치 → 다음 스테이지 / 시간 초과 → 같은 스테이지 일반 몬스터부터 다시
+///
+/// 포획은 여기서 굴리지 않는다. 처치를 [GameState.killLog]에 세어 두면 서버가 판정한다(6장).
 class BattleEngine {
-  const BattleEngine(this.config);
+  const BattleEngine(this.config, {this.catalog = MonsterCatalog.empty});
 
   final BalanceConfig config;
+  final MonsterCatalog catalog;
 
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {
@@ -56,7 +61,12 @@ class BattleEngine {
             ? bossGoldReward(s.stage, config)
             : goldReward(s.stage, config)) *
         stats.goldMultiplier;
-    s = s.copyWith(gold: s.gold + reward, totalKills: s.totalKills + 1);
+    s = s.copyWith(
+      gold: s.gold + reward,
+      totalKills: s.totalKills + 1,
+      killLog: s.isBoss ? null : _increment(s.killLog, s.monsterId),
+      bossKillLog: s.isBoss ? _increment(s.bossKillLog, s.monsterId) : null,
+    );
 
     if (s.isBoss) {
       final next = s.stage + 1;
@@ -81,6 +91,7 @@ class BattleEngine {
       monsterMaxHp: hp,
       isBoss: false,
       bossTimeLeft: 0,
+      monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
     );
   }
 
@@ -91,6 +102,7 @@ class BattleEngine {
       monsterMaxHp: hp,
       isBoss: true,
       bossTimeLeft: config.bossTimeLimit,
+      monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
     );
   }
 
@@ -103,6 +115,38 @@ class BattleEngine {
       gold: s.gold - cost,
       levels: {...s.levels, type: level + 1},
     );
+  }
+
+  /// 도감을 바꾸고 패시브를 다시 계산한다. 도감은 항상 이 메서드로만 바꾼다.
+  GameState withCodex(GameState s, Map<int, int> codex) =>
+      s.copyWith(codex: codex, passives: computePassives(codex, catalog));
+
+  /// 서버 포획 이벤트를 도감에 반영한다.
+  GameState applyCaptures(GameState s, List<CaptureEvent> captures) {
+    if (captures.isEmpty) return s;
+    final codex = {...s.codex};
+    for (final c in captures) {
+      codex[c.monsterId] = max(codex[c.monsterId] ?? 0, c.stars);
+    }
+    return withCodex(s, codex);
+  }
+
+  /// 서버가 수락한 처치 보고를 처치 기록에서 뺀다. 요청 중에 쌓인 처치는 남는다.
+  GameState consumeKillLog(GameState s, Map<int, int> sentNormal, Map<int, int> sentBoss) =>
+      s.copyWith(
+        killLog: _subtract(s.killLog, sentNormal),
+        bossKillLog: _subtract(s.bossKillLog, sentBoss),
+      );
+
+  static Map<int, int> _increment(Map<int, int> log, int id) => {...log, id: (log[id] ?? 0) + 1};
+
+  static Map<int, int> _subtract(Map<int, int> log, Map<int, int> sent) {
+    final out = <int, int>{};
+    for (final e in log.entries) {
+      final left = e.value - (sent[e.key] ?? 0);
+      if (left > 0) out[e.key] = left;
+    }
+    return out;
   }
 
   /// 공격속도가 극단적으로 높아졌을 때 한 틱에서 무한 루프를 막는 상한.

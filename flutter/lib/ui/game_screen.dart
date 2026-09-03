@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/game_controller.dart';
+import '../domain/codex.dart';
 import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
 import '../domain/upgrade.dart';
+import 'codex_screen.dart';
 
-/// 1주차 텍스트 화면. 그래픽 없이 숫자만 보여준다.
+/// 텍스트 전투 화면. 그래픽 없이 숫자와 이름만 보여준다.
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
 
@@ -39,26 +41,64 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     );
   }
 
+  void _showCaptures(List<CaptureEvent> captures) {
+    final catalog = ref.read(monsterCatalogProvider);
+    final lines = captures.map((c) {
+      final name = catalog.byId(c.monsterId)?.name ?? '몬스터 #${c.monsterId}';
+      return c.first ? '$name 도감 등록!' : '$name ★${c.stars}';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('포획: ${lines.join(', ')}'), duration: const Duration(seconds: 4)),
+    );
+    ref.read(captureFeedProvider.notifier).clear();
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(captureFeedProvider, (_, events) {
+      if (events.isNotEmpty) _showCaptures(events);
+    });
+
     final state = ref.watch(gameControllerProvider);
     final config = ref.watch(balanceConfigProvider);
+    final catalog = ref.watch(monsterCatalogProvider);
     final saveStatus = ref.watch(saveStatusProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final stats = state.stats;
     final mono = Theme.of(context).textTheme.bodyLarge?.copyWith(fontFamily: 'monospace');
+    final monster = catalog.byId(state.monsterId);
+    final monsterLabel = monster == null ? '몬스터' : '${monster.name} [${monster.element.label}]';
+    final registered = state.codex.values.where((s) => s > 0).length;
 
     return Scaffold(
-      appBar: AppBar(title: Text('스테이지 ${state.stage}  (최고 ${state.highestStage})')),
+      appBar: AppBar(
+        title: Text('스테이지 ${state.stage}  (최고 ${state.highestStage})'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const CodexScreen()),
+            ),
+            icon: const Icon(Icons.menu_book),
+            label: Text('도감 $registered'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
             state.isBoss
-                ? '보스  ${state.bossTimeLeft.toStringAsFixed(1)}초 남음'
-                : '몬스터  ${state.killsOnStage}/${config.killsPerStage}',
+                ? '보스 $monsterLabel  ${state.bossTimeLeft.toStringAsFixed(1)}초 남음'
+                : '$monsterLabel  ${state.killsOnStage}/${config.killsPerStage}',
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          if (monster != null)
+            Text(
+              state.starsOf(monster.id) > 0
+                  ? '도감 ★${state.starsOf(monster.id)}  ${monster.passiveKind.label} ★당 ${monster.passiveKind.format(monster.passivePerStar)}'
+                  : '미등록  포획 확률 ${(stats.captureRate * monster.rarity * (state.isBoss ? config.bossCaptureMultiplier : 1) * 100).toStringAsFixed(2)}%',
+              style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
+            ),
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: state.monsterMaxHp == 0 ? 0 : state.monsterHp / state.monsterMaxHp,
@@ -85,7 +125,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               onBuy: () => controller.buyUpgrade(type),
             ),
           const SizedBox(height: 24),
-          Text('총 처치 ${state.totalKills}', style: mono),
+          Text('총 처치 ${state.totalKills}  ·  미보고 처치 ${state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b)}', style: mono),
           Text(
             _saveLine(context, saveStatus),
             style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),

@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/codex.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
+
+import '../support/catalog.dart';
 
 void main() {
   const config = BalanceConfig();
@@ -127,6 +130,56 @@ void main() {
       s = run(s, 2.5); // 1마리
       final base = config.goldBase * pow(config.goldGrowth, 1);
       expect(s.gold, closeTo(base * 1.5, 1e-9));
+    });
+  });
+
+  group('도감 연동 (6주차)', () {
+    const withCatalog = BattleEngine(config, catalog: smallCatalog);
+
+    test('스폰 시 스테이지의 몬스터 id가 붙고 처치가 몬스터별로 기록된다', () {
+      var s = GameState.initial(config);
+      // 1스테이지 = 슬라임(1). 보스 전까지 10마리 → killLog[1] == 10, 보스 처치 → bossKillLog[1] == 1
+      var t = 0.0;
+      while (s.stage == 1 && t < 200) {
+        s = withCatalog.tick(s, 0.1, noCrit);
+        t += 0.1;
+      }
+      expect(s.stage, 2);
+      expect(s.killLog, {1: 10});
+      expect(s.bossKillLog, {1: 1});
+      expect(s.monsterId, 2, reason: '2스테이지 = 늑대');
+    });
+
+    test('카탈로그가 없으면 monsterId는 그대로', () {
+      var s = GameState.initial(config);
+      s = engine.tick(s, 3, noCrit);
+      expect(s.monsterId, 1);
+      expect(s.killLog, {1: 1});
+    });
+
+    test('보낸 보고만 빼고 그 사이 쌓인 처치는 남는다', () {
+      final s = GameState.initial(config).copyWith(killLog: const {1: 7, 2: 1}, bossKillLog: const {1: 1});
+      final left = withCatalog.consumeKillLog(s, const {1: 5}, const {1: 1});
+      expect(left.killLog, {1: 2, 2: 1});
+      expect(left.bossKillLog, isEmpty);
+    });
+
+    test('포획 이벤트를 도감에 반영하면 패시브가 따라온다', () {
+      var s = GameState.initial(config);
+      s = withCatalog.applyCaptures(s, const [
+        CaptureEvent(monsterId: 1, stars: 1, first: true),
+        CaptureEvent(monsterId: 1, stars: 2, first: false),
+        CaptureEvent(monsterId: 2, stars: 1, first: true),
+      ]);
+      expect(s.codex, {1: 2, 2: 1});
+      expect(s.passives.gold, closeTo(1.0, 1e-9));
+      expect(s.passives.attack, 20, reason: '숲 완성 보너스');
+      expect(s.stats.attack, 12);
+    });
+
+    test('빈 이벤트는 상태를 바꾸지 않는다', () {
+      final s = GameState.initial(config);
+      expect(identical(withCatalog.applyCaptures(s, const []), s), true);
     });
   });
 }

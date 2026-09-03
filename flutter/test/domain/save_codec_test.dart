@@ -21,6 +21,10 @@ void main() {
       killsOnStage: 10,
       attackTimer: 0.42,
       totalKills: 999,
+      monsterId: 7,
+      killLog: const {7: 3, 8: 1},
+      bossKillLog: const {7: 1},
+      codex: const {1: 5, 7: 2},
     );
     final savedAt = DateTime(2026, 9, 3, 14, 30, 5);
 
@@ -39,6 +43,27 @@ void main() {
     expect(s.killsOnStage, 10);
     expect(s.attackTimer, 0.42);
     expect(s.totalKills, 999);
+    expect(s.monsterId, 7);
+    expect(s.killLog, {7: 3, 8: 1});
+    expect(s.bossKillLog, {7: 1});
+    expect(s.codex, {1: 5, 7: 2});
+  });
+
+  test('구버전(도감 이전) 저장도 읽힌다', () {
+    final json = encodeState(GameState.initial(config))
+      ..remove('monsterId')
+      ..remove('killLog')
+      ..remove('codex');
+    final s = decodeState(json)!;
+    expect(s.monsterId, 1);
+    expect(s.killLog, isEmpty);
+    expect(s.codex, isEmpty);
+  });
+
+  test('서버 스냅샷 필드명과 같다', () {
+    final json = encodeState(GameState.initial(config).copyWith(killLog: const {3: 2}));
+    expect(json['killLog'], {'normal': {'3': 2}, 'boss': {}});
+    expect(json.keys, containsAll(['stage', 'highestStage', 'gold', 'levels', 'totalKills', 'monsterId', 'killLog']));
   });
 
   test('버전이 다르면 null', () {

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'balance_config.dart';
+import 'codex.dart';
 
 /// 골드로 사는 능력치 업그레이드 5종. GAME_DESIGN.md 3장·17장.
 ///
@@ -10,7 +11,6 @@ enum UpgradeType {
   attackSpeed('공격속도', baseCost: 25),
   critChance('치명타', baseCost: 50),
   goldGain('골드획득', baseCost: 40),
-  // 포획 시스템(6주차)이 들어오기 전까지는 효과가 없다. 정의만 미리 둔다.
   captureRate('포획률', baseCost: 100);
 
   const UpgradeType(this.label, {required this.baseCost});
@@ -22,7 +22,7 @@ enum UpgradeType {
       baseCost * pow(config.upgradeCostGrowth, level);
 }
 
-/// 업그레이드 레벨 → 실제 능력치.
+/// 업그레이드 레벨 + 도감 패시브 → 실제 능력치. 서버 `formulas.stats_of`와 같은 식.
 class Stats {
   const Stats({
     required this.attack,
@@ -32,14 +32,14 @@ class Stats {
     required this.captureRate,
   });
 
-  factory Stats.fromLevels(Map<UpgradeType, int> levels) {
+  factory Stats.fromLevels(Map<UpgradeType, int> levels, [Passives p = Passives.none]) {
     int lv(UpgradeType t) => levels[t] ?? 0;
     return Stats(
-      attack: 10 + 5.0 * lv(UpgradeType.attack),
-      attacksPerSecond: 1.0 + 0.1 * lv(UpgradeType.attackSpeed),
-      critChance: min(1.0, 0.05 + 0.01 * lv(UpgradeType.critChance)),
-      goldMultiplier: 1.0 + 0.05 * lv(UpgradeType.goldGain),
-      captureRate: 0.005 + 0.0005 * lv(UpgradeType.captureRate),
+      attack: (10 + 5.0 * lv(UpgradeType.attack)) * (1 + p.attack / 100),
+      attacksPerSecond: (1.0 + 0.1 * lv(UpgradeType.attackSpeed)) * (1 + p.attackSpeed / 100),
+      critChance: min(1.0, 0.05 + 0.01 * lv(UpgradeType.critChance) + p.crit / 100),
+      goldMultiplier: (1.0 + 0.05 * lv(UpgradeType.goldGain)) * (1 + p.gold / 100),
+      captureRate: (0.005 + 0.0005 * lv(UpgradeType.captureRate)) * (1 + p.capture / 100),
     );
   }
 
@@ -47,6 +47,8 @@ class Stats {
   final double attacksPerSecond;
   final double critChance;
   final double goldMultiplier;
+
+  /// 기본 포획률(0~1). 실제 판정은 서버가 몬스터 희귀도·보스 배율을 곱해 굴린다.
   final double captureRate;
 
   /// 치명타 기대값을 반영한 초당 피해량. 화면 표시와 오프라인 보상 계산에 쓴다.

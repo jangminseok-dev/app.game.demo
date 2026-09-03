@@ -72,6 +72,37 @@ void main() {
     expect(r.offlineReward!.gold, 123.5);
   });
 
+  test('monsters: 몬스터 표 원본 JSON, 캐시 버전 같으면 null', () async {
+    rec.responses['GET /masterdata/monsters'] = http.Response.bytes(utf8.encode(
+      '{"version":2,"unchanged":false,"regions":[],"monsters":[{"id":1,"name":"슬라임"}]}'), 200);
+    final j = await api.monsters();
+    expect(j!['version'], 2);
+    expect((j['monsters'] as List).single['name'], '슬라임');
+    rec.responses['GET /masterdata/monsters'] = http.Response('{"version":2,"unchanged":true,"regions":[],"monsters":[]}', 200);
+    expect(await api.monsters(cachedVersion: 2), isNull);
+  });
+
+  test('load: 도감 목록을 맵으로 받는다', () async {
+    rec.responses['GET /save'] = http.Response(
+      '{"state":{"stage":1},"syncedAt":"2026-09-03T03:00:00Z","created":false,"offlineReward":null,'
+      '"codex":[{"monsterId":1,"stars":3},{"monsterId":9,"stars":1}]}',
+      200,
+    );
+    final r = await api.load(const GuestSession(playerId: 1, accessToken: 'tok'));
+    expect(r.codex, {1: 3, 9: 1});
+  });
+
+  test('sync: 포획 이벤트를 받는다', () async {
+    rec.responses['PUT /save'] = http.Response(
+      '{"accepted":true,"state":{"stage":1},"syncedAt":"2026-09-03T03:00:00Z","rejectedRule":null,'
+      '"captures":[{"monsterId":1,"stars":1,"first":true}]}',
+      200,
+    );
+    final r = await api.sync(const GuestSession(playerId: 1, accessToken: 'tok'), {'stage': 1});
+    expect(r.captures.single.monsterId, 1);
+    expect(r.captures.single.first, true);
+  });
+
   test('load: 보상이 null이면 null', () async {
     rec.responses['GET /save'] =
         http.Response('{"state":{"stage":1},"syncedAt":"2026-09-03T03:00:00Z","created":true,"offlineReward":null}', 200);

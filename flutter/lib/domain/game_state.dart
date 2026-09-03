@@ -1,4 +1,5 @@
 import 'balance_config.dart';
+import 'codex.dart';
 import 'formulas.dart' as formulas;
 import 'upgrade.dart';
 
@@ -16,6 +17,11 @@ class GameState {
     required this.killsOnStage,
     required this.attackTimer,
     required this.totalKills,
+    this.monsterId = 1,
+    this.killLog = const {},
+    this.bossKillLog = const {},
+    this.codex = const {},
+    this.passives = Passives.none,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -49,9 +55,24 @@ class GameState {
   final double attackTimer;
   final int totalKills;
 
-  Stats get stats => Stats.fromLevels(levels);
+  /// 지금 싸우는 몬스터(마스터 데이터 id).
+  final int monsterId;
+
+  /// 마지막 서버 동기화 이후 몬스터별 처치 수. 서버가 포획을 굴리는 근거이며, 수락되면 비운다.
+  final Map<int, int> killLog;
+  final Map<int, int> bossKillLog;
+
+  /// 도감(몬스터 id → 성급). 서버가 정본이며 전생해도 남는다.
+  final Map<int, int> codex;
+
+  /// [codex]에서 계산한 패시브 합계. codex가 바뀔 때 [BattleEngine.withCodex]가 함께 갱신한다.
+  final Passives passives;
+
+  Stats get stats => Stats.fromLevels(levels, passives);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
+
+  int starsOf(int monsterId) => codex[monsterId] ?? 0;
 
   GameState copyWith({
     int? stage,
@@ -65,6 +86,11 @@ class GameState {
     int? killsOnStage,
     double? attackTimer,
     int? totalKills,
+    int? monsterId,
+    Map<int, int>? killLog,
+    Map<int, int>? bossKillLog,
+    Map<int, int>? codex,
+    Passives? passives,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -78,6 +104,11 @@ class GameState {
       killsOnStage: killsOnStage ?? this.killsOnStage,
       attackTimer: attackTimer ?? this.attackTimer,
       totalKills: totalKills ?? this.totalKills,
+      monsterId: monsterId ?? this.monsterId,
+      killLog: killLog ?? this.killLog,
+      bossKillLog: bossKillLog ?? this.bossKillLog,
+      codex: codex ?? this.codex,
+      passives: passives ?? this.passives,
     );
   }
 }

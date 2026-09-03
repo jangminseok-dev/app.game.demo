@@ -3,7 +3,7 @@ import 'upgrade.dart';
 
 /// 저장 단위. 상태 + 저장 시각.
 ///
-/// 지금은 기기 시각을 쓴다. 5주차에 서버로 옮기면 savedAt은 서버 시간이 된다.
+/// 로컬 저장은 기기 시각을 쓴다. 서버 세이브의 시각은 서버가 관리한다.
 class SaveData {
   const SaveData({required this.state, required this.savedAt});
 
@@ -30,6 +30,8 @@ class SaveData {
   }
 }
 
+/// 서버(`save/domain/snapshot.py`)가 읽는 필드명과 같다. 서버가 모르는 필드(codex·passives)는
+/// 로컬 복원용이며 서버 응답의 codex가 항상 우선한다.
 Map<String, dynamic> encodeState(GameState s) => {
       'stage': s.stage,
       'highestStage': s.highestStage,
@@ -42,8 +44,12 @@ Map<String, dynamic> encodeState(GameState s) => {
       'killsOnStage': s.killsOnStage,
       'attackTimer': s.attackTimer,
       'totalKills': s.totalKills,
+      'monsterId': s.monsterId,
+      'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
+      'codex': _encodeIntMap(s.codex),
     };
 
+/// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
 GameState? decodeState(Map<String, dynamic> j) {
   try {
     final rawLevels = j['levels'] as Map<String, dynamic>? ?? const {};
@@ -53,6 +59,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       // 모르는 업그레이드는 버린다(구버전 저장과의 호환).
       if (type != null) levels[type] = (e.value as num).toInt();
     }
+    final killLog = j['killLog'] as Map<String, dynamic>? ?? const {};
     return GameState(
       stage: (j['stage'] as num).toInt(),
       highestStage: (j['highestStage'] as num).toInt(),
@@ -65,10 +72,21 @@ GameState? decodeState(Map<String, dynamic> j) {
       killsOnStage: (j['killsOnStage'] as num).toInt(),
       attackTimer: (j['attackTimer'] as num).toDouble(),
       totalKills: (j['totalKills'] as num).toInt(),
+      monsterId: (j['monsterId'] as num?)?.toInt() ?? 1,
+      killLog: _decodeIntMap(killLog['normal']),
+      bossKillLog: _decodeIntMap(killLog['boss']),
+      codex: _decodeIntMap(j['codex']),
     );
   } on TypeError {
     return null;
   } on NoSuchMethodError {
     return null;
   }
+}
+
+Map<String, int> _encodeIntMap(Map<int, int> m) => {for (final e in m.entries) '${e.key}': e.value};
+
+Map<int, int> _decodeIntMap(Object? raw) {
+  if (raw is! Map) return const {};
+  return {for (final e in raw.entries) int.parse('${e.key}'): (e.value as num).toInt()};
 }

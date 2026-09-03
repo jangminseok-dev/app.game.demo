@@ -16,6 +16,8 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       offlineCapSeconds: (j['offlineCapSeconds'] as num).toDouble(),
       offlineEfficiency: (j['offlineEfficiency'] as num).toDouble(),
       offlineMinSeconds: (j['offlineMinSeconds'] as num).toDouble(),
+      bossCaptureMultiplier: (j['bossCaptureMultiplier'] as num?)?.toDouble() ?? 4.0,
+      maxStars: (j['maxStars'] as num?)?.toInt() ?? 5,
     );
 
 Map<String, dynamic> balanceToJson(BalanceConfig c) => {
@@ -33,4 +35,6 @@ Map<String, dynamic> balanceToJson(BalanceConfig c) => {
       'offlineCapSeconds': c.offlineCapSeconds,
       'offlineEfficiency': c.offlineEfficiency,
       'offlineMinSeconds': c.offlineMinSeconds,
+      'bossCaptureMultiplier': c.bossCaptureMultiplier,
+      'maxStars': c.maxStars,
     };

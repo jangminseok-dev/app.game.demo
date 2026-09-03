@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/app/game_controller.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/codex.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 
+import '../support/catalog.dart';
 import '../support/fake_cloud_save_gateway.dart';
 import '../support/in_memory_save_repository.dart';
 
@@ -21,6 +23,7 @@ void main() {
       overrides: [
         saveRepositoryProvider.overrideWithValue(repo),
         cloudSaveProvider.overrideWithValue(cloud),
+        monsterCatalogProvider.overrideWithValue(smallCatalog),
         if (initial != null) initialStateProvider.overrideWithValue(initial),
       ],
     );
@@ -78,6 +81,45 @@ void main() {
 
     expect(repo.saveCount, 1);
     expect(container.read(saveStatusProvider).lastSyncedAt, isNull);
+  });
+
+  test('수락되면 보낸 처치 보고를 빼고 포획을 도감에 반영하고 피드에 올린다', () async {
+    final cloud = FakeCloudSaveGateway()
+      ..captures = const [CaptureEvent(monsterId: 1, stars: 1, first: true)];
+    final container = make(
+      repo: InMemorySaveRepository(),
+      cloud: cloud,
+      initial: GameState.initial(c).copyWith(killLog: const {1: 4}, bossKillLog: const {1: 1}),
+    );
+
+    await container.read(gameControllerProvider.notifier).saveNow();
+
+    final s = container.read(gameControllerProvider);
+    expect(cloud.synced.single.killLog, {1: 4});
+    expect(s.killLog, isEmpty, reason: '보낸 만큼 소비');
+    expect(s.bossKillLog, isEmpty);
+    expect(s.codex, {1: 1});
+    expect(s.passives.gold, closeTo(0.5, 1e-9));
+    expect(container.read(captureFeedProvider).single.monsterId, 1);
+    container.read(captureFeedProvider.notifier).clear();
+    expect(container.read(captureFeedProvider), isEmpty);
+  });
+
+  test('거부되면 도감은 유지한 채 서버 상태로 롤백한다', () async {
+    final cloud = FakeCloudSaveGateway(rejectWith: 'gold_conservation')
+      ..rejectedState = GameState.initial(c).copyWith(gold: 30);
+    final container = make(
+      repo: InMemorySaveRepository(),
+      cloud: cloud,
+      initial: GameState.initial(c).copyWith(gold: 999, codex: const {3: 2}, killLog: const {1: 2}),
+    );
+
+    await container.read(gameControllerProvider.notifier).saveNow();
+
+    final s = container.read(gameControllerProvider);
+    expect(s.gold, 30);
+    expect(s.codex, {3: 2});
+    expect(s.passives.crit, closeTo(0.4, 1e-9));
   });
 
   test('30초마다 자동 저장된다', () {
