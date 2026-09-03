@@ -3,17 +3,17 @@
 /// 스테이지 → 몬스터 매핑(`forStage`)은 서버 `MonsterCatalog.monster_for_stage`와 같은 규칙이다.
 library;
 
-enum Element {
+enum MonsterElement {
   fire('화'),
   water('수'),
   earth('지'),
   wind('풍'),
   neutral('무');
 
-  const Element(this.label);
+  const MonsterElement(this.label);
   final String label;
 
-  static Element parse(String s) => Element.values.firstWhere((e) => e.name == s);
+  static MonsterElement parse(String s) => MonsterElement.values.firstWhere((e) => e.name == s);
 }
 
 enum PassiveKind {
@@ -66,7 +66,7 @@ class Monster {
   final int id;
   final String name;
   final String region;
-  final Element element;
+  final MonsterElement element;
   final double rarity;
   final PassiveKind passiveKind;
   final double passivePerStar;
@@ -102,7 +102,7 @@ class MonsterCatalog {
               id: (m['id'] as num).toInt(),
               name: m['name'] as String,
               region: m['region'] as String,
-              element: Element.parse(m['element'] as String),
+              element: MonsterElement.parse(m['element'] as String),
               rarity: (m['rarity'] as num).toDouble(),
               passiveKind: PassiveKind.parse(m['passive']['kind'] as String),
               passivePerStar: (m['passive']['perStar'] as num).toDouble(),

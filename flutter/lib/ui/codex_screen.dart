@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/codex.dart';
 import '../domain/monster.dart';
+import 'sprites/monster_sprite.dart';
 
-/// 도감 화면 — 지역별 등록 현황, 성급, 패시브. 미등록 몬스터는 이름을 가린다.
+/// 도감 화면 — 지역별 스프라이트 그리드. 미등록은 실루엣, 탭하면 상세.
 class CodexScreen extends ConsumerWidget {
   const CodexScreen({super.key});
 
@@ -32,12 +33,22 @@ class CodexScreen extends ConsumerWidget {
                   ].join('  ·  '),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 8),
           for (final region in catalog.regions) ...[
-            const Divider(height: 24),
+            const SizedBox(height: 16),
             _RegionHeader(region: region, done: completion[region.id]!),
-            for (final m in catalog.monstersIn(region.id))
-              _MonsterRow(monster: m, stars: codex[m.id] ?? 0),
+            const SizedBox(height: 6),
+            GridView.count(
+              crossAxisCount: 5,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: 0.78,
+              children: [
+                for (final m in catalog.monstersIn(region.id))
+                  _MonsterCell(monster: m, stars: codex[m.id] ?? 0),
+              ],
+            ),
           ],
         ],
       ),
@@ -54,28 +65,35 @@ class _RegionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final complete = done.$1 == done.$2;
     final range = region.stageTo == null ? '${region.stageFrom}층~' : '${region.stageFrom}~${region.stageTo}층';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text('${region.name}  $range  ${done.$1}/${done.$2}',
-                style: Theme.of(context).textTheme.titleMedium),
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 22,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: regionColors(region.id)),
+            borderRadius: BorderRadius.circular(3),
           ),
-          Text(
-            '완성 ${region.completionKind.label} ${region.completionKind.format(region.completionValue)}',
-            style: TextStyle(
-              color: complete ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
-            ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('${region.name}  $range  ${done.$1}/${done.$2}',
+              style: Theme.of(context).textTheme.titleMedium),
+        ),
+        Text(
+          '완성 ${region.completionKind.label} ${region.completionKind.format(region.completionValue)}',
+          style: TextStyle(
+            fontSize: 12,
+            color: complete ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _MonsterRow extends StatelessWidget {
-  const _MonsterRow({required this.monster, required this.stars});
+class _MonsterCell extends StatelessWidget {
+  const _MonsterCell({required this.monster, required this.stars});
   final Monster monster;
   final int stars;
 
@@ -83,22 +101,65 @@ class _MonsterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final known = stars > 0;
     final muted = Theme.of(context).colorScheme.outline;
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: known ? null : Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Text(monster.element.label, style: const TextStyle(fontSize: 12)),
+    return InkWell(
+      onTap: () => _showDetail(context),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(10),
+          border: known ? Border.all(color: elementColor(monster.element).withValues(alpha: 0.6)) : null,
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            Expanded(child: Center(child: MonsterSprite(monster: monster, size: 44, silhouette: !known))),
+            Text(
+              known ? monster.name : '???',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: known ? null : muted),
+            ),
+            Text(
+              known ? '★' * stars + '☆' * (5 - stars) : '☆☆☆☆☆',
+              style: TextStyle(fontSize: 9, color: known ? Colors.amber : muted, letterSpacing: -1),
+            ),
+          ],
+        ),
       ),
-      title: Text(known ? monster.name : '???', style: known ? null : TextStyle(color: muted)),
-      subtitle: Text(
-        known
-            ? '${monster.passiveKind.label} ${monster.passiveKind.format(monster.passivePerStar * stars)}  (★당 ${monster.passiveKind.format(monster.passivePerStar)})'
-            : '${monster.passiveKind.label} ★당 ${monster.passiveKind.format(monster.passivePerStar)}',
-        style: TextStyle(color: muted),
+    );
+  }
+
+  void _showDetail(BuildContext context) {
+    final known = stars > 0;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            MonsterSprite(monster: monster, size: 96, silhouette: !known),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(known ? monster.name : '???', style: Theme.of(context).textTheme.titleLarge),
+                  Text('속성 ${monster.element.label}  ·  희귀도 ${monster.rarity <= 0.3 ? '희귀' : monster.rarity <= 0.6 ? '보통' : '흔함'}'),
+                  const SizedBox(height: 8),
+                  Text(
+                    known
+                        ? '${monster.passiveKind.label} ${monster.passiveKind.format(monster.passivePerStar * stars)}  (★당 ${monster.passiveKind.format(monster.passivePerStar)})'
+                        : '등록하면 ${monster.passiveKind.label} ★당 ${monster.passiveKind.format(monster.passivePerStar)}',
+                  ),
+                  Text('★' * stars + '☆' * (5 - stars), style: const TextStyle(color: Colors.amber, fontSize: 18)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      trailing: Text('★' * stars + '☆' * (5 - stars), style: TextStyle(color: known ? Colors.amber : muted)),
     );
   }
 }

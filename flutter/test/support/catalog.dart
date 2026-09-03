@@ -15,9 +15,9 @@ const smallCatalog = MonsterCatalog(
     Region(id: 'cave', name: '동굴', stageFrom: 11, stageTo: null, completionKind: PassiveKind.gold, completionValue: 20),
   ],
   monsters: [
-    Monster(id: 1, name: '슬라임', region: 'forest', element: Element.neutral, rarity: 1.0, passiveKind: PassiveKind.gold, passivePerStar: 0.5),
-    Monster(id: 2, name: '늑대', region: 'forest', element: Element.wind, rarity: 0.5, passiveKind: PassiveKind.attackSpeed, passivePerStar: 0.3),
-    Monster(id: 3, name: '박쥐', region: 'cave', element: Element.wind, rarity: 1.0, passiveKind: PassiveKind.crit, passivePerStar: 0.2),
-    Monster(id: 4, name: '골렘', region: 'cave', element: Element.earth, rarity: 0.3, passiveKind: PassiveKind.attack, passivePerStar: 0.6),
+    Monster(id: 1, name: '슬라임', region: 'forest', element: MonsterElement.neutral, rarity: 1.0, passiveKind: PassiveKind.gold, passivePerStar: 0.5),
+    Monster(id: 2, name: '늑대', region: 'forest', element: MonsterElement.wind, rarity: 0.5, passiveKind: PassiveKind.attackSpeed, passivePerStar: 0.3),
+    Monster(id: 3, name: '박쥐', region: 'cave', element: MonsterElement.wind, rarity: 1.0, passiveKind: PassiveKind.crit, passivePerStar: 0.2),
+    Monster(id: 4, name: '골렘', region: 'cave', element: MonsterElement.earth, rarity: 0.3, passiveKind: PassiveKind.attack, passivePerStar: 0.6),
   ],
 );
