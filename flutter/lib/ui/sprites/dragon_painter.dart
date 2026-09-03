@@ -25,7 +25,11 @@ class DragonPainter extends CustomPainter {
     final base = monster == null ? const Color(0xFFE85D3A) : elementColor(monster!.element);
     final variant = monster == null ? 0 : (monster!.id - 1) % 10;
     final h = HSLColor.fromColor(base);
-    final body = silhouette ? const Color(0xFF111827) : h.withHue((h.hue + variant * 7) % 360).withSaturation(0.65).withLightness(0.55).toColor();
+    // 용은 고유 형태라 속성색을 거의 그대로 쓴다(회전 ±1~2도). 지역 기본 형태처럼 크게 돌리면 화 속성 용이 초록이 된다.
+    final darkNamed = monster != null && (monster!.name.contains('어둠') || monster!.name.contains('그림자'));
+    final body = silhouette
+        ? const Color(0xFF111827)
+        : h.withHue((h.hue + variant * 1.5) % 360).withSaturation(darkNamed ? 0.45 : 0.7).withLightness(darkNamed ? 0.3 : 0.55).toColor();
     final belly = silhouette ? body : h.withSaturation(0.35).withLightness(0.85).toColor();
     final dark = silhouette ? const Color(0xFF0B1220) : h.withSaturation(0.7).withLightness(0.28).toColor();
     final wing = silhouette ? body : h.withSaturation(0.55).withLightness(0.42).toColor();

@@ -18,7 +18,7 @@ import '../support/catalog.dart';
 /// 결과: build/art_gallery.png
 void main() {
   testWidgets('벡터 아트 갤러리를 PNG로 내보낸다', (tester) async {
-    tester.view.physicalSize = const Size(1200, 520);
+    tester.view.physicalSize = const Size(1200, 440);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final catalog = loadBundledCatalog();
@@ -51,9 +51,6 @@ void main() {
                       MonsterSprite(monster: catalog.byId(id), size: 100),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text('위: 주인공·아기 용(코드 벡터)   아래: 지역별 기본 형태 + 팔레트 스왑',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),
