@@ -51,3 +51,18 @@ async def test_속성_5종이_모두_쓰인다():
     c = await FileMonsterSourceAdapter().load()
     assert {m.element for m in c.monsters} == {"fire", "water", "earth", "wind", "neutral"}
     assert {m.passive_kind for m in c.monsters} == {"attack", "gold", "attackSpeed", "crit", "capture"}
+
+
+async def test_같은_종류_이름은_전체에서_2개까지_색만_바꾼_몬스터_인상_방지():
+    c = await FileMonsterSourceAdapter().load()
+    for kw in ("골렘", "정령", "요정", "슬라임", "늑대", "거미", "박쥐", "뱀", "유령"):
+        count = sum(1 for m in c.monsters if kw in m.name)
+        assert count <= 2, f"{kw} {count}종"
+
+
+async def test_희귀_몬스터는_칭호형_이름():
+    """희귀(0.3)는 '~의 군주'·'~왕'처럼 이름에서 급이 드러나야 포획의 특별함이 산다."""
+    c = await FileMonsterSourceAdapter().load()
+    for m in c.monsters:
+        if m.rarity <= 0.3:
+            assert any(t in m.name for t in ("군주", "왕", "수호", "파라오", "마녀", "리치", "지배")), m.name
