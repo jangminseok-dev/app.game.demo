@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "7주차 — 그래픽을 14주차까지 미루지 않기로 했다"
-date: 2026-09-03 17:50:00 +0900
+date: 2026-09-03 17:30:00 +0900
 categories: retrospective
 ---
 
