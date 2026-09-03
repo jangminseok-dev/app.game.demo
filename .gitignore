@@ -1,1 +1,7 @@
 .DS_Store
+
+# Jekyll (blog/)
+blog/_site/
+blog/.jekyll-cache/
+blog/.jekyll-metadata
+blog/vendor/
