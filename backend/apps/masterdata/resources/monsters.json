@@ -1,42 +1,1207 @@
 {
-  "version": 1,
+  "version": 2,
   "regions": [
-    {"id": "forest", "name": "숲", "stageFrom": 1, "stageTo": 50, "completionBonus": {"kind": "attack", "value": 20}},
-    {"id": "cave", "name": "동굴", "stageFrom": 51, "stageTo": 120, "completionBonus": {"kind": "gold", "value": 20}},
-    {"id": "volcano", "name": "화산", "stageFrom": 121, "stageTo": null, "completionBonus": {"kind": "crit", "value": 5}}
+    {
+      "id": "forest",
+      "name": "숲",
+      "stageFrom": 1,
+      "stageTo": 50,
+      "completionBonus": {
+        "kind": "attack",
+        "value": 20
+      }
+    },
+    {
+      "id": "cave",
+      "name": "동굴",
+      "stageFrom": 51,
+      "stageTo": 120,
+      "completionBonus": {
+        "kind": "gold",
+        "value": 20
+      }
+    },
+    {
+      "id": "volcano",
+      "name": "화산",
+      "stageFrom": 121,
+      "stageTo": 200,
+      "completionBonus": {
+        "kind": "crit",
+        "value": 5
+      }
+    },
+    {
+      "id": "tundra",
+      "name": "설원",
+      "stageFrom": 201,
+      "stageTo": 300,
+      "completionBonus": {
+        "kind": "attackSpeed",
+        "value": 10
+      }
+    },
+    {
+      "id": "swamp",
+      "name": "늪지",
+      "stageFrom": 301,
+      "stageTo": 420,
+      "completionBonus": {
+        "kind": "capture",
+        "value": 20
+      }
+    },
+    {
+      "id": "desert",
+      "name": "사막",
+      "stageFrom": 421,
+      "stageTo": 560,
+      "completionBonus": {
+        "kind": "gold",
+        "value": 10
+      }
+    },
+    {
+      "id": "abyss",
+      "name": "심해",
+      "stageFrom": 561,
+      "stageTo": 720,
+      "completionBonus": {
+        "kind": "attack",
+        "value": 10
+      }
+    },
+    {
+      "id": "sky",
+      "name": "하늘섬",
+      "stageFrom": 721,
+      "stageTo": 900,
+      "completionBonus": {
+        "kind": "attackSpeed",
+        "value": 10
+      }
+    },
+    {
+      "id": "ruins",
+      "name": "폐허",
+      "stageFrom": 901,
+      "stageTo": 1100,
+      "completionBonus": {
+        "kind": "crit",
+        "value": 3
+      }
+    },
+    {
+      "id": "demon",
+      "name": "마계",
+      "stageFrom": 1101,
+      "stageTo": null,
+      "completionBonus": {
+        "kind": "attack",
+        "value": 15
+      }
+    }
   ],
   "monsters": [
-    {"id": 1, "name": "초록 슬라임", "region": "forest", "element": "neutral", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 2, "name": "숲쥐", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
-    {"id": 3, "name": "버섯돌이", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 4, "name": "꽃요정", "region": "forest", "element": "wind", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 5, "name": "멧돼지", "region": "forest", "element": "earth", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 6, "name": "회색 늑대", "region": "forest", "element": "wind", "rarity": 0.6, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
-    {"id": 7, "name": "나무 정령", "region": "forest", "element": "earth", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 8, "name": "연못 개구리", "region": "forest", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
-    {"id": 9, "name": "벌떼", "region": "forest", "element": "wind", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 10, "name": "숲의 수호자", "region": "forest", "element": "earth", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}},
-
-    {"id": 11, "name": "동굴 박쥐", "region": "cave", "element": "wind", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
-    {"id": 12, "name": "동굴 거미", "region": "cave", "element": "earth", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 13, "name": "고블린", "region": "cave", "element": "neutral", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 14, "name": "바위 골렘", "region": "cave", "element": "earth", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 15, "name": "수정 도마뱀", "region": "cave", "element": "water", "rarity": 0.6, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 16, "name": "지하 뱀", "region": "cave", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
-    {"id": 17, "name": "해골 병사", "region": "cave", "element": "neutral", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 18, "name": "두더지", "region": "cave", "element": "earth", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 19, "name": "어둠 유령", "region": "cave", "element": "wind", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 20, "name": "동굴 군주", "region": "cave", "element": "earth", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}},
-
-    {"id": 21, "name": "불도마뱀", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 22, "name": "용암 슬라임", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 23, "name": "화염새", "region": "volcano", "element": "fire", "rarity": 0.6, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
-    {"id": 24, "name": "재의 늑대", "region": "volcano", "element": "wind", "rarity": 1.0, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 25, "name": "마그마 골렘", "region": "volcano", "element": "fire", "rarity": 0.6, "passive": {"kind": "attack", "perStar": 0.6}},
-    {"id": 26, "name": "증기 정령", "region": "volcano", "element": "water", "rarity": 1.0, "passive": {"kind": "capture", "perStar": 2.0}},
-    {"id": 27, "name": "화산 박쥐", "region": "volcano", "element": "wind", "rarity": 1.0, "passive": {"kind": "attackSpeed", "perStar": 0.3}},
-    {"id": 28, "name": "흑요석 전갈", "region": "volcano", "element": "earth", "rarity": 0.6, "passive": {"kind": "crit", "perStar": 0.2}},
-    {"id": 29, "name": "불꽃 임프", "region": "volcano", "element": "fire", "rarity": 1.0, "passive": {"kind": "gold", "perStar": 0.5}},
-    {"id": 30, "name": "화산 용", "region": "volcano", "element": "fire", "rarity": 0.3, "passive": {"kind": "attack", "perStar": 0.6}}
+    {
+      "id": 1,
+      "name": "초록 슬라임",
+      "region": "forest",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 2,
+      "name": "숲쥐",
+      "region": "forest",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 3,
+      "name": "버섯돌이",
+      "region": "forest",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 4,
+      "name": "꽃요정",
+      "region": "forest",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 5,
+      "name": "멧돼지",
+      "region": "forest",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 6,
+      "name": "회색 늑대",
+      "region": "forest",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 7,
+      "name": "나무 정령",
+      "region": "forest",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 8,
+      "name": "연못 개구리",
+      "region": "forest",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 9,
+      "name": "벌떼",
+      "region": "forest",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 10,
+      "name": "숲의 수호자",
+      "region": "forest",
+      "element": "earth",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 11,
+      "name": "동굴 박쥐",
+      "region": "cave",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 12,
+      "name": "동굴 거미",
+      "region": "cave",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 13,
+      "name": "고블린",
+      "region": "cave",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 14,
+      "name": "바위 골렘",
+      "region": "cave",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 15,
+      "name": "수정 도마뱀",
+      "region": "cave",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 16,
+      "name": "지하 뱀",
+      "region": "cave",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 17,
+      "name": "해골 병사",
+      "region": "cave",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 18,
+      "name": "두더지",
+      "region": "cave",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 19,
+      "name": "어둠 유령",
+      "region": "cave",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 20,
+      "name": "동굴 군주",
+      "region": "cave",
+      "element": "earth",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 21,
+      "name": "불도마뱀",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 22,
+      "name": "용암 슬라임",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 23,
+      "name": "화염새",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 24,
+      "name": "재의 늑대",
+      "region": "volcano",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 25,
+      "name": "마그마 골렘",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 26,
+      "name": "증기 정령",
+      "region": "volcano",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 27,
+      "name": "화산 박쥐",
+      "region": "volcano",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 28,
+      "name": "흑요석 전갈",
+      "region": "volcano",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 29,
+      "name": "불꽃 임프",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 30,
+      "name": "화산 용",
+      "region": "volcano",
+      "element": "fire",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 31,
+      "name": "눈토끼",
+      "region": "tundra",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 32,
+      "name": "얼음 슬라임",
+      "region": "tundra",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 33,
+      "name": "서리 늑대",
+      "region": "tundra",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 34,
+      "name": "설인",
+      "region": "tundra",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 35,
+      "name": "얼음 정령",
+      "region": "tundra",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 36,
+      "name": "눈올빼미",
+      "region": "tundra",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 37,
+      "name": "빙하 거북",
+      "region": "tundra",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 38,
+      "name": "서리 거미",
+      "region": "tundra",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 39,
+      "name": "오로라 나비",
+      "region": "tundra",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 40,
+      "name": "설원의 군주",
+      "region": "tundra",
+      "element": "water",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 41,
+      "name": "독개구리",
+      "region": "swamp",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 42,
+      "name": "늪 슬라임",
+      "region": "swamp",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 43,
+      "name": "진흙 골렘",
+      "region": "swamp",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 44,
+      "name": "거머리떼",
+      "region": "swamp",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 45,
+      "name": "독버섯",
+      "region": "swamp",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 46,
+      "name": "늪 악어",
+      "region": "swamp",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 47,
+      "name": "안개 유령",
+      "region": "swamp",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 48,
+      "name": "습지 뱀",
+      "region": "swamp",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 49,
+      "name": "반딧불 정령",
+      "region": "swamp",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 50,
+      "name": "늪의 마녀",
+      "region": "swamp",
+      "element": "water",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 51,
+      "name": "모래 전갈",
+      "region": "desert",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 52,
+      "name": "선인장 요정",
+      "region": "desert",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 53,
+      "name": "사막 여우",
+      "region": "desert",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 54,
+      "name": "모래벌레",
+      "region": "desert",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 55,
+      "name": "미라 병사",
+      "region": "desert",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 56,
+      "name": "신기루 정령",
+      "region": "desert",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 57,
+      "name": "낙타 거미",
+      "region": "desert",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 58,
+      "name": "바람 독수리",
+      "region": "desert",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 59,
+      "name": "모래 골렘",
+      "region": "desert",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 60,
+      "name": "사막의 파라오",
+      "region": "desert",
+      "element": "fire",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 61,
+      "name": "해파리",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 62,
+      "name": "심해어",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 63,
+      "name": "상어 병사",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 64,
+      "name": "문어 마법사",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 65,
+      "name": "산호 골렘",
+      "region": "abyss",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 66,
+      "name": "인어 궁수",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 67,
+      "name": "심해 게",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 68,
+      "name": "전기 뱀장어",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 69,
+      "name": "바다 정령",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 70,
+      "name": "심해의 왕",
+      "region": "abyss",
+      "element": "water",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 71,
+      "name": "구름 양",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 72,
+      "name": "바람 정령",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 73,
+      "name": "번개새",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 74,
+      "name": "하늘 고래",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 75,
+      "name": "천둥 골렘",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 76,
+      "name": "하피",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 77,
+      "name": "구름 슬라임",
+      "region": "sky",
+      "element": "water",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 78,
+      "name": "폭풍 독수리",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 79,
+      "name": "별빛 나비",
+      "region": "sky",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 80,
+      "name": "하늘섬의 수호룡",
+      "region": "sky",
+      "element": "wind",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 81,
+      "name": "유적 거미",
+      "region": "ruins",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 82,
+      "name": "고대 병사",
+      "region": "ruins",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 83,
+      "name": "저주받은 갑옷",
+      "region": "ruins",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 84,
+      "name": "석상 가고일",
+      "region": "ruins",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 85,
+      "name": "유령 기사",
+      "region": "ruins",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 86,
+      "name": "잊힌 마법사",
+      "region": "ruins",
+      "element": "neutral",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 87,
+      "name": "폐허 쥐",
+      "region": "ruins",
+      "element": "earth",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 88,
+      "name": "고대 골렘",
+      "region": "ruins",
+      "element": "earth",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 89,
+      "name": "흑마법 박쥐",
+      "region": "ruins",
+      "element": "wind",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 90,
+      "name": "폐허의 리치",
+      "region": "ruins",
+      "element": "neutral",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 91,
+      "name": "임프 무리",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 92,
+      "name": "지옥 사냥개",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 93,
+      "name": "서큐버스",
+      "region": "demon",
+      "element": "neutral",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "gold",
+        "perStar": 0.5
+      }
+    },
+    {
+      "id": 94,
+      "name": "마계 기사",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 95,
+      "name": "지옥불 정령",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 96,
+      "name": "그림자 늑대",
+      "region": "demon",
+      "element": "wind",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attackSpeed",
+        "perStar": 0.3
+      }
+    },
+    {
+      "id": 97,
+      "name": "마족 궁수",
+      "region": "demon",
+      "element": "neutral",
+      "rarity": 0.6,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    },
+    {
+      "id": 98,
+      "name": "지옥 골렘",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "capture",
+        "perStar": 2.0
+      }
+    },
+    {
+      "id": 99,
+      "name": "어둠 용",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 1.0,
+      "passive": {
+        "kind": "crit",
+        "perStar": 0.2
+      }
+    },
+    {
+      "id": 100,
+      "name": "마왕",
+      "region": "demon",
+      "element": "fire",
+      "rarity": 0.3,
+      "passive": {
+        "kind": "attack",
+        "perStar": 0.6
+      }
+    }
   ]
 }

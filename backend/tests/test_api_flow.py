@@ -85,7 +85,7 @@ def test_마스터데이터는_인증_없이_버전과_계수를_준다(client):
     assert body["version"] == 2 and body["monsterHpGrowth"] == 1.18
     assert client.get("/masterdata/balance", params={"version": 2}).json()["unchanged"] is True
     monsters = client.get("/masterdata/monsters").json()
-    assert len(monsters["monsters"]) == 30 and [r["id"] for r in monsters["regions"]] == ["forest", "cave", "volcano"]
+    assert len(monsters["monsters"]) == 100 and len(monsters["regions"]) == 10
 
 
 def test_세이브는_토큰_없이_막힌다(client):
