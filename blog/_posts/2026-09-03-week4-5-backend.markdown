@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "4~5주차 — 서버가 정본이 되다: 게스트 계정, 클라우드 세이브, 델타 검증"
-date: 2026-09-03 16:00:00 +0900
+date: 2026-09-03 14:45:00 +0900
 categories: retrospective
 ---
 

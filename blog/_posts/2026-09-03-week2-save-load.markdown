@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "2주차 — 저장/로드와 오프라인 보상, 여기까지가 방치형의 최소 조건"
-date: 2026-09-03 15:30:00 +0900
+date: 2026-09-03 14:30:00 +0900
 categories: retrospective
 ---
 
