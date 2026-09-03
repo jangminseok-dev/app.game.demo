@@ -1,0 +1,58 @@
+"""세이브 델타 검증 — GAME_DESIGN 12장.
+
+직전 서버 상태 → 새 상태의 변화가 경과 시간 안에 물리적으로 가능한지 본다.
+정밀 시뮬레이션이 아니라 **상한 검사**다: 정직한 플레이는 절대 걸리지 않고,
+조작은 상한 배수 이상 이득을 못 본다. 상한이 느슨한 만큼 오탐이 없다.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from hub.app.dtos.balance_dto import Balance
+from save.domain.balance.formulas import boss_gold_reward, stats_of, upgrade_cost
+from save.domain.snapshot import Snapshot
+
+# 처치 수 상한 여유 — 클라이언트 틱 오차·치명타 편차를 흡수한다.
+KILL_SLACK = 1.5
+# 아주 짧은 동기화 간격에서 0으로 수렴하는 것을 막는 최소 인정 시간(초).
+MIN_ELAPSED = 5.0
+
+
+@dataclass(frozen=True)
+class Violation:
+    rule: str
+    detail: str
+
+
+def validate(prev: Snapshot, new: Snapshot, elapsed_seconds: float, b: Balance) -> Violation | None:
+    elapsed = max(elapsed_seconds, MIN_ELAPSED)
+
+    # 1. 되돌아갈 수 없는 값들 — 레벨·최고 스테이지·누적 처치는 줄지 않는다.
+    for upgrade, level in prev.levels.items():
+        if new.level(upgrade) < level:
+            return Violation("level_decreased", f"{upgrade} {level}→{new.level(upgrade)}")
+    if new.highest_stage < prev.highest_stage:
+        return Violation("highest_stage_decreased", f"{prev.highest_stage}→{new.highest_stage}")
+    if new.total_kills < prev.total_kills:
+        return Violation("kills_decreased", f"{prev.total_kills}→{new.total_kills}")
+
+    # 2. 처치 수 ≤ 경과 시간 × 공격속도. 한 마리에 최소 한 번은 때려야 한다.
+    kills_delta = new.total_kills - prev.total_kills
+    max_kills = elapsed * stats_of(new).attacks_per_second * KILL_SLACK + 1
+    if kills_delta > max_kills:
+        return Violation("too_many_kills", f"{kills_delta} > {max_kills:.0f} ({elapsed:.0f}s)")
+
+    # 3. 골드 보존: 새 골드 + 쓴 골드 ≤ 이전 골드 + 벌 수 있는 최대 골드.
+    #    벌이 상한은 "모든 처치가 최고 스테이지 보스였다"는 가정(×10 여유)이다.
+    spent = 0.0
+    for upgrade, level in new.levels.items():
+        for lv in range(prev.level(upgrade), level):
+            spent += upgrade_cost(upgrade, lv, b)
+    earned_max = kills_delta * boss_gold_reward(new.highest_stage, b) * stats_of(new).gold_multiplier
+    if new.gold + spent > prev.gold + earned_max + 1e-6:
+        return Violation(
+            "gold_conservation",
+            f"gold {new.gold:.0f} + spent {spent:.0f} > prev {prev.gold:.0f} + max {earned_max:.0f}",
+        )
+    return None

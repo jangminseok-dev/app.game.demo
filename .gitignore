@@ -1,7 +1,14 @@
 .DS_Store
+.env
 
 # Jekyll (blog/)
 blog/_site/
 blog/.jekyll-cache/
 blog/.jekyll-metadata
 blog/vendor/
+
+# Python (backend/)
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

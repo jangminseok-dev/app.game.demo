@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=9
+pytest-asyncio>=1.0
+httpx>=0.28
+import-linter>=2.3
+aiosqlite>=0.21

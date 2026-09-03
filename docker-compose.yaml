@@ -1,0 +1,21 @@
+# 로컬 개발용 DB. 5432는 다른 프로젝트(callguard)가 쓰므로 5440으로 발행한다.
+# 루프백 바인딩 — LAN 노출 금지.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-idle_fantasy}
+      POSTGRES_USER: ${POSTGRES_USER:-idle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-idle} -d ${POSTGRES_DB:-idle_fantasy}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:

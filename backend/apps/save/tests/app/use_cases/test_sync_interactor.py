@@ -1,0 +1,48 @@
+from datetime import timedelta
+
+import pytest
+
+from save.app.dtos.sync_dto import SyncCommand
+from save.app.ports.output.save_repository import SaveRecord
+from save.app.use_cases.sync_interactor import NoSaveToSync, SyncInteractor
+from save.domain.snapshot import InvalidSnapshot
+from save.tests.support import T0, StubBalance, StubRejections, StubSaves, state
+
+
+def _sut(saves, rejections=None):
+    return SyncInteractor(saves=saves, balance=StubBalance(), rejections=rejections or StubRejections())
+
+
+async def test_정직한_변화는_저장한다():
+    saves = StubSaves(SaveRecord(player_id=1, state=state(), synced_at=T0))
+    new = state(gold=40, totalKills=10, levels={"attack": 1})
+    r = await _sut(saves).sync(SyncCommand(player_id=1, state=new, now=T0 + timedelta(seconds=30)))
+    assert r.accepted is True
+    assert r.state == new
+    assert r.synced_at == T0 + timedelta(seconds=30)
+    assert saves.record.state == new
+
+
+async def test_조작된_변화는_거부하고_서버_상태로_돌려주며_기록한다():
+    prev = state(gold=10)
+    saves = StubSaves(SaveRecord(player_id=1, state=prev, synced_at=T0))
+    rejections = StubRejections()
+    r = await _sut(saves, rejections).sync(
+        SyncCommand(player_id=1, state=state(gold=999_999), now=T0 + timedelta(seconds=30))
+    )
+    assert r.accepted is False
+    assert r.rejected_rule == "gold_conservation"
+    assert r.state == prev and r.synced_at == T0
+    assert saves.upserts == 0
+    assert rejections.records[0][:2] == (1, "gold_conservation")
+
+
+async def test_세이브가_없으면_먼저_load하라고_알린다():
+    with pytest.raises(NoSaveToSync):
+        await _sut(StubSaves()).sync(SyncCommand(player_id=1, state=state(), now=T0))
+
+
+async def test_형식이_깨진_상태는_거부한다():
+    saves = StubSaves(SaveRecord(player_id=1, state=state(), synced_at=T0))
+    with pytest.raises(InvalidSnapshot):
+        await _sut(saves).sync(SyncCommand(player_id=1, state={"gold": 1}, now=T0))
