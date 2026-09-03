@@ -1,0 +1,36 @@
+import '../domain/balance_config.dart';
+
+/// 서버 `GET /masterdata/balance` 응답 ↔ [BalanceConfig]. 로컬 캐시에도 같은 형식으로 둔다.
+BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
+      version: (j['version'] as num).toInt(),
+      monsterHpBase: (j['monsterHpBase'] as num).toDouble(),
+      monsterHpGrowth: (j['monsterHpGrowth'] as num).toDouble(),
+      bossHpMultiplier: (j['bossHpMultiplier'] as num).toDouble(),
+      bossTimeLimit: (j['bossTimeLimit'] as num).toDouble(),
+      goldBase: (j['goldBase'] as num).toDouble(),
+      goldGrowth: (j['goldGrowth'] as num).toDouble(),
+      bossGoldMultiplier: (j['bossGoldMultiplier'] as num).toDouble(),
+      upgradeCostGrowth: (j['upgradeCostGrowth'] as num).toDouble(),
+      killsPerStage: (j['killsPerStage'] as num).toInt(),
+      critMultiplier: (j['critMultiplier'] as num).toDouble(),
+      offlineCapSeconds: (j['offlineCapSeconds'] as num).toDouble(),
+      offlineEfficiency: (j['offlineEfficiency'] as num).toDouble(),
+      offlineMinSeconds: (j['offlineMinSeconds'] as num).toDouble(),
+    );
+
+Map<String, dynamic> balanceToJson(BalanceConfig c) => {
+      'version': c.version,
+      'monsterHpBase': c.monsterHpBase,
+      'monsterHpGrowth': c.monsterHpGrowth,
+      'bossHpMultiplier': c.bossHpMultiplier,
+      'bossTimeLimit': c.bossTimeLimit,
+      'goldBase': c.goldBase,
+      'goldGrowth': c.goldGrowth,
+      'bossGoldMultiplier': c.bossGoldMultiplier,
+      'upgradeCostGrowth': c.upgradeCostGrowth,
+      'killsPerStage': c.killsPerStage,
+      'critMultiplier': c.critMultiplier,
+      'offlineCapSeconds': c.offlineCapSeconds,
+      'offlineEfficiency': c.offlineEfficiency,
+      'offlineMinSeconds': c.offlineMinSeconds,
+    };

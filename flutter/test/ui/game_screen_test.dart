@@ -20,7 +20,7 @@ void main() {
     await tester.pumpWidget(app());
     expect(find.textContaining('스테이지 1'), findsOneWidget);
     expect(find.text('골드  0'), findsOneWidget);
-    expect(find.text('저장 전'), findsOneWidget);
+    expect(find.textContaining('저장 전'), findsOneWidget);
     for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {
       expect(find.textContaining(label), findsOneWidget);
     }

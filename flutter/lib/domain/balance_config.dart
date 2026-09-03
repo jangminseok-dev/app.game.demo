@@ -1,9 +1,10 @@
 /// 밸런스 계수. GAME_DESIGN.md 4장의 공식 계수를 한 곳에 모은다.
 ///
-/// 지금은 상수지만, 4장 원칙대로 나중에 서버 마스터 데이터로 교체된다.
-/// 그래서 `const` 생성자로 두고 도메인 함수는 전부 이 객체를 받는다.
+/// 서버 마스터 데이터(`GET /masterdata/balance`)에서 받아 채운다. 내장 기본값은
+/// 서버가 안 닿을 때의 폴백이며 backend `resources/balance.json`과 같은 값이다.
 class BalanceConfig {
   const BalanceConfig({
+    this.version = 0,
     this.monsterHpBase = 10,
     this.monsterHpGrowth = 1.18,
     this.bossHpMultiplier = 10,
@@ -18,6 +19,9 @@ class BalanceConfig {
     this.offlineEfficiency = 0.5,
     this.offlineMinSeconds = 60,
   });
+
+  /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
+  final int version;
 
   final double monsterHpBase;
   final double monsterHpGrowth;

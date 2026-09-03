@@ -43,7 +43,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(gameControllerProvider);
     final config = ref.watch(balanceConfigProvider);
-    final lastSaved = ref.watch(lastSavedAtProvider);
+    final saveStatus = ref.watch(saveStatusProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final stats = state.stats;
     final mono = Theme.of(context).textTheme.bodyLarge?.copyWith(fontFamily: 'monospace');
@@ -87,15 +87,26 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           const SizedBox(height: 24),
           Text('총 처치 ${state.totalKills}', style: mono),
           Text(
-            lastSaved == null
-                ? '저장 전'
-                : '마지막 저장 ${TimeOfDay.fromDateTime(lastSaved).format(context)}:${lastSaved.second.toString().padLeft(2, '0')}',
+            _saveLine(context, saveStatus),
             style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
           ),
+          if (saveStatus.lastRejectedRule != null)
+            Text(
+              '서버 검증 거부(${saveStatus.lastRejectedRule}) — 서버 상태로 되돌렸습니다',
+              style: mono?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
         ],
       ),
     );
   }
+}
+
+String _saveLine(BuildContext context, SaveStatus s) {
+  String hms(DateTime t) =>
+      '${TimeOfDay.fromDateTime(t).format(context)}:${t.second.toString().padLeft(2, '0')}';
+  final saved = s.lastSavedAt == null ? '저장 전' : '로컬 저장 ${hms(s.lastSavedAt!)}';
+  final synced = s.lastSyncedAt == null ? '서버 미동기화' : '서버 동기화 ${hms(s.lastSyncedAt!)}';
+  return '$saved · $synced';
 }
 
 class _UpgradeRow extends StatelessWidget {

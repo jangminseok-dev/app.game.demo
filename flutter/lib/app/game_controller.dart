@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/cloud_save_gateway.dart';
 import '../data/save_repository.dart';
 import '../domain/balance_config.dart';
 import '../domain/battle_engine.dart';
@@ -12,13 +13,16 @@ import '../domain/offline_reward.dart';
 import '../domain/save_codec.dart';
 import '../domain/upgrade.dart';
 
-/// 지금은 상수. 5주차에 서버 마스터 데이터로 교체된다.
+/// 서버 마스터 데이터(또는 캐시). main()에서 override한다. 없으면 내장 기본값.
 final balanceConfigProvider = Provider<BalanceConfig>((_) => const BalanceConfig());
 
 /// main()에서 실제 구현으로 override한다.
 final saveRepositoryProvider = Provider<SaveRepository>(
   (_) => throw UnimplementedError('saveRepositoryProvider는 main에서 override한다'),
 );
+
+/// 서버 세이브. 로그인에 실패했으면 null — 로컬 저장만 한다.
+final cloudSaveProvider = Provider<CloudSaveGateway?>((_) => null);
 
 /// 저장 데이터를 반영한 시작 상태. main()에서 override한다.
 final initialStateProvider = Provider<GameState>(
@@ -31,18 +35,33 @@ final offlineRewardProvider = Provider<OfflineReward?>((_) => null);
 final gameControllerProvider =
     NotifierProvider<GameController, GameState>(GameController.new);
 
-/// 마지막 저장 시각. 화면 하단 표시용.
-final lastSavedAtProvider =
-    NotifierProvider<LastSavedAt, DateTime?>(LastSavedAt.new);
+final saveStatusProvider = NotifierProvider<SaveStatusNotifier, SaveStatus>(SaveStatusNotifier.new);
 
-class LastSavedAt extends Notifier<DateTime?> {
+/// 화면 하단 표시용 저장·동기화 상태.
+class SaveStatus {
+  const SaveStatus({this.lastSavedAt, this.lastSyncedAt, this.lastRejectedRule});
+  final DateTime? lastSavedAt;
+  final DateTime? lastSyncedAt;
+  final String? lastRejectedRule;
+
+  SaveStatus copyWith({DateTime? lastSavedAt, DateTime? lastSyncedAt, String? lastRejectedRule}) =>
+      SaveStatus(
+        lastSavedAt: lastSavedAt ?? this.lastSavedAt,
+        lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+        lastRejectedRule: lastRejectedRule ?? this.lastRejectedRule,
+      );
+}
+
+class SaveStatusNotifier extends Notifier<SaveStatus> {
   @override
-  DateTime? build() => null;
-  void mark(DateTime at) => state = at;
+  SaveStatus build() => const SaveStatus();
+  void saved(DateTime at) => state = state.copyWith(lastSavedAt: at);
+  void synced(DateTime at) => state = SaveStatus(lastSavedAt: state.lastSavedAt, lastSyncedAt: at);
+  void rejected(String rule) => state = state.copyWith(lastRejectedRule: rule);
 }
 
 /// 게임 루프. 100ms마다 [BattleEngine.tick]을 돌려 상태를 갱신하고,
-/// 30초마다 + 앱이 백그라운드로 갈 때 저장한다 (GAME_DESIGN 12장 자동 저장).
+/// 30초마다 + 앱이 백그라운드로 갈 때 저장·동기화한다 (GAME_DESIGN 12장).
 class GameController extends Notifier<GameState> {
   static const _tick = Duration(milliseconds: 100);
   static const _autoSave = Duration(seconds: 30);
@@ -52,6 +71,7 @@ class GameController extends Notifier<GameState> {
   Timer? _timer;
   Timer? _saveTimer;
   AppLifecycleListener? _lifecycle;
+  bool _syncing = false;
 
   @override
   GameState build() {
@@ -81,9 +101,27 @@ class GameController extends Notifier<GameState> {
     if (next != null) state = next;
   }
 
+  /// 로컬 저장은 항상, 서버 동기화는 연결돼 있을 때. 서버가 거부하면 서버 상태로 롤백한다.
   Future<void> saveNow() async {
     final now = DateTime.now();
     await ref.read(saveRepositoryProvider).save(SaveData(state: state, savedAt: now));
-    ref.read(lastSavedAtProvider.notifier).mark(now);
+    ref.read(saveStatusProvider.notifier).saved(now);
+
+    final cloud = ref.read(cloudSaveProvider);
+    if (cloud == null || _syncing) return;
+    _syncing = true;
+    try {
+      final result = await cloud.sync(state);
+      if (result.accepted) {
+        ref.read(saveStatusProvider.notifier).synced(DateTime.now());
+      } else {
+        state = result.state;
+        ref.read(saveStatusProvider.notifier).rejected(result.rejectedRule ?? 'unknown');
+      }
+    } on Object {
+      // 네트워크 오류 — 다음 주기에 다시 시도한다. 로컬 저장은 이미 됐다.
+    } finally {
+      _syncing = false;
+    }
   }
 }
