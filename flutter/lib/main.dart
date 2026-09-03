@@ -1,14 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app/bootstrap.dart';
+import 'app/game_controller.dart';
+import 'data/save_repository.dart';
+import 'domain/balance_config.dart';
 import 'ui/game_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // 세로 고정 (GAME_DESIGN 1장)
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(const ProviderScope(child: IdleFantasyApp()));
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  const config = BalanceConfig();
+  final repo = SharedPrefsSaveRepository(await SharedPreferences.getInstance());
+  final boot = await Bootstrap.load(repo, config, DateTime.now());
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        balanceConfigProvider.overrideWithValue(config),
+        saveRepositoryProvider.overrideWithValue(repo),
+        initialStateProvider.overrideWithValue(boot.state),
+        offlineRewardProvider.overrideWithValue(boot.offlineReward),
+      ],
+      child: const IdleFantasyApp(),
+    ),
+  );
 }
 
 class IdleFantasyApp extends StatelessWidget {

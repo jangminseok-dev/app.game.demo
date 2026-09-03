@@ -14,6 +14,9 @@ class BalanceConfig {
     this.upgradeCostGrowth = 1.09,
     this.killsPerStage = 10,
     this.critMultiplier = 2.0,
+    this.offlineCapSeconds = 8 * 3600,
+    this.offlineEfficiency = 0.5,
+    this.offlineMinSeconds = 60,
   });
 
   final double monsterHpBase;
@@ -26,4 +29,11 @@ class BalanceConfig {
   final double upgradeCostGrowth;
   final int killsPerStage;
   final double critMultiplier;
+
+  /// 오프라인 보상 (GAME_DESIGN 8장): 상한 8시간, 효율 50%.
+  final double offlineCapSeconds;
+  final double offlineEfficiency;
+
+  /// 이보다 짧은 이탈은 보상 없음. 팝업이 너무 자주 뜨는 것을 막는다(가정값).
+  final double offlineMinSeconds;
 }

@@ -3,16 +3,47 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/game_controller.dart';
 import '../domain/number_format.dart';
+import '../domain/offline_reward.dart';
 import '../domain/upgrade.dart';
 
 /// 1주차 텍스트 화면. 그래픽 없이 숫자만 보여준다.
-class GameScreen extends ConsumerWidget {
+class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends ConsumerState<GameScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final reward = ref.read(offlineRewardProvider);
+    if (reward != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showOfflineReward(reward));
+    }
+  }
+
+  void _showOfflineReward(OfflineReward reward) {
+    final h = reward.elapsed.inHours;
+    final m = reward.elapsed.inMinutes % 60;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('오프라인 보상'),
+        content: Text('${h > 0 ? '$h시간 ' : ''}$m분 동안 자동 사냥\n골드 +${formatNumber(reward.gold)}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('받기')),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(gameControllerProvider);
     final config = ref.watch(balanceConfigProvider);
+    final lastSaved = ref.watch(lastSavedAtProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final stats = state.stats;
     final mono = Theme.of(context).textTheme.bodyLarge?.copyWith(fontFamily: 'monospace');
@@ -55,6 +86,12 @@ class GameScreen extends ConsumerWidget {
             ),
           const SizedBox(height: 24),
           Text('총 처치 ${state.totalKills}', style: mono),
+          Text(
+            lastSaved == null
+                ? '저장 전'
+                : '마지막 저장 ${TimeOfDay.fromDateTime(lastSaved).format(context)}:${lastSaved.second.toString().padLeft(2, '0')}',
+            style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
+          ),
         ],
       ),
     );
