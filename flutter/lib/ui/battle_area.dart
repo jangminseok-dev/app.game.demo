@@ -98,9 +98,12 @@ class _BattleAreaState extends ConsumerState<BattleArea> with SingleTickerProvid
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                monster == null ? '몬스터' : '${monster.name}  [${monster.element.label}]',
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, shadows: [Shadow(color: Colors.black54, blurRadius: 4)]),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  monster == null ? '몬스터' : '${monster.name}  [${monster.element.label}]',
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, shadows: [Shadow(color: Colors.black54, blurRadius: 4)]),
+                ),
               ),
               const SizedBox(height: 4),
               ClipRRect(

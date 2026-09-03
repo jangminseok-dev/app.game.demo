@@ -85,7 +85,13 @@ class BattleStageGame extends FlameGame {
       if (dealt > 0) {
         hero.swing();
         final crit = dealt > prev.statsWith(config).attack * 1.5;
-        _root.add(FloatingDamage(text: formatNumber(dealt), crit: crit, start: monster.position + Vector2(_rng.nextDouble() * 40 - 20, -monster.baseSize * 0.55)));
+        final floaters = _root.children.whereType<FloatingDamage>().toList();
+        if (floaters.length >= 6) _root.remove(floaters.first); // 공격속도가 높으면 겹쳐 쌓인다 — 오래된 것부터 치운다
+        _root.add(FloatingDamage(
+          text: formatNumber(dealt),
+          crit: crit,
+          start: monster.position + Vector2(_rng.nextDouble() * 120 - 60, _rng.nextDouble() * 50 - monster.baseSize * 0.45),
+        ));
       }
     }
     if (spawned) {
@@ -242,14 +248,17 @@ class MonsterActor extends PositionComponent {
     canvas.translate(size.x / 2 + shakeX, size.y / 2 + math.sin(_t * 2.6) * 4);
     canvas.scale(hitScale * appearScale);
     canvas.translate(-size.x / 2, -size.y / 2);
+    final flashing = _hit > 0.5;
+    // 백플래시는 별도 레이어에 그려야 스프라이트 픽셀에만 칠해진다(배경까지 네모로 하얘지지 않게).
+    if (flashing) canvas.saveLayer(size.toRect().inflate(20), Paint());
     if (isDragon(monster)) {
       DragonPainter(monster: monster, isBoss: isBoss, blink: blink.clamp(0, 1)).paint(canvas, size.toSize());
     } else {
       MonsterPainter(monster: monster, isBoss: isBoss, silhouette: false).paint(canvas, size.toSize());
     }
-    if (_hit > 0.5) {
-      // 피격 백플래시
-      canvas.drawRect(size.toRect(), Paint()..color = Colors.white.withValues(alpha: (_hit - 0.5) * 0.5)..blendMode = BlendMode.srcATop);
+    if (flashing) {
+      canvas.drawRect(size.toRect().inflate(20), Paint()..color = Colors.white.withValues(alpha: (_hit - 0.5) * 0.6)..blendMode = BlendMode.srcATop);
+      canvas.restore();
     }
     canvas.restore();
   }
@@ -263,7 +272,7 @@ class FloatingDamage extends PositionComponent implements _Expiring {
   final String text;
   final bool crit;
   double _life = 0;
-  static const _span = 0.75;
+  static const _span = 0.6;
 
   @override
   bool get expired => _life >= _span;
@@ -272,7 +281,7 @@ class FloatingDamage extends PositionComponent implements _Expiring {
   void update(double dt) {
     super.update(dt);
     _life += dt;
-    position.y -= dt * 70;
+    position.y -= dt * 90;
   }
 
   @override
