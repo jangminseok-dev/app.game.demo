@@ -35,4 +35,12 @@ async def fetch_balance(
         baseCaptureRate=r.base_capture_rate,
         captureRatePerLevel=r.capture_rate_per_level,
         capturePityKills=r.capture_pity_kills,
+        attackBase=r.attack_base,
+        attackPerLevel=r.attack_per_level,
+        attackSpeedBase=r.attack_speed_base,
+        attackSpeedPerLevel=r.attack_speed_per_level,
+        critBase=r.crit_base,
+        critPerLevel=r.crit_per_level,
+        goldMultiplierPerLevel=r.gold_multiplier_per_level,
+        upgradeBaseCosts=dict(r.upgrade_base_costs),
     )

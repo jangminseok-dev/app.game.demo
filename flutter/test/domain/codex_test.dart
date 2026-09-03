@@ -40,7 +40,7 @@ void main() {
   group('능력치에 반영', () {
     test('공격·골드·공속·포획은 배율, 치명은 %p', () {
       const p = Passives(attack: 50, gold: 20, attackSpeed: 10, crit: 5, capture: 100);
-      final s = Stats.fromLevels(const {}, p);
+      final s = Stats.fromLevels(const {}, const BalanceConfig(), p);
       expect(s.attack, 15);
       expect(s.goldMultiplier, closeTo(1.2, 1e-9));
       expect(s.attacksPerSecond, closeTo(1.1, 1e-9));

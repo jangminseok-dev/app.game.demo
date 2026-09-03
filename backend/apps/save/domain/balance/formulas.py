@@ -12,9 +12,6 @@ from hub.app.dtos.balance_dto import Balance
 from hub.app.dtos.codex_dto import Passives
 from save.domain.snapshot import Snapshot
 
-# 업그레이드 기본 비용 — Flutter `UpgradeType.baseCost`와 같다.
-BASE_COST = {"attack": 10.0, "attackSpeed": 25.0, "critChance": 50.0, "goldGain": 40.0, "captureRate": 100.0}
-
 NO_PASSIVES = Passives()
 
 
@@ -31,7 +28,7 @@ def boss_gold_reward(stage: int, b: Balance) -> float:
 
 
 def upgrade_cost(upgrade: str, level: int, b: Balance) -> float:
-    return BASE_COST[upgrade] * b.upgrade_cost_growth**level
+    return b.upgrade_base_costs[upgrade] * b.upgrade_cost_growth**level
 
 
 @dataclass(frozen=True)
@@ -45,12 +42,12 @@ class Stats:
         return self.attack * (1 + self.crit_chance * (b.crit_multiplier - 1)) * self.attacks_per_second
 
 
-def stats_of(s: Snapshot, p: Passives = NO_PASSIVES) -> Stats:
+def stats_of(s: Snapshot, b: Balance, p: Passives = NO_PASSIVES) -> Stats:
     return Stats(
-        attack=(10 + 5.0 * s.level("attack")) * (1 + p.attack / 100),
-        attacks_per_second=(1.0 + 0.1 * s.level("attackSpeed")) * (1 + p.attack_speed / 100),
-        crit_chance=min(1.0, 0.05 + 0.01 * s.level("critChance") + p.crit / 100),
-        gold_multiplier=(1.0 + 0.05 * s.level("goldGain")) * (1 + p.gold / 100),
+        attack=(b.attack_base + b.attack_per_level * s.level("attack")) * (1 + p.attack / 100),
+        attacks_per_second=(b.attack_speed_base + b.attack_speed_per_level * s.level("attackSpeed")) * (1 + p.attack_speed / 100),
+        crit_chance=min(1.0, b.crit_base + b.crit_per_level * s.level("critChance") + p.crit / 100),
+        gold_multiplier=(1.0 + b.gold_multiplier_per_level * s.level("goldGain")) * (1 + p.gold / 100),
     )
 
 

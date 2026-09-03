@@ -48,7 +48,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final config = ref.watch(balanceConfigProvider);
     final saveStatus = ref.watch(saveStatusProvider);
     final controller = ref.read(gameControllerProvider.notifier);
-    final stats = state.stats;
+    final stats = state.statsWith(config);
     final mono = Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace');
     final registered = state.codex.values.where((s) => s > 0).length;
     final pending = state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b);

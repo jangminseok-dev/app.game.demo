@@ -27,7 +27,7 @@ def calculate(s: Snapshot, raw_elapsed_seconds: float, b: Balance, p: Passives =
     if raw_elapsed_seconds < b.offline_min_seconds:
         return NONE
     seconds = min(raw_elapsed_seconds, b.offline_cap_seconds)
-    stats = stats_of(s, p)
+    stats = stats_of(s, b, p)
     kills = stats.dps(b) * seconds / monster_hp(s.stage, b)
     gold = kills * gold_reward(s.stage, b) * stats.gold_multiplier * b.offline_efficiency
     return OfflineReward(elapsed_seconds=seconds, gold=gold)

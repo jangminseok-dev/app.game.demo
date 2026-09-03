@@ -28,7 +28,7 @@ class OfflineReward {
     if (rawSeconds < c.offlineMinSeconds) return none;
 
     final seconds = min(rawSeconds, c.offlineCapSeconds);
-    final stats = s.stats;
+    final stats = s.statsWith(c);
     final kills = stats.dps(c) * seconds / monsterHp(s.stage, c);
     final gold = kills *
         goldReward(s.stage, c) *

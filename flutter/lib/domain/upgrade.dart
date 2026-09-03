@@ -7,19 +7,19 @@ import 'codex.dart';
 ///
 /// 능력치는 레벨에 선형으로 붙고(4장), 비용만 지수로 오른다.
 enum UpgradeType {
-  attack('공격력', baseCost: 10),
-  attackSpeed('공격속도', baseCost: 25),
-  critChance('치명타', baseCost: 50),
-  goldGain('골드획득', baseCost: 40),
-  captureRate('포획률', baseCost: 100);
+  attack('공격력'),
+  attackSpeed('공격속도'),
+  critChance('치명타'),
+  goldGain('골드획득'),
+  captureRate('포획률');
 
-  const UpgradeType(this.label, {required this.baseCost});
+  const UpgradeType(this.label);
 
   final String label;
-  final double baseCost;
 
+  /// 비용 = 기본 비용(마스터 데이터) × 성장률^레벨.
   double cost(int level, BalanceConfig config) =>
-      baseCost * pow(config.upgradeCostGrowth, level);
+      config.upgradeBaseCosts[this]! * pow(config.upgradeCostGrowth, level);
 }
 
 /// 업그레이드 레벨 + 도감 패시브 → 실제 능력치. 서버 `formulas.stats_of`와 같은 식.
@@ -31,13 +31,13 @@ class Stats {
     required this.goldMultiplier,
   });
 
-  factory Stats.fromLevels(Map<UpgradeType, int> levels, [Passives p = Passives.none]) {
+  factory Stats.fromLevels(Map<UpgradeType, int> levels, BalanceConfig c, [Passives p = Passives.none]) {
     int lv(UpgradeType t) => levels[t] ?? 0;
     return Stats(
-      attack: (10 + 5.0 * lv(UpgradeType.attack)) * (1 + p.attack / 100),
-      attacksPerSecond: (1.0 + 0.1 * lv(UpgradeType.attackSpeed)) * (1 + p.attackSpeed / 100),
-      critChance: min(1.0, 0.05 + 0.01 * lv(UpgradeType.critChance) + p.crit / 100),
-      goldMultiplier: (1.0 + 0.05 * lv(UpgradeType.goldGain)) * (1 + p.gold / 100),
+      attack: (c.attackBase + c.attackPerLevel * lv(UpgradeType.attack)) * (1 + p.attack / 100),
+      attacksPerSecond: (c.attackSpeedBase + c.attackSpeedPerLevel * lv(UpgradeType.attackSpeed)) * (1 + p.attackSpeed / 100),
+      critChance: min(1.0, c.critBase + c.critPerLevel * lv(UpgradeType.critChance) + p.crit / 100),
+      goldMultiplier: (1.0 + c.goldMultiplierPerLevel * lv(UpgradeType.goldGain)) * (1 + p.gold / 100),
     );
   }
 

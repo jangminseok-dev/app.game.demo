@@ -29,13 +29,13 @@ void main() {
     });
 
     test('능력치는 레벨에 선형', () {
-      final s0 = Stats.fromLevels(const {});
-      final s3 = Stats.fromLevels(const {UpgradeType.attack: 3});
+      final s0 = Stats.fromLevels(const {}, c);
+      final s3 = Stats.fromLevels(const {UpgradeType.attack: 3}, c);
       expect(s3.attack - s0.attack, 15);
     });
 
     test('치명타 확률은 100%를 넘지 않는다', () {
-      final s = Stats.fromLevels(const {UpgradeType.critChance: 500});
+      final s = Stats.fromLevels(const {UpgradeType.critChance: 500}, c);
       expect(s.critChance, 1.0);
     });
   });

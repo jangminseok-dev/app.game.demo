@@ -13,3 +13,5 @@ async def test_리포지토리의_balance_json이_기획서_4장_계수와_같�
     assert r.base_capture_rate == 0.005 and r.capture_rate_per_level == 0.0005
     # 천장은 기대값(1/p = 200)의 2배 — 불운 상한 역할
     assert r.capture_pity_kills == round(2 / r.base_capture_rate)
+    assert r.attack_base == 10 and r.attack_per_level == 5
+    assert set(r.upgrade_base_costs) == {"attack", "attackSpeed", "critChance", "goldGain", "captureRate"}

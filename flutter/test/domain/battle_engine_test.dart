@@ -119,7 +119,7 @@ void main() {
       s = engine.buyUpgrade(s, UpgradeType.attack)!;
       expect(s.gold, 90);
       expect(s.levelOf(UpgradeType.attack), 1);
-      expect(s.stats.attack, 15);
+      expect(s.statsWith(config).attack, 15);
       expect(UpgradeType.attack.cost(1, config), greaterThan(10));
     });
 
@@ -174,7 +174,7 @@ void main() {
       expect(s.codex, {1: 2, 2: 1});
       expect(s.passives.gold, closeTo(1.0, 1e-9));
       expect(s.passives.attack, 20, reason: '숲 완성 보너스');
-      expect(s.stats.attack, 12);
+      expect(s.statsWith(config).attack, 12);
     });
 
     test('빈 이벤트는 상태를 바꾸지 않는다', () {

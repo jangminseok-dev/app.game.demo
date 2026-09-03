@@ -78,7 +78,7 @@ class _BattleAreaState extends ConsumerState<BattleArea> with TickerProviderStat
     if (damage > 0 || spawned) {
       // 처치로 새 몬스터가 나왔으면 마지막 타격은 이전 몬스터의 남은 HP만큼이다.
       final dealt = spawned && next.totalKills > prev.totalKills ? prev.monsterHp : damage;
-      if (dealt > 0) _addFloater(dealt, prev.stats.attack);
+      if (dealt > 0) _addFloater(dealt, prev.statsWith(ref.read(balanceConfigProvider)).attack);
     }
     if (spawned) {
       _spawn.forward(from: 0);

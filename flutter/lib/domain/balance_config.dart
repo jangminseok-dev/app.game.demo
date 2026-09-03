@@ -1,3 +1,5 @@
+import 'upgrade.dart';
+
 /// 밸런스 계수. GAME_DESIGN.md 4장의 공식 계수를 한 곳에 모은다.
 ///
 /// 서버 마스터 데이터(`GET /masterdata/balance`)에서 받아 채운다. 내장 기본값은
@@ -23,6 +25,20 @@ class BalanceConfig {
     this.baseCaptureRate = 0.005,
     this.captureRatePerLevel = 0.0005,
     this.capturePityKills = 400,
+    this.attackBase = 10,
+    this.attackPerLevel = 5,
+    this.attackSpeedBase = 1.0,
+    this.attackSpeedPerLevel = 0.1,
+    this.critBase = 0.05,
+    this.critPerLevel = 0.01,
+    this.goldMultiplierPerLevel = 0.05,
+    this.upgradeBaseCosts = const {
+      UpgradeType.attack: 10,
+      UpgradeType.attackSpeed: 25,
+      UpgradeType.critChance: 50,
+      UpgradeType.goldGain: 40,
+      UpgradeType.captureRate: 100,
+    },
   });
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
@@ -57,4 +73,16 @@ class BalanceConfig {
 
   /// 몬스터 희귀도에 맞춘 확정 포획 처치 수. 서버 `pity_threshold`와 같은 식.
   int pityThreshold(double rarity) => (capturePityKills / rarity).round().clamp(1, 1 << 30);
+
+  /// 능력치 = base + perLevel × 레벨 (선형, GAME_DESIGN 4장).
+  final double attackBase;
+  final double attackPerLevel;
+  final double attackSpeedBase;
+  final double attackSpeedPerLevel;
+  final double critBase;
+  final double critPerLevel;
+  final double goldMultiplierPerLevel;
+
+  /// 업그레이드 종류별 레벨 0 비용. 비용 = base × upgradeCostGrowth^레벨.
+  final Map<UpgradeType, double> upgradeBaseCosts;
 }

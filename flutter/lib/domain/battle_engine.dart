@@ -33,7 +33,7 @@ class BattleEngine {
       s = s.copyWith(bossTimeLeft: left);
     }
 
-    final stats = s.stats;
+    final stats = s.statsWith(config);
     final interval = 1 / stats.attacksPerSecond;
     var timer = s.attackTimer + dt;
     var hits = 0;

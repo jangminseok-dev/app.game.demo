@@ -30,7 +30,7 @@ def validate(
     prev: Snapshot, new: Snapshot, elapsed_seconds: float, b: Balance, p: Passives = NO_PASSIVES
 ) -> Violation | None:
     elapsed = max(elapsed_seconds, MIN_ELAPSED)
-    stats = stats_of(new, p)
+    stats = stats_of(new, b, p)
 
     # 1. 되돌아갈 수 없는 값들 — 레벨·최고 스테이지·누적 처치는 줄지 않는다.
     for upgrade, level in prev.levels.items():

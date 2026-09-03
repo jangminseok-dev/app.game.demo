@@ -7,7 +7,7 @@ from save.tests.support import BALANCE, state
 def test_경과_시간_x_DPS만큼_잡은_몬스터의_골드를_50퍼센트로_준다():
     s = parse_snapshot(state(stage=5, levels={"goldGain": 4}))
     r = offline_reward.calculate(s, 3600, BALANCE)
-    kills = stats_of(s).dps(BALANCE) * 3600 / monster_hp(5, BALANCE)
+    kills = stats_of(s, BALANCE).dps(BALANCE) * 3600 / monster_hp(5, BALANCE)
     assert r.gold == kills * gold_reward(5, BALANCE) * 1.2 * 0.5
     assert r.elapsed_seconds == 3600
 

@@ -25,6 +25,9 @@ BALANCE = Balance(
     gold_base=5, gold_growth=1.15, boss_gold_multiplier=10, upgrade_cost_growth=1.09, kills_per_stage=10,
     crit_multiplier=2.0, offline_cap_seconds=28800, offline_efficiency=0.5, offline_min_seconds=60,
     boss_capture_multiplier=4.0, max_stars=5, base_capture_rate=0.005, capture_rate_per_level=0.0005, capture_pity_kills=400,
+    attack_base=10, attack_per_level=5, attack_speed_base=1.0, attack_speed_per_level=0.1,
+    crit_base=0.05, crit_per_level=0.01, gold_multiplier_per_level=0.05,
+    upgrade_base_costs={"attack": 10, "attackSpeed": 25, "critChance": 50, "goldGain": 40, "captureRate": 100},
 )
 
 

@@ -16,7 +16,7 @@ void main() {
     );
     final r = OfflineReward.calculate(s, base, base.add(const Duration(hours: 1)), c);
 
-    final kills = s.stats.dps(c) * 3600 / monsterHp(5, c);
+    final kills = s.statsWith(c).dps(c) * 3600 / monsterHp(5, c);
     final expected = kills * goldReward(5, c) * 1.2 * 0.5;
     expect(r.gold, closeTo(expected, 1e-6));
     expect(r.elapsed, const Duration(hours: 1));

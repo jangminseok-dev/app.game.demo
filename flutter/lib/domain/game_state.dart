@@ -72,7 +72,7 @@ class GameState {
   /// [codex]에서 계산한 패시브 합계. codex가 바뀔 때 [BattleEngine.withCodex]가 함께 갱신한다.
   final Passives passives;
 
-  Stats get stats => Stats.fromLevels(levels, passives);
+  Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 

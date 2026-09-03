@@ -27,3 +27,13 @@ class Balance:
     base_capture_rate: float
     capture_rate_per_level: float
     capture_pity_kills: int  # 희귀도 1.0 기준. 실제 천장 = pity / rarity
+    # 능력치 = base + per_level × 레벨 (선형, GAME_DESIGN 4장)
+    attack_base: float
+    attack_per_level: float
+    attack_speed_base: float
+    attack_speed_per_level: float
+    crit_base: float
+    crit_per_level: float
+    gold_multiplier_per_level: float
+    # 업그레이드 기본 비용(레벨 0). 비용 = base × upgrade_cost_growth^level
+    upgrade_base_costs: dict[str, float]
