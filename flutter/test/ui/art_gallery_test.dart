@@ -4,13 +4,17 @@ import 'dart:ui' as ui;
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:idle_fantasy/app/game_controller.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/sprites/monster_sprite.dart';
 import 'package:idle_fantasy/ui/stage/battle_stage_game.dart';
 
 import '../support/catalog.dart';
+import '../support/in_memory_save_repository.dart';
 
 /// 아트를 PNG로 뽑는다 — 눈으로 확인하기 위한 도구(테스트 겸).
 /// 결과: build/art_gallery.png, build/battle_stage.png
@@ -91,5 +95,36 @@ void main() {
       }
     });
     await snap('battle_stage');
+  });
+
+  testWidgets('앱 화면 전체를 PNG로 내보낸다 — 무리 전투와 탭', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final key = GlobalKey();
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            saveRepositoryProvider.overrideWithValue(InMemorySaveRepository()),
+            monsterCatalogProvider.overrideWithValue(loadBundledCatalog()),
+            offlineRewardProvider.overrideWithValue(null),
+          ],
+          child: MaterialApp(home: RepaintBoundary(key: key, child: const GameScreen())),
+        ),
+      );
+      // 무대가 시트를 비동기로 읽고 몬스터가 자리까지 걸어온다.
+      for (var i = 0; i < 90; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 16));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final file = File('build/app_screen.png')..createSync(recursive: true);
+      file.writeAsBytesSync(bytes!.buffer.asUint8List());
+      expect(file.lengthSync(), greaterThan(10000));
+    });
   });
 }
