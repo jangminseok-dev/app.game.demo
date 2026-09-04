@@ -5,6 +5,7 @@ import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/dungeon.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/quest.dart';
 
 void main() {
   const config = BalanceConfig();
@@ -44,7 +45,11 @@ void main() {
 
   test('던전 안에서는 못 옮긴다', () {
     final s = engine.enterDungeon(
-      GameState.initial(config).copyWith(highestStage: 100, dungeon: const DungeonState(tickets: 2)),
+      GameState.initial(config).copyWith(
+        highestStage: 100,
+        dungeon: const DungeonState(tickets: 2),
+        quests: const QuestState(claimed: 20),
+      ),
       DungeonType.goldCave,
       rng,
     )!;

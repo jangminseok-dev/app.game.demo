@@ -104,9 +104,9 @@ void main() {
         overrides: [
           saveRepositoryProvider.overrideWithValue(InMemorySaveRepository()),
           offlineRewardProvider.overrideWithValue(null),
-          // 1번 퀘스트(10층 도달)를 이미 채운 상태로 시작한다.
+          // 1번 퀘스트(10마리 처치)를 이미 채운 상태로 시작한다.
           initialStateProvider.overrideWithValue(
-            GameState.initial(config).copyWith(highestStage: 10),
+            GameState.initial(config).copyWith(totalKills: 50),
           ),
         ],
         child: const MaterialApp(home: GameScreen()),

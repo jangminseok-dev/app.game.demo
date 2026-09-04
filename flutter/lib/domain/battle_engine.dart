@@ -353,8 +353,8 @@ class BattleEngine {
 
   /// 입장권을 쓰고 다음 층에 들어간다. 조건이 안 되면 null.
   GameState? enterDungeon(GameState s, DungeonType type, Random rng) {
-    if (!s.dungeon.canEnter(type, s.highestStage, config)) return null;
-    final dungeon = s.dungeon.enter(type, s.highestStage, config);
+    if (!s.dungeon.canEnter(type, s.highestStage, s.quests.claimed, config)) return null;
+    final dungeon = s.dungeon.enter(type, s.highestStage, s.quests.claimed, config);
     return _spawnDungeonWave(s.copyWith(dungeon: dungeon), dungeon.run!, rng);
   }
 

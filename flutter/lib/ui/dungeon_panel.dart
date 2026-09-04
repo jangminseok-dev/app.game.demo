@@ -129,7 +129,7 @@ class _DungeonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dungeon = state.dungeon;
-    final unlocked = dungeon.isUnlocked(type, state.highestStage);
+    final unlocked = dungeon.isUnlocked(type, state.quests.claimed);
     final floor = dungeon.nextFloor(type);
     final required = dungeon.requiredStage(type, config);
     final floorReady = state.highestStage >= required;
@@ -151,7 +151,8 @@ class _DungeonCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 if (!unlocked)
-                  PixelText('${type.unlockStage}층에 도달하면 열립니다', size: 11, color: PixelPalette.textDim)
+                  PixelText('퀘스트 ${type.unlockQuest}번을 마치면 열립니다',
+                      size: 11, color: PixelPalette.textDim)
                 else if (!floorReady)
                   PixelText('$floor층은 본편 $required층부터 들어갈 수 있습니다',
                       size: 11, color: PixelPalette.textDim)
@@ -173,7 +174,7 @@ class _DungeonCard extends StatelessWidget {
           ),
           _Button(
             label: '입장',
-            enabled: dungeon.canEnter(type, state.highestStage, config),
+            enabled: dungeon.canEnter(type, state.highestStage, state.quests.claimed, config),
             onTap: onEnter,
           ),
         ],

@@ -23,18 +23,24 @@ enum DungeonCurrency {
 /// 필드에서 골드만 나오면 성장이 한 줄로 굳는다. 던전은 재화마다 다른 소비처로 연결해
 /// 오늘 무엇을 할지를 만든다.
 enum DungeonType {
-  goldCave('황금 동굴', DungeonCurrency.gold, 10),
-  stoneMine('강화석 광산', DungeonCurrency.stone, 20),
-  dragonNest('용의 둥지', DungeonCurrency.eggShard, 30),
-  ruins('고대 유적', DungeonCurrency.skillPage, 50);
+  goldCave('황금 동굴', DungeonCurrency.gold, 10, 8),
+  stoneMine('강화석 광산', DungeonCurrency.stone, 20, 12),
+  dragonNest('용의 둥지', DungeonCurrency.eggShard, 30, 15),
+  ruins('고대 유적', DungeonCurrency.skillPage, 50, 20);
 
-  const DungeonType(this.label, this.currency, this.unlockStage);
+  const DungeonType(this.label, this.currency, this.unlockStage, this.unlockQuest);
 
   final String label;
   final DungeonCurrency currency;
 
-  /// 이 최고 층에 도달해야 열린다.
+  /// 층 난이도 기준선. 이 층보다 낮은 곳에서는 1층도 못 들어간다.
   final int unlockStage;
+
+  /// 이 번호 퀘스트를 받아야 열린다.
+  ///
+  /// 해금을 퀘스트에 걸면 "다음에 뭐가 열리는가"가 퀘스트 카드 한 줄로 읽힌다.
+  /// 레퍼런스도 골드 던전을 "퀘스트 23 완료시 해금"으로 잠가 둔다.
+  final int unlockQuest;
 }
 
 /// 진행 중인 던전 한 판. 남은 몬스터 수와 시간만 들고 있다.
@@ -114,7 +120,8 @@ class DungeonState {
   /// 다음에 도전할 층. 항상 최고 클리어 층 + 1이다.
   int nextFloor(DungeonType type) => clearedFloor(type) + 1;
 
-  bool isUnlocked(DungeonType type, int highestStage) => highestStage >= type.unlockStage;
+  /// 퀘스트를 그만큼 받았는가. 던전이 열리는 조건이다.
+  bool isUnlocked(DungeonType type, int claimedQuests) => claimedQuests >= type.unlockQuest;
 
   /// 다음 층에 들어가는 데 필요한 최고 층.
   ///
@@ -123,8 +130,11 @@ class DungeonState {
   int requiredStage(DungeonType type, BalanceConfig c) =>
       max(type.unlockStage, dungeonEquivalentStage(nextFloor(type), c));
 
-  bool canEnter(DungeonType type, int highestStage, BalanceConfig c) =>
-      run == null && tickets > 0 && highestStage >= requiredStage(type, c);
+  bool canEnter(DungeonType type, int highestStage, int claimedQuests, BalanceConfig c) =>
+      run == null &&
+      tickets > 0 &&
+      isUnlocked(type, claimedQuests) &&
+      highestStage >= requiredStage(type, c);
 
   /// 시간이 지난 만큼 입장권을 채운다. 오프라인에도 같은 함수를 쓴다.
   DungeonState regenerate(double seconds, BalanceConfig c) {
@@ -140,8 +150,8 @@ class DungeonState {
   }
 
   /// 입장권 1장을 쓰고 다음 층에 들어간다. 못 들어가면 그대로 돌려준다.
-  DungeonState enter(DungeonType type, int highestStage, BalanceConfig c) {
-    if (!canEnter(type, highestStage, c)) return this;
+  DungeonState enter(DungeonType type, int highestStage, int claimedQuests, BalanceConfig c) {
+    if (!canEnter(type, highestStage, claimedQuests, c)) return this;
     return copyWith(
       tickets: tickets - 1,
       run: DungeonRun(

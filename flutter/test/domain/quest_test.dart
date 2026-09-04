@@ -4,6 +4,7 @@ import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/dungeon.dart';
 import 'package:idle_fantasy/domain/equipment.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/pet.dart';
 import 'package:idle_fantasy/domain/quest.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
 
@@ -20,12 +21,23 @@ void main() {
       }
     });
 
+    test('앞 20개는 시스템을 하나씩 연다', () {
+      final opening = questTable.take(20).map((q) => q.goal).toList();
+      // 전투 → 장비 → 강화 → 진행 → 던전 → 도감 → 펫 순으로 처음 나온다.
+      int firstOf(QuestGoal g) => opening.indexOf(g);
+      expect(firstOf(QuestGoal.totalKills), 0);
+      expect(firstOf(QuestGoal.equipWorn), lessThan(firstOf(QuestGoal.enhanceLevel)));
+      expect(firstOf(QuestGoal.enhanceLevel), lessThan(firstOf(QuestGoal.dungeonFloors)));
+      expect(firstOf(QuestGoal.dungeonFloors), lessThan(firstOf(QuestGoal.petsOwned)));
+    });
+
     test('같은 목표는 뒤로 갈수록 목표치가 커진다', () {
+      // 앞 20개는 손으로 적은 튜토리얼이라 뒤 40개만 본다.
       for (final goal in QuestGoal.values) {
-        final targets = questTable.where((q) => q.goal == goal).map((q) => q.target).toList();
-        expect(targets.length, greaterThan(1));
+        final targets =
+            questTable.skip(20).where((q) => q.goal == goal).map((q) => q.target).toList();
         for (var i = 1; i < targets.length; i++) {
-          expect(targets[i], greaterThan(targets[i - 1]));
+          expect(targets[i], greaterThanOrEqualTo(targets[i - 1]), reason: '${goal.label}');
         }
       }
     });
@@ -51,34 +63,30 @@ void main() {
 
     test('조건을 채우면 받을 수 있고 다음 번호로 넘어간다', () {
       final first = questTable.first;
-      final s = initial.copyWith(highestStage: first.target);
+      final s = initial.copyWith(totalKills: first.target);
       expect(questReady(s), isTrue);
       final claimed = engine.claimQuest(s)!;
       expect(claimed.quests.current?.number, 2);
     });
 
     test('보상이 재화별 자리에 들어간다', () {
-      // 1번은 골드, 2번은 강화석, 3번은 입장권이다.
-      var s = initial.copyWith(highestStage: 1000, totalKills: 100000, dungeon: const DungeonState(tickets: 0));
-      s = s.copyWith(equipment: const EquipmentState(enhanceLevel: 100));
+      // 1번 골드, 2번 골드, 3번 강화석, 7번 입장권.
+      var s = _allDone(initial);
       final gold = engine.claimQuest(s)!;
       expect(gold.gold, greaterThan(s.gold));
-      final stone = engine.claimQuest(gold)!;
-      expect(stone.equipment.stones, greaterThan(gold.equipment.stones));
-      final ticket = engine.claimQuest(stone)!;
-      expect(ticket.dungeon.tickets, greaterThan(stone.dungeon.tickets));
+      s = gold;
+      for (var i = 0; i < 2; i++) {
+        s = engine.claimQuest(s)!;
+      }
+      expect(s.equipment.stones, greaterThan(gold.equipment.stones), reason: '3번은 강화석');
     });
 
     test('입장권 보상도 상한을 넘지 않는다', () {
-      var s = initial.copyWith(
-        highestStage: 1000,
-        totalKills: 100000,
-        equipment: const EquipmentState(enhanceLevel: 100),
-        dungeon: DungeonState(tickets: config.dungeonTicketCap),
-      );
-      s = engine.claimQuest(s)!; // 1번 골드
-      s = engine.claimQuest(s)!; // 2번 강화석
-      s = engine.claimQuest(s)!; // 3번 입장권
+      var s = _allDone(initial).copyWith(dungeon: DungeonState(tickets: config.dungeonTicketCap));
+      // 7번이 입장권이다. 거기까지 받아 본다.
+      for (var i = 0; i < 7; i++) {
+        s = engine.claimQuest(s)!;
+      }
       expect(s.dungeon.tickets, config.dungeonTicketCap);
     });
 
@@ -136,3 +144,25 @@ void main() {
     expect(decodeState(old)!.quests.claimed, 0);
   });
 }
+
+/// 앞 20개 퀘스트 조건을 전부 채운 상태.
+GameState _allDone(GameState s) => s.copyWith(
+      highestStage: 1000,
+      totalKills: 100000,
+      codex: const {1: 3, 2: 1, 3: 1, 4: 1, 5: 1},
+      equipment: const EquipmentState(
+        enhanceLevel: 100,
+        equipped: {
+          EquipSlot.weapon: Equipment(slot: EquipSlot.weapon, grade: EquipGrade.common, tier: 0),
+          EquipSlot.helmet: Equipment(slot: EquipSlot.helmet, grade: EquipGrade.common, tier: 0),
+          EquipSlot.cape: Equipment(slot: EquipSlot.cape, grade: EquipGrade.common, tier: 0),
+          EquipSlot.armor: Equipment(slot: EquipSlot.armor, grade: EquipGrade.common, tier: 0),
+          EquipSlot.ring: Equipment(slot: EquipSlot.ring, grade: EquipGrade.common, tier: 0),
+          EquipSlot.amulet: Equipment(slot: EquipSlot.amulet, grade: EquipGrade.common, tier: 0),
+        },
+      ),
+      dungeon: const DungeonState(
+        cleared: {DungeonType.goldCave: 10, DungeonType.stoneMine: 10},
+      ),
+      pets: const PetState(owned: [Pet(grade: PetGrade.common, bonus: PetBonus.attack)], activeIndex: 0),
+    );

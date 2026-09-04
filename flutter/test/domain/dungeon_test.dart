@@ -6,6 +6,7 @@ import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/dungeon.dart';
 import 'package:idle_fantasy/domain/field.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/quest.dart';
 import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
 
@@ -15,10 +16,11 @@ void main() {
   final rng = Random(1);
 
   /// 던전에 들어갈 수 있는 상태 — 최고 층이 높고 입장권이 있다.
-  GameState ready({int highestStage = 100, int tickets = 3}) =>
+  GameState ready({int highestStage = 100, int tickets = 3, int claimedQuests = 20}) =>
       GameState.initial(config).copyWith(
         highestStage: highestStage,
         dungeon: DungeonState(tickets: tickets),
+        quests: QuestState(claimed: claimedQuests),
       );
 
   group('입장권', () {
@@ -52,6 +54,14 @@ void main() {
       expect(engine.enterDungeon(ready(highestStage: 1), DungeonType.goldCave, rng), isNull);
       expect(engine.enterDungeon(ready(highestStage: 15), DungeonType.stoneMine, rng), isNull,
           reason: '강화석 광산은 20층부터');
+    });
+
+    test('퀘스트를 마치기 전에는 잠겨 있다', () {
+      expect(engine.enterDungeon(ready(claimedQuests: 0), DungeonType.goldCave, rng), isNull);
+      expect(
+        engine.enterDungeon(ready(claimedQuests: DungeonType.goldCave.unlockQuest), DungeonType.goldCave, rng),
+        isNotNull,
+      );
     });
 
     test('던전 층은 본편 진행보다 앞서 나갈 수 없다', () {
