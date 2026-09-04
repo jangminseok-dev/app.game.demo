@@ -151,8 +151,9 @@ void main() {
 
     // 무대 밖은 보이지 않는다. 보이는 폭은 확대율을 따라간다.
     final zoom = game.camera.viewfinder.zoom;
-    final halfW = viewWidth / 2 / zoom;
-    final halfH = viewHeight / 2 / zoom;
+    final vp = game.camera.viewport.size;
+    final halfW = vp.x / 2 / zoom;
+    final halfH = vp.y / 2 / zoom;
     expect(now.x, greaterThanOrEqualTo(halfW - 0.01));
     expect(now.x, lessThanOrEqualTo(stageWidth - halfW + 0.01));
     expect(now.y, greaterThanOrEqualTo(halfH - 0.01));

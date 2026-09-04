@@ -24,12 +24,12 @@ const stageWidth = 360.0;
 /// 안전 영역은 가운데 269×162. 그 밖은 잘릴 수 있다.
 const stageHeight = 202.0;
 
-/// 카메라가 한 번에 보여 주는 크기. 무대보다 작아야 카메라가 움직일 자리가 생긴다.
+/// 평소에 얼마나 당겨 두는가. cover 배율의 몇 배인지다.
 ///
-/// 무대와 같은 크기면 카메라가 붙박이가 되어 화면이 죽는다. 조금 좁게 잘라 두면
+/// 1.0이면 화면이 무대를 딱 덮어 카메라가 움직일 자리가 없다. 조금 당겨 두면
 /// 주인공과 몬스터 사이를 따라다니며 전투가 살아 있는 것처럼 보인다.
-const viewWidth = 300.0;
-const viewHeight = 168.0;
+/// 보스일 때는 1.0으로 돌아가 물러난다 — cover보다 더 물러나면 무대 밖이 보인다.
+const normalZoomFactor = 1.16;
 
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
@@ -53,7 +53,7 @@ class BattleStageGame extends FlameGame {
   BattleStageGame({required this.catalog, required this.config, SheetLoader? loader, Images? bgImages})
       : _loader = loader ?? SheetLoader(),
         _bgImages = bgImages ?? Images(prefix: 'assets/backgrounds/'),
-        super(camera: CameraComponent.withFixedResolution(width: viewWidth, height: viewHeight));
+        super(camera: CameraComponent());
 
   MonsterCatalog catalog;
   BalanceConfig config;
@@ -103,6 +103,10 @@ class BattleStageGame extends FlameGame {
     // 가운데를 기준으로 삼아야 따라다니기 좋다.
     camera.viewfinder.anchor = Anchor.center;
     camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);
+    // 첫 프레임이 튀지 않게 cover 배율로 시작한다. 이후는 _follow가 이어받는다.
+    final vp0 = camera.viewport.size;
+    camera.viewfinder.zoom =
+        math.max(vp0.x / stageWidth, vp0.y / stageHeight) * normalZoomFactor;
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
 
@@ -152,8 +156,12 @@ class BattleStageGame extends FlameGame {
     final hero = _hero;
     if (hero == null) return;
 
-    // 보스는 크다. 조금 물러나 전신이 들어오게 한다. 자르는 폭도 이 확대율을 따라간다.
-    final wantedZoom = (_last?.isBoss ?? false) ? 0.86 : 1.0;
+    // 화면을 덮는 최소 배율. 기기 비율이 바뀌면 같이 바뀐다.
+    final vp = camera.viewport.size;
+    final cover = math.max(vp.x / stageWidth, vp.y / stageHeight);
+    // 보스는 크다. cover로 돌아가 전신이 들어오게 한다.
+    // cover보다 더 물러나면 무대 밖 빈 곳이 보이므로 이 아래로는 안 내려간다.
+    final wantedZoom = cover * ((_last?.isBoss ?? false) ? 1.0 : normalZoomFactor);
     final zoom = camera.viewfinder.zoom;
     final nextZoom = zoom + (wantedZoom - zoom) * (1 - math.exp(-dt * 2.0));
     camera.viewfinder.zoom = nextZoom;
@@ -163,8 +171,8 @@ class BattleStageGame extends FlameGame {
     var targetY = front == null ? hero.pos.y : (hero.pos.y + front.pos.y) / 2;
 
     // 무대 밖이 보이지 않게 자른다. 물러날수록 더 많이 보이므로 여유가 줄어든다.
-    final halfW = math.min(stageWidth / 2, viewWidth / 2 / nextZoom);
-    final halfH = math.min(stageHeight / 2, viewHeight / 2 / nextZoom);
+    final halfW = math.min(stageWidth / 2, vp.x / 2 / nextZoom);
+    final halfH = math.min(stageHeight / 2, vp.y / 2 / nextZoom);
     targetX = targetX.clamp(halfW, stageWidth - halfW);
     targetY = targetY.clamp(halfH, stageHeight - halfH);
 
