@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'pixel_icons.dart';
 import 'pixel_ui.dart';
 
 /// 인게임 팝업 한 장. 전투 화면 위에 겹쳐 뜬다.
@@ -87,7 +88,7 @@ class HudButton extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final PixelIcon icon;
   final VoidCallback onTap;
 
   /// 빨간 점.
@@ -109,7 +110,7 @@ class HudButton extends StatelessWidget {
               PixelPanel(
                 padding: const EdgeInsets.all(7),
                 color: PixelPalette.panelLight,
-                child: Icon(icon, size: 20, color: PixelPalette.gold),
+                child: PixelIconView(icon, size: 20),
               ),
               if (alert)
                 Positioned(

@@ -29,3 +29,15 @@ flutter:
     - assets/sprites/monster/
     - assets/sprites/boss/
     - assets/backgrounds/forest/
+
+  fonts:
+    # 갈무리 — SIL 오픈 폰트 라이선스. 상업 사용 가능. assets/fonts/Galmuri-LICENSE.txt 참고.
+    # 픽셀 무대에 시스템 폰트를 쓰면 게임이 아니라 설정 화면처럼 보인다.
+    - family: Galmuri
+      fonts:
+        - asset: assets/fonts/Galmuri11.ttf
+        - asset: assets/fonts/Galmuri11-Bold.ttf
+          weight: 700
+    - family: GalmuriBig
+      fonts:
+        - asset: assets/fonts/Galmuri14.ttf

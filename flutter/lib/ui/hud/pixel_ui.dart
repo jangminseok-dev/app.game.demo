@@ -2,23 +2,31 @@ import 'package:flutter/material.dart';
 
 /// 픽셀 UI 공통 스타일. 이미지 에셋 없이 코드로만 그린다.
 ///
-/// 규칙: 각진 모서리, 두꺼운 어두운 테두리, 위쪽 밝은 하이라이트 한 줄.
+/// 규칙: 각진 모서리, 두꺼운 어두운 테두리, 위쪽 밝은 하이라이트 한 줄, 아래 그림자 한 줄.
 /// 무대가 픽셀아트라 UI도 안티에일리어싱 없는 직선으로 맞춘다.
+///
+/// 글꼴은 갈무리(SIL OFL). 시스템 폰트를 쓰면 픽셀 무대 위에서 설정 화면처럼 보인다.
+const pixelFont = 'Galmuri';
+
 class PixelPalette {
-  static const ink = Color(0xFF1A1420); // 테두리·글자 외곽
-  static const panel = Color(0xFF2E2536); // 패널 바탕
-  static const panelLight = Color(0xFF3E3348); // 하이라이트
+  // 나무와 금색. 보라·회색은 차갑고 시스템 UI처럼 보인다.
+  static const ink = Color(0xFF17110C); // 테두리·글자 외곽
+  static const panel = Color(0xFF3A2A1E); // 패널 바탕(짙은 나무)
+  static const panelLight = Color(0xFF54402D); // 하이라이트(밝은 나무)
+  static const panelDark = Color(0xFF241A12); // 안쪽 그늘
   static const gold = Color(0xFFFFC24A);
-  static const goldDark = Color(0xFFC98A16);
+  static const goldDark = Color(0xFFB57A17);
   static const gem = Color(0xFF63C7FF);
   static const hp = Color(0xFF56D364);
   static const hpLow = Color(0xFFE5534B);
   static const boss = Color(0xFFE5534B);
-  static const text = Color(0xFFF2ECF7);
-  static const textDim = Color(0xFFB4A8C0);
+  static const text = Color(0xFFF6ECDA);
+  static const textDim = Color(0xFFB9A48A);
 }
 
-/// 각진 픽셀 패널. 테두리 2겹 + 위쪽 하이라이트.
+/// 각진 픽셀 패널. 바깥 어두운 테두리 + 안쪽 밝은 윗줄 + 어두운 아랫줄.
+///
+/// 평평한 사각형은 싸구려로 보인다. 한 픽셀짜리 빗면 두 줄만 넣어도 눌린 나무판처럼 읽힌다.
 class PixelPanel extends StatelessWidget {
   const PixelPanel({
     super.key,
@@ -26,6 +34,7 @@ class PixelPanel extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     this.color = PixelPalette.panel,
     this.border = PixelPalette.ink,
+    this.bevel = true,
   });
 
   final Widget child;
@@ -33,19 +42,42 @@ class PixelPanel extends StatelessWidget {
   final Color color;
   final Color border;
 
+  /// 빗면을 넣을지. 아주 작은 칩에서는 끄는 편이 깔끔하다.
+  final bool bevel;
+
   @override
   Widget build(BuildContext context) {
+    final inner = Padding(padding: padding, child: child);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color,
         border: Border.all(color: border, width: 2),
+        boxShadow: const [BoxShadow(color: Color(0x66000000), offset: Offset(0, 2))],
       ),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
+      child: bevel
+          ? CustomPaint(painter: _BevelPainter(color), child: inner)
+          : inner,
     );
   }
+}
+
+/// 위 한 줄은 밝게, 아래 한 줄은 어둡게. 빗면 흉내다.
+class _BevelPainter extends CustomPainter {
+  const _BevelPainter(this.base);
+
+  final Color base;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..isAntiAlias = false;
+    p.color = Color.lerp(base, Colors.white, 0.18)!;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 1.5), p);
+    p.color = Color.lerp(base, Colors.black, 0.35)!;
+    canvas.drawRect(Rect.fromLTWH(0, size.height - 1.5, size.width, 1.5), p);
+  }
+
+  @override
+  bool shouldRepaint(_BevelPainter old) => old.base != base;
 }
 
 /// 외곽선이 있는 픽셀 글자. 배경 위에서도 읽힌다.
@@ -72,9 +104,10 @@ class PixelText extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
+            fontFamily: pixelFont,
             fontSize: size,
             fontWeight: weight,
-            height: 1.1,
+            height: 1.2,
             foreground: Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 2.4
@@ -82,7 +115,16 @@ class PixelText extends StatelessWidget {
               ..color = outline,
           ),
         ),
-        Text(text, style: TextStyle(fontSize: size, fontWeight: weight, height: 1.1, color: color)),
+        Text(
+          text,
+          style: TextStyle(
+            fontFamily: pixelFont,
+            fontSize: size,
+            fontWeight: weight,
+            height: 1.2,
+            color: color,
+          ),
+        ),
       ],
     );
   }

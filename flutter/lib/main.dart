@@ -15,6 +15,7 @@ import 'data/save_repository.dart';
 import 'domain/balance_config.dart';
 import 'domain/monster.dart';
 import 'ui/game_screen.dart';
+import 'ui/hud/pixel_ui.dart';
 
 /// `flutter run --dart-define=API_BASE_URL=http://...` 로 바꾼다. 기본은 맥 로컬 백엔드.
 const _apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8010');
@@ -78,7 +79,13 @@ class IdleFantasyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Idle Fantasy',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      // 픽셀 무대 위에 시스템 폰트가 섞이면 화면 절반이 설정 화면처럼 보인다.
+      theme: ThemeData(
+        colorSchemeSeed: const Color(0xFFB57A17),
+        useMaterial3: true,
+        fontFamily: pixelFont,
+        scaffoldBackgroundColor: const Color(0xFF12161A),
+      ),
       home: const GameScreen(),
     );
   }

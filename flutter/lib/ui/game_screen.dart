@@ -18,6 +18,7 @@ import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
 import 'forge_panel.dart';
 import 'hud/game_popup.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
@@ -70,22 +71,22 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
               children: [
                 HudButton(
                   label: '성장',
-                  icon: Icons.trending_up,
+                  icon: PixelIcon.growth,
                   onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
                 ),
                 HudButton(
                   label: '장비',
-                  icon: Icons.shield_outlined,
+                  icon: PixelIcon.shield,
                   onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
                 ),
                 HudButton(
                   label: '스킬',
-                  icon: Icons.auto_awesome,
+                  icon: PixelIcon.spark,
                   onTap: () => showGamePopup(context, title: '스킬', child: const SkillSheet()),
                 ),
                 HudButton(
                   label: '펫',
-                  icon: Icons.egg_outlined,
+                  icon: PixelIcon.egg,
                   onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
                 ),
               ],
@@ -184,7 +185,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                   children: [
                     HudButton(
                       label: '던전',
-                      icon: Icons.castle_outlined,
+                      icon: PixelIcon.gate,
                       badge: '${state.dungeon.tickets}',
                       alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
                       onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
@@ -192,7 +193,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     const SizedBox(height: 10),
                     HudButton(
                       label: '오늘',
-                      icon: Icons.today_outlined,
+                      icon: PixelIcon.calendar,
                       alert: anyDailyReady(state),
                       onTap: () => showGamePopup(context, title: '오늘 과제',
                           heightFactor: 0.5, child: const DailyPanel()),
@@ -200,7 +201,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     const SizedBox(height: 10),
                     HudButton(
                       label: '출석',
-                      icon: Icons.event_available_outlined,
+                      icon: PixelIcon.check,
                       alert: state.attendance.canClaim(epochDayOf(DateTime.now())),
                       onTap: () => showGamePopup(context, title: '출석부',
                           heightFactor: 0.55, child: const AttendancePanel()),
@@ -208,14 +209,14 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     const SizedBox(height: 10),
                     HudButton(
                       label: '이동',
-                      icon: Icons.map_outlined,
+                      icon: PixelIcon.pin,
                       alert: state.stageFailCount > 0 && state.stage == state.highestStage,
                       onTap: () => showGamePopup(context, title: '층 이동', child: const StageSelectPanel()),
                     ),
                     const SizedBox(height: 10),
                     HudButton(
                       label: '도감 $registered',
-                      icon: Icons.menu_book,
+                      icon: PixelIcon.book,
                       onTap: () => showGamePopup(context, title: '도감', child: const CodexTab()),
                     ),
                   ],
@@ -240,31 +241,31 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     children: [
                       HudButton(
                         label: '성장',
-                        icon: Icons.trending_up,
+                        icon: PixelIcon.growth,
                         alert: _canBuyAnything(state),
                         onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
                       ),
                       HudButton(
                         label: '장비',
-                        icon: Icons.shield_outlined,
+                        icon: PixelIcon.shield,
                         alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
                         onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
                       ),
                       HudButton(
                         label: '대장간',
-                        icon: Icons.hardware_outlined,
+                        icon: PixelIcon.hammer,
                         alert: state.equipment.canCraft(ref.read(balanceConfigProvider)),
                         onTap: () => showGamePopup(context, title: '대장간', child: const ForgePanel()),
                       ),
                       HudButton(
                         label: '펫',
-                        icon: Icons.egg_outlined,
+                        icon: PixelIcon.egg,
                         alert: state.hatchery.hasReady,
                         onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
                       ),
                       HudButton(
                         label: '퀘스트',
-                        icon: Icons.flag_outlined,
+                        icon: PixelIcon.flag,
                         alert: questReady(state),
                         onTap: () => showGamePopup(
                           context,
