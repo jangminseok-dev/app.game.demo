@@ -12,6 +12,15 @@
 
 ## Global Constraints
 
+> **스파이크(2026-09-04)에서 갱신된 규칙** — 아래 태스크 본문보다 이 항목이 우선한다.
+> - 주인공·동료 프레임은 **56×56**(표준 모드 캔버스 68에 키 50px). 몬스터 48, 펫 32, 보스 96은 그대로.
+> - 묶인 시트는 항상 오른쪽을 본다. 주인공은 서쪽 뷰 + `--flip`, 몬스터는 동쪽 뷰. 앱은 적만 반전.
+> - 배경은 PixelLab `create_image_pixflux` 360×272로 뽑아 `bg_pixelize.py`로 나눈다. 외부 이미지 모델 불필요.
+> - `BattleStageGame`은 `FlameGame` 기본 `world`/`camera`를 쓰고(생성자 `camera:`), `camera.viewfinder.anchor = Anchor.topLeft`.
+> - 백플래시는 `renderTree`+`saveLayer`가 아니라 스프라이트 페인트 `ColorFilter.mode(white, srcATop)`. Task 9·13의 코드는 이 규칙대로 고쳐 쓴다.
+> - PixelLab MCP는 사용자 설정(`claude mcp add -s user`)에 등록. 저장소에 `.mcp.json` 없음.
+> - 헤드리스 캡처는 `onLoad()` 직접 호출이 아니라 `GameWidget` + `game.ready()` + `RepaintBoundary`(`test/spike/spike_capture_test.dart` 참고).
+
 - 가상 해상도 **360×270** 픽셀 단위, 4:3 고정. 기기 폭에 맞춰 통째로 확대.
 - 확대는 최근접 보간(`FilterQuality.none`, `isAntiAlias = false`). 액터 위치는 정수 픽셀로 반올림.
 - 스프라이트 크기: 캐릭터·일반 몬스터 **48×48**, 새끼 용 **32×32**, 보스 **96×96**, 아이템 아이콘 **32×32**.
