@@ -157,11 +157,11 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
 
     return Scaffold(
       backgroundColor: const Color(0xFF12161A),
-      body: Center(
-        child: ConstrainedBox(
-          // 세로 게임이라 데스크톱에서도 폰 폭으로 묶는다.
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Stack(
+      // 가로 화면. 노치가 좌우에 오므로 SafeArea로 감싼다.
+      // 폭을 묶지 않는다 — 묶으면 GameWidget 뷰포트가 줄어 cover 배율이 화면이 아니라
+      // 그 폭 기준으로 계산되고, 무대가 화면보다 좁게 그려져 옆에 띠가 남는다(백로그 D4-1).
+      body: SafeArea(
+        child: Stack(
             children: [
               // ── 전투가 화면을 다 채운다. 위에 얹히는 것은 전부 겹침이다.
               const Positioned.fill(child: BattleArea()),
@@ -280,7 +280,6 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
               ),
             ],
           ),
-        ),
       ),
     );
   }
