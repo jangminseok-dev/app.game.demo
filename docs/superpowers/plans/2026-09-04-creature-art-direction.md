@@ -456,11 +456,15 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **⚠️ 이 태스크는 유료다.** PixelLab은 크레딧제다. Step 1의 잔액을 사용자에게 보이고 **진행 승인을 받은 뒤에** Step 3으로 간다. 승인 없이 생성하지 않는다.
 
-리그와 애니메이션이 필요 없으므로 `create_character`(v3, 2~9 generations)가 아니라 `create_image_pixflux`(1 generation)를 쓴다. 판정 대상은 화풍이지 방향 회전이 아니다. **4장 = 4 generations.**
+리그와 애니메이션이 필요 없으므로 `create_character`(v3, 2~9 generations)가 아니라 `create_image_pixflux`(1 generation)를 쓴다. 판정 대상은 화풍이지 방향 회전이 아니다. **2장 = 2 generations.**
 
-- [ ] **Step 1: 잔액을 확인하고 사용자에게 보인다**
+**원래 4장이었다.** 크레딧이 2밖에 안 남아 양 끝 두 마리로 줄였다. 이 둘이 정보량이 가장 크다 — 기준 5("숲과 마계가 닮아 가는 관계로 읽히나")가 애초에 이 두 마리로 판정하는 것이고, 가장 먼 둘이 같은 게임으로 보이면 중간은 보간된다. **잃는 것은 기준 3의 강도**다: "새로 더해진 특징이 읽히나"를 마계 하나로만 보게 된다. 중간 단계(뿔·꼬리·날개막)가 한 단계씩 실제로 읽히는지는 지역별 기본 형태 20종을 뽑을 때 확인한다.
 
-`get_balance`를 부른다. 남은 크레딧과 구독 생성 횟수를 사용자에게 그대로 보고하고, "4 generations를 쓰겠다"고 말한 뒤 승인을 기다린다.
+- [ ] **Step 1: 잔액을 확인한다**
+
+`get_balance`를 부른다.
+
+**2026-09-04 확인: Generations 38/40 사용, 남은 것은 2다.** 사용자가 **2장으로 가기로 결정**했다(숲·마계). 잔액이 2 미만이면 멈추고 보고한다. 2 이상이면 승인은 이미 받은 것이므로 Step 2로 간다.
 
 - [ ] **Step 2: 프롬프트 4개를 조립해 사용자에게 보인다**
 
@@ -469,17 +473,15 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 | # | 지역 | 단계 | ③ 캐릭터 블록 | ② 용 단계 블록 |
 |---|---|---|---|---|
 | 1 | 숲 | 0 | `a round mossy boar` | (없음) |
-| 2 | 화산 | 1 | `a chubby lava toad` | `a pair of small horns` |
-| 3 | 심해 | 2 | `a plump deep-sea jelly creature` | `+ a fin` |
-| 4 | 마계 | 4 | `a stout shadow beast` | `+ scale-covered body, small faint horns, small faint tail, small faint wings` |
+| 2 | 마계 | 4 | `a stout shadow beast` | `+ scale-covered body, small faint horns, small faint tail, small faint wings` |
 
-단계 3(하늘섬·폐허, 날개막)을 뺀 것은 의도다 — 날개막은 단계 4에 포함되므로 마계 한 마리로 같이 검사된다. 마계에서 날개가 안 읽히면 3과 4를 갈라 다시 뽑는다.
+중간 단계(1 뿔 · 2 꼬리 · 3 날개막)는 마계가 다 물려받으므로 **마계 한 마리로 같이 검사된다.** 마계에서 뿔·꼬리·날개가 하나도 안 읽히면 단계 표 자체가 틀린 것이다.
 
-조립 결과 4줄을 사용자에게 보여 오타·누락을 먼저 잡는다.
+조립 결과 2줄을 사용자에게 보여 오타·누락을 먼저 잡는다.
 
-- [ ] **Step 3: 4장을 생성한다**
+- [ ] **Step 3: 2장을 생성한다**
 
-`create_image_pixflux`를 4번 부른다. 네 번 모두 같은 값:
+`create_image_pixflux`를 2번 부른다. 두 번 모두 같은 값:
 
 - `description`: Step 2에서 조립한 줄 (스타일 블록 + 용 단계 블록 + 캐릭터 블록)
 - `width: 48`, `height: 48`
@@ -489,14 +491,14 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - `shading: "flat shading"`
 - `detail: "low detail"`
 
-비동기다. 4개를 한꺼번에 걸고 `get_image(job_id)`로 받는다. 받은 PNG를 scratchpad의 `art-spike/` 아래에 **정확히 이 네 이름으로** 저장한다 — Step 6의 대조 시트가 이 이름을 그대로 연다.
+비동기다. 2개를 한꺼번에 걸고 `get_image(job_id)`로 받는다. 받은 PNG를 scratchpad의 `art-spike/` 아래에 **정확히 이 두 이름으로** 저장한다 — Step 6의 대조 시트가 이 이름을 그대로 연다.
 
 | # | 파일명 |
 |---|---|
 | 1 | `1-forest.png` |
-| 2 | `2-volcano.png` |
-| 3 | `3-abyssal-sea.png` |
-| 4 | `4-abyss.png` |
+| 2 | `4-abyss.png` |
+
+**재뽑기 여유가 없다.** 프롬프트를 Step 2에서 확인받고 뽑는다. 실패해도 다시 뽑을 크레딧이 없으므로, 나온 결과로 판정하고 불합격이면 충전 뒤에 다시 돈다.
 
 - [ ] **Step 4: 합격 기준 2번을 기계로 잰다**
 
@@ -505,6 +507,8 @@ python3 flutter/tools/count_colors.py <scratchpad>/art-spike/*.png --max 5; echo
 ```
 
 기대: 종료 코드 0. **떨어질 가능성이 가장 높은 기준이다** — 생성기가 색 수를 잘 안 지킨다. 떨어지면 Step 7로 간다.
+
+색 수는 판정을 위한 숫자이면서 동시에 **Task 5의 결정 기록에 적을 값**이다. 두 장의 숫자를 적어 둔다.
 
 - [ ] **Step 5: 팔레트 스왑 변종을 만든다 (합격 기준 4번)**
 
@@ -556,7 +560,7 @@ from PIL import Image
 from pathlib import Path
 
 D = Path("<scratchpad>/art-spike")
-names = ["1-forest", "2-volcano", "3-abyssal-sea", "4-abyss", "1-forest-hue120", "1-forest-hue240"]
+names = ["1-forest", "4-abyss", "1-forest-hue120", "1-forest-hue240"]
 ims = [Image.open(D / f"{n}.png").convert("RGBA") for n in names]
 
 pad, scale = 8, 4
@@ -579,6 +583,8 @@ EOF
 
 대조 시트를 사용자에게 보낸다(`SendUserFile`). 다섯 줄을 그대로 묻는다. 판정은 사용자가 한다.
 
+**기준 3은 마계 한 마리로만 본다** — 2장으로 줄이며 약해진 부분이다. 사용자에게 그 사실을 함께 알린다.
+
 1. 4마리를 나란히 놓으면 **같은 게임**으로 보이는가
 2. 색이 5개 이내인가 — Step 4의 출력을 그대로 붙인다
 3. 48px에서 **눈과 새로 더해진 특징**이 읽히는가
@@ -587,7 +593,7 @@ EOF
 
 - [ ] **Step 7: 떨어졌으면 고치고 다시 돈다**
 
-- **기준 1~4에서 떨어짐**: `ART_GUIDE.md` 2절 스타일 블록을 **한 줄씩만** 고쳐 Step 1부터 다시 돈다. 여러 줄을 한꺼번에 고치면 무엇이 고쳤는지 모른다. 잔액 승인도 다시 받는다
+- **기준 1~4에서 떨어짐**: `ART_GUIDE.md` 2절 스타일 블록을 **한 줄씩만** 고쳐 다시 뽑는다. 여러 줄을 한꺼번에 고치면 무엇이 고쳤는지 모른다. **크레딧이 없으므로 충전 뒤에 돈다** — 사용자에게 무엇을 고칠지와 몇 장이 필요한지 알리고 멈춘다
 - **기준 5에서 떨어짐**: 단계 표(`ART_GUIDE.md` 2절 ②)가 틀린 것이다. 표를 고치고 다시 돈다
 - 어느 쪽이든 **고친 이유와 결과를 Task 5의 결정 기록에 남긴다**
 
@@ -710,6 +716,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 | 위험 | 어디서 터지나 | 대응 |
 |---|---|---|
 | 생성기가 5색을 안 지킨다 | Task 4 Step 4 | 가장 떨어질 확률이 높다. 스타일 블록의 `exactly 5 colors`를 한 줄만 고쳐 다시 뽑는다 |
+| **재뽑기 크레딧이 없다** | Task 4 Step 7 | 2 generations로 딱 2장을 뽑는다. 불합격이면 충전이 필요하다. 그래서 Step 2에서 프롬프트를 먼저 확인받는다 |
+| 중간 단계가 검증되지 않는다 | 합격 이후 물량 | 2장은 양 끝만 본다. 뿔·꼬리·날개막이 한 단계씩 읽히는지는 지역별 기본 형태 20종을 뽑을 때 확인한다 |
 | 마계(단계 4)가 "특징 하나" 규칙과 부딪힌다 | Task 4 Step 6 기준 3 | 물려받은 특징의 `small faint`를 더 강하게 누르거나, 단계 표에서 마계의 비늘을 몸통 질감이 아니라 등줄기로 한정한다 |
 | `create_image_pixflux` 화풍이 `create_character` 화풍과 다르다 | 합격 이후 첫 물량 | 스파이크는 1 generation짜리 도구로 싸게 봤다. 합격 후 **첫 물량 1종을 v3로 뽑아 화풍이 유지되는지 한 번 더 확인**한다. 다르면 스타일 블록을 v3 기준으로 다시 맞춘다 |
 | Pillow 설치가 막힌다 | Task 3 Step 1 | `flutter/tools/.venv`를 만들어 거기에 설치하고, 어느 쪽을 골랐는지 커밋 메시지에 적는다 |
