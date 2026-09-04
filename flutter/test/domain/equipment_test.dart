@@ -108,6 +108,30 @@ void main() {
       expect(drops.length, inInclusiveRange(60, 140), reason: '기대값 100 근처');
     });
 
+    test('보스 드롭이 필드 드롭보다 등급이 좋다', () {
+      const table = DropTable(BalanceConfig(equipFieldDropChance: 1));
+      int goodOnes({required bool boss}) {
+        final rng = Random(11);
+        var count = 0;
+        for (var i = 0; i < 2000; i++) {
+          final item = table.roll(1, isBoss: boss, rng: rng);
+          if (item != null && item.grade.index >= EquipGrade.rare.index) count++;
+        }
+        return count;
+      }
+
+      expect(goodOnes(boss: true), greaterThan(goodOnes(boss: false)));
+    });
+
+    test('보스도 전설을 떨어뜨릴 수 있다', () {
+      const table = DropTable(config);
+      final rng = Random(4);
+      final grades = {
+        for (var i = 0; i < 3000; i++) table.roll(1, isBoss: true, rng: rng)!.grade,
+      };
+      expect(grades, contains(EquipGrade.legendary), reason: '운 보정이 위쪽으로 당겨야 한다');
+    });
+
     test('전설이 일반보다 드물다', () {
       const table = DropTable(BalanceConfig(equipFieldDropChance: 1));
       final rng = Random(3);

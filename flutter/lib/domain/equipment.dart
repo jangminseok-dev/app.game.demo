@@ -86,6 +86,7 @@ class EquipmentState {
     this.inventory = const [],
     this.stones = 0,
     this.enhanceLevel = 0,
+    this.craftLevel = 0,
   });
 
   static const empty = EquipmentState();
@@ -101,6 +102,14 @@ class EquipmentState {
 
   /// 캐릭터 귀속 강화 레벨. 파괴·하락 없이 무한히 오른다.
   final int enhanceLevel;
+
+  /// 대장간 숙련도. 제작할 때마다 오르고 등급 추첨을 조금씩 유리하게 만든다.
+  final int craftLevel;
+
+  /// 다음 제작에 드는 강화석.
+  int craftCost(BalanceConfig c) => (c.craftCostBase + c.craftCostPerLevel * craftLevel).round();
+
+  bool canCraft(BalanceConfig c) => stones >= craftCost(c);
 
   /// 장비가 주는 공격력 배수. 착용분 합계 + 강화 레벨.
   ///
@@ -187,12 +196,14 @@ class EquipmentState {
     List<Equipment>? inventory,
     int? stones,
     int? enhanceLevel,
+    int? craftLevel,
   }) {
     return EquipmentState(
       equipped: equipped ?? this.equipped,
       inventory: inventory ?? this.inventory,
       stones: stones ?? this.stones,
       enhanceLevel: enhanceLevel ?? this.enhanceLevel,
+      craftLevel: craftLevel ?? this.craftLevel,
     );
   }
 
@@ -201,6 +212,7 @@ class EquipmentState {
         'inventory': [for (final e in inventory) e.toJson()],
         'stones': stones,
         'enhanceLevel': enhanceLevel,
+        'craftLevel': craftLevel,
       };
 
   factory EquipmentState.fromJson(Map<String, dynamic> j) {
@@ -217,6 +229,7 @@ class EquipmentState {
       ],
       stones: (j['stones'] as num? ?? 0).toInt(),
       enhanceLevel: (j['enhanceLevel'] as num? ?? 0).toInt(),
+      craftLevel: (j['craftLevel'] as num? ?? 0).toInt(),
     );
   }
 }
@@ -247,13 +260,19 @@ class DropTable {
     );
   }
 
-  /// 등급 추첨. 보스는 한 단계 유리하다.
-  EquipGrade _rollGrade(Random rng, {required bool boss}) {
-    final r = rng.nextDouble() * (boss ? 0.72 : 1.0);
-    if (r < 0.52) return EquipGrade.common;
-    if (r < 0.80) return EquipGrade.uncommon;
-    if (r < 0.94) return EquipGrade.rare;
-    if (r < 0.99) return EquipGrade.epic;
-    return EquipGrade.legendary;
-  }
+  /// 등급 추첨. 보스는 유리하다.
+  EquipGrade _rollGrade(Random rng, {required bool boss}) => rollGrade(rng, luck: boss ? 1.4 : 1.0);
+}
+
+/// 등급 추첨. [luck]이 클수록 좋은 등급이 잘 나온다(1.0이 기본).
+///
+/// 드롭과 제작이 같은 표를 쓴다. 표가 둘이면 어느 쪽이 이득인지 계산이 안 된다.
+/// 운은 난수를 위쪽으로 당기는 방식이라 1.4에서도 전설이 1.4%다 — 곱하기로 하면 29%가 된다.
+EquipGrade rollGrade(Random rng, {required double luck}) {
+  final r = pow(rng.nextDouble(), 1 / luck).toDouble();
+  if (r < 0.52) return EquipGrade.common;
+  if (r < 0.80) return EquipGrade.uncommon;
+  if (r < 0.94) return EquipGrade.rare;
+  if (r < 0.99) return EquipGrade.epic;
+  return EquipGrade.legendary;
 }

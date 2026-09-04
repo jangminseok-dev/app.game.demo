@@ -43,6 +43,9 @@ class BalanceResponseSchema(BaseModel):
     waveSizeMax: int
     stageTimeLimit: float
     stageFailKillPenalty: float
+    craftCostBase: float
+    craftCostPerLevel: float
+    craftBiasPerLevel: float
     heroHpBase: float
     heroHpPerLevel: float
     heroHpRegenRate: float

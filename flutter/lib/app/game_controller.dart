@@ -10,6 +10,7 @@ import '../domain/balance_config.dart';
 import '../domain/battle_engine.dart';
 import '../domain/codex.dart';
 import '../domain/dungeon.dart';
+import '../domain/equipment.dart';
 import '../domain/game_state.dart';
 import '../domain/hatchery.dart';
 import '../domain/monster.dart';
@@ -117,6 +118,14 @@ class GameController extends Notifier<GameState> {
   void buyUpgrade(UpgradeType type) {
     final next = _engine.buyUpgrade(state, type);
     if (next != null) state = next;
+  }
+
+  /// 강화석을 내고 장비를 만든다. 만든 것을 돌려준다. 못 만들면 null.
+  Equipment? craft() {
+    final result = _engine.craft(state, _rng);
+    if (result == null) return null;
+    state = result.$1;
+    return result.$2;
   }
 
   /// 부위마다 가장 센 것을 자동으로 입는다.

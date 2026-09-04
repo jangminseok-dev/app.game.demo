@@ -534,6 +534,27 @@ class BattleEngine {
     );
   }
 
+  // ── 대장간. 강화석을 장비로 바꾼다.
+
+  /// 강화석을 내고 장비 하나를 만든다. 강화석이 모자라면 null.
+  ///
+  /// 등급은 숙련도가 오를수록 유리해지고, 티어는 지금 층을 따른다.
+  /// 만든 것이 더 세면 자동으로 입고 아니면 가방으로 간다.
+  (GameState, Equipment)? craft(GameState s, Random rng) {
+    final eq = s.equipment;
+    if (!eq.canCraft(config)) return null;
+    final luck = 1.0 + config.craftBiasPerLevel * eq.craftLevel;
+    final item = Equipment(
+      slot: EquipSlot.values[rng.nextInt(EquipSlot.values.length)],
+      grade: rollGrade(rng, luck: luck),
+      tier: dropTable.tierOf(s.stage),
+    );
+    final next = eq
+        .copyWith(stones: eq.stones - eq.craftCost(config), craftLevel: eq.craftLevel + 1)
+        .pickUp(item);
+    return (s.copyWith(equipment: next), item);
+  }
+
   /// 조건을 채웠으면 지금 퀘스트 보상을 받고 다음 번호로 넘어간다. 아니면 null.
   GameState? claimQuest(GameState s) {
     final quest = s.quests.current;

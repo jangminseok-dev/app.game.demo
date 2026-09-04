@@ -12,6 +12,7 @@ import 'battle_area.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
+import 'forge_panel.dart';
 import 'hud/game_popup.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
@@ -228,6 +229,12 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                         icon: Icons.shield_outlined,
                         alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
                         onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
+                      ),
+                      HudButton(
+                        label: '대장간',
+                        icon: Icons.hardware_outlined,
+                        alert: state.equipment.canCraft(ref.read(balanceConfigProvider)),
+                        onTap: () => showGamePopup(context, title: '대장간', child: const ForgePanel()),
                       ),
                       HudButton(
                         label: '펫',

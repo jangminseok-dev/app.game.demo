@@ -20,6 +20,9 @@ class BalanceConfig {
     this.waveSizeMax = 5,
     this.stageTimeLimit = 120,
     this.stageFailKillPenalty = 0.5,
+    this.craftCostBase = 40,
+    this.craftCostPerLevel = 6,
+    this.craftBiasPerLevel = 0.015,
     this.heroHpBase = 200,
     this.heroHpPerLevel = 25,
     this.heroHpRegenRate = 0.03,
@@ -162,6 +165,17 @@ class BalanceConfig {
 
   /// 시간을 넘겼을 때 잃는 처치 진행 비율(0~1).
   final double stageFailKillPenalty;
+
+  // ── 대장간. 강화석을 장비로 바꾼다.
+  //
+  // 강화석의 소비처가 둘(강화·제작)이 된다. "지금 강화할까 새로 만들까"가 매번 선택이 된다.
+
+  /// 제작 한 번에 드는 강화석 = base + perLevel × 숙련도.
+  final double craftCostBase;
+  final double craftCostPerLevel;
+
+  /// 숙련도 1당 등급 운 보정. 오래 두드릴수록 좋은 것이 나온다.
+  final double craftBiasPerLevel;
 
   // ── 주인공의 체력·마력과 이동. 무리에게 둘러싸이면 죽을 수 있어야 무리 전투가 뜻이 생긴다.
 

@@ -57,6 +57,10 @@ class BalanceResponse:
     # 한 층에 주어지는 시간과 넘겼을 때 잃는 진행 비율.
     stage_time_limit: float = 120
     stage_fail_kill_penalty: float = 0.5
+    # 대장간 — 강화석을 장비로 바꾼다.
+    craft_cost_base: float = 40
+    craft_cost_per_level: float = 6
+    craft_bias_per_level: float = 0.015
     # 주인공의 체력·마력·이동과 몬스터의 반격.
     hero_hp_base: float = 200
     hero_hp_per_level: float = 25
