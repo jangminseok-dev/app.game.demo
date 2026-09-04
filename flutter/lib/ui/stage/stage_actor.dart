@@ -47,6 +47,9 @@ class StageActor extends PositionComponent {
   String _state = 'idle';
   double _flash = 0;
   double _knock = 0, _knockPower = 0;
+
+  /// 이번 프레임의 넉백 변위. HP 바는 이걸 되돌려 자리에 고정한다.
+  final _knockOff = Vector2.zero();
   double _fade = 1;
   bool dying = false;
 
@@ -138,6 +141,7 @@ class StageActor extends PositionComponent {
       offY = -_knockPower * (dying ? 0.3 : 0.55) * curve;
       rot = -_facing * (dying ? 1.6 : 0.5) * curve;
     }
+    _knockOff.setValues(offX, offY);
     position.setValues((pos.x + offX).roundToDouble(), (pos.y + offY).roundToDouble());
     angle = rot;
     priority = pos.y.round();
@@ -159,8 +163,9 @@ class StageActor extends PositionComponent {
       Paint()..color = Colors.black.withValues(alpha: 0.34 * _fade.clamp(0, 1)),
     );
     if (!showHpBar || dying) return;
-    // HP 바 — 발밑, 검은 테두리. 넉백 회전을 되돌려 항상 수평.
+    // HP 바 — 발밑, 검은 테두리. 넉백의 이동·회전을 모두 되돌려 자리에 고정한다.
     canvas.save();
+    canvas.translate(-_knockOff.x, -_knockOff.y);
     canvas.translate(s / 2, s);
     canvas.rotate(-angle);
     canvas.translate(-s / 2, -s);

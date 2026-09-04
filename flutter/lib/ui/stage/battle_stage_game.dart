@@ -42,7 +42,7 @@ class BattleStageGame extends FlameGame {
 
   final SheetLoader _loader;
   final Images _bgImages;
-  final _root = _ShakeRoot();
+  final _root = PositionComponent();
   final _actors = _ActorLayer();
   final _fx = PositionComponent(priority: 9000);
   final _bg = _Background();
@@ -57,8 +57,8 @@ class BattleStageGame extends FlameGame {
   bool _busy = false;
   int _floaterSeq = 0;
 
-  /// 연출 쿨다운. 공격속도가 초당 9회를 넘으므로 타격마다 흔들면 화면이 계속 떨린다.
-  /// 흔들림·히트스톱은 치명타에만, 그것도 이 간격 이상 떨어져 있을 때만 건다.
+  /// 히트스톱 쿨다운. 공격속도가 초당 9회를 넘어 타격마다 걸면 시간이 계속 멈춘다.
+  /// 치명타에만, 그것도 이 간격 이상 떨어져 있을 때만 건다. 화면 흔들림은 쓰지 않는다(어지럽다).
   double _juiceCool = 0;
   static const _juiceGap = 0.55;
 
@@ -169,7 +169,6 @@ class BattleStageGame extends FlameGame {
         a.die();
       }
       _queue.clear();
-      _root.shake(6); // 보스 등장은 한 번만이라 세게
     }
     for (var i = 0; i < _queue.length; i++) {
       _queue[i].target.setFrom(_slots[i]);
@@ -252,12 +251,11 @@ class BattleStageGame extends FlameGame {
     target.flash();
     target.knockback(crit ? 12 : 6);
 
-    // 흔들림·히트스톱은 치명타에만, 쿨다운을 두고 건다.
+    // 히트스톱은 치명타에만, 쿨다운을 두고 건다.
     if (crit && _juiceCool <= 0) {
       _juiceCool = _juiceGap;
       _hitStop = 0.06;
       _actors.timeScale = 0;
-      _root.shake(3.2);
     }
 
     final floaters = _fx.children.whereType<DamageText>().toList();
@@ -282,33 +280,6 @@ class BattleStageGame extends FlameGame {
 
 /// 히트스톱 대상 — 이 레이어의 시간만 멈춘다.
 class _ActorLayer extends PositionComponent with HasTimeScale {}
-
-/// 모든 레이어의 부모. 흔들림은 이 컴포넌트의 position을 흔든다.
-class _ShakeRoot extends PositionComponent {
-  double _left = 0, _amp = 0;
-  static const _time = 0.32;
-
-  void shake(double amp) {
-    _left = _time;
-    _amp = amp;
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    if (_left <= 0) {
-      if (position != Vector2.zero()) position.setZero();
-      return;
-    }
-    _left -= dt;
-    if (_left <= 0) {
-      position.setZero();
-      return;
-    }
-    final t = 1 - _left / _time;
-    position.setValues(math.sin(t * math.pi * 8) * (1 - t) * _amp, math.cos(t * math.pi * 6) * (1 - t) * _amp * 0.5);
-  }
-}
 
 /// 배경 원경 + 지면. 에셋이 없는 지역은 기존 그라데이션으로.
 class _Background extends PositionComponent {

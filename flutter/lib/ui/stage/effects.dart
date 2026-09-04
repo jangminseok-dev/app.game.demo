@@ -140,8 +140,12 @@ class DamageText extends PositionComponent implements Expiring {
   void render(Canvas canvas) {
     final p = (_t / _life).clamp(0.0, 1.0);
     final alpha = p < 0.72 ? 1.0 : (1 - p) / 0.28;
-    final pop = 1 + 0.5 * math.max(0, 1 - p / 0.18);
-    final size = (crit ? 16.0 : 12.0) * sizeScale * pop;
+    // 치명타는 더 크고, 더 세게 튀어나오고, 색과 기울기가 다르다.
+    final pop = 1 + (crit ? 0.85 : 0.35) * math.max(0, 1 - p / (crit ? 0.22 : 0.16));
+    final size = (crit ? 20.0 : 11.0) * sizeScale * pop;
+    final outline = crit ? const Color(0xFF6B1200) : Colors.black;
+    final top = crit ? const Color(0xFFFFF3B0) : Colors.white;
+    final bottom = crit ? const Color(0xFFFF6A00) : const Color(0xFFCFD8DC);
 
     TextPainter make(Paint paint) => TextPainter(
           text: TextSpan(
@@ -153,24 +157,26 @@ class DamageText extends PositionComponent implements Expiring {
 
     final stroke = make(Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = size * 0.24
+      ..strokeWidth = size * (crit ? 0.28 : 0.22)
       ..strokeJoin = StrokeJoin.round
-      ..color = Colors.black.withValues(alpha: alpha)
+      ..color = outline.withValues(alpha: alpha)
       ..isAntiAlias = false);
     final rect = Rect.fromLTWH(0, 0, stroke.width, stroke.height);
     final fill = make(Paint()
       ..shader = ui.Gradient.linear(
         rect.topCenter,
         rect.bottomCenter,
-        [
-          Colors.white.withValues(alpha: alpha),
-          (crit ? const Color(0xFFFFC107) : const Color(0xFFFFE082)).withValues(alpha: alpha),
-        ],
+        [top.withValues(alpha: alpha), bottom.withValues(alpha: alpha)],
       )
       ..isAntiAlias = false);
     final o = Offset(-stroke.width / 2, -stroke.height / 2);
+    if (crit) {
+      canvas.save();
+      canvas.rotate(-0.14);
+    }
     stroke.paint(canvas, o);
     fill.paint(canvas, o);
+    if (crit) canvas.restore();
   }
 }
 
