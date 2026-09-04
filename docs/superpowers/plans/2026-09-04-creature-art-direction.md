@@ -325,13 +325,17 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Pillow를 쓸 수 있게 한다**
 
 기존 도구가 이미 PIL을 쓰는데 지금 어느 파이썬에도 설치돼 있지 않다.
+**`flutter/tools/requirements.txt`에 `pillow==11.*`가 이미 핀으로 박혀 있다.** 새로 버전을 고르지 말고 그것을 쓴다.
 
 ```bash
-python3 -c "import PIL; print(PIL.__version__)" || python3 -m pip install --user pillow
+cat flutter/tools/requirements.txt
+python3 -c "import PIL; print(PIL.__version__)" || python3 -m pip install --user -r flutter/tools/requirements.txt
 python3 -c "from PIL import Image; print('ok')"
 ```
 
-기대: 마지막 줄이 `ok`. 실패하면(외부 관리 환경 오류 등) `python3 -m venv flutter/tools/.venv && flutter/tools/.venv/bin/pip install pillow`로 만들고, 이후 모든 단계에서 `flutter/tools/.venv/bin/python`을 쓴다. 어느 쪽을 골랐는지 커밋 메시지에 적는다.
+기대: 마지막 줄이 `ok`. 실패하면(외부 관리 환경 오류 등) `python3 -m venv flutter/tools/.venv && flutter/tools/.venv/bin/pip install -r flutter/tools/requirements.txt`로 만들고, 이후 모든 단계에서 `flutter/tools/.venv/bin/python`을 쓴다. 어느 쪽을 골랐는지 커밋 메시지에 적는다.
+
+`requirements.txt`는 **건드리지 않는다.** `count_colors.py`는 이미 핀으로 박힌 Pillow만 쓰므로 더할 것이 없다.
 
 - [ ] **Step 2: 도구를 쓴다**
 
@@ -660,6 +664,16 @@ grep -rn "512×512" ART_GUIDE.md GAME_DESIGN.md docs/
 ```
 
 기대: 색 수는 세 문서에서 다 5색이고, "원형을 잃는다"는 스펙 7절(교체를 지시하는 문서)에만 남고, `512×512`는 어디에도 없다.
+
+**그리고 `ART_GUIDE.md`가 가리키는 파일이 다 있는지 센다.** 옛 문서가 없는 경로를 가리키던 것이 이번 교체의 이유 중 하나였으므로, 새 문서가 같은 상태로 끝나면 안 된다.
+
+```bash
+grep -o '`[a-zA-Z0-9_./-]*\.\(py\|dart\|md\|json\|yaml\)`' ART_GUIDE.md | tr -d '`' | sort -u | while read f; do
+  find . -path ./.git -prune -o -name "$(basename "$f")" -print -quit | grep -q . && echo "OK   $f" || echo "없음 $f"
+done
+```
+
+기대: **전부 `OK`.** `flutter/tools/count_colors.py`는 Task 3이 만들었으므로 여기서 잡혀야 한다. 하나라도 `없음`이면 그 문장을 고치거나 파일을 만든다.
 
 - [ ] **Step 5: 커밋**
 
