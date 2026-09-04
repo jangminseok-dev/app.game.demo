@@ -22,6 +22,13 @@ const stageWidth = 360.0;
 /// 세로 화면을 채우도록 3:4로 잡는다. 배경 그림(360×270)은 지평선 아래를 세로로 반복해 채운다.
 const stageHeight = 480.0;
 
+/// 카메라가 한 번에 보여 주는 크기. 무대보다 작아야 카메라가 움직일 자리가 생긴다.
+///
+/// 무대와 같은 크기면 카메라가 붙박이가 되어 화면이 죽는다. 조금 좁게 잘라 두면
+/// 주인공과 몬스터 사이를 따라다니며 전투가 살아 있는 것처럼 보인다.
+const viewWidth = 300.0;
+const viewHeight = 400.0;
+
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
 
@@ -44,7 +51,7 @@ class BattleStageGame extends FlameGame {
   BattleStageGame({required this.catalog, required this.config, SheetLoader? loader, Images? bgImages})
       : _loader = loader ?? SheetLoader(),
         _bgImages = bgImages ?? Images(prefix: 'assets/backgrounds/'),
-        super(camera: CameraComponent.withFixedResolution(width: stageWidth, height: stageHeight));
+        super(camera: CameraComponent.withFixedResolution(width: viewWidth, height: viewHeight));
 
   MonsterCatalog catalog;
   BalanceConfig config;
@@ -91,7 +98,9 @@ class BattleStageGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    camera.viewfinder.anchor = Anchor.topLeft;
+    // 가운데를 기준으로 삼아야 따라다니기 좋다.
+    camera.viewfinder.anchor = Anchor.center;
+    camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
 
@@ -120,6 +129,7 @@ class BattleStageGame extends FlameGame {
       if (_hitStop <= 0) _actors.timeScale = 1;
     }
     if (_juiceCool > 0) _juiceCool -= dt;
+    _moveCamera(dt);
     if (_floaterCool > 0) _floaterCool -= dt;
     // 펫은 주인공을 따라간다. 주인공과 몬스터의 목표는 도메인이 정한다.
     final hero = _hero;
@@ -130,6 +140,39 @@ class BattleStageGame extends FlameGame {
     for (final a in _actors.children.whereType<StageActor>().toList()) {
       if (a.expired) _actors.remove(a);
     }
+  }
+
+  /// 카메라를 전투 쪽으로 부드럽게 옮긴다.
+  ///
+  /// 주인공과 가장 가까운 몬스터의 가운데를 본다. 한쪽만 따라가면 상대가 화면 밖으로 나가고,
+  /// 붙박이면 화면이 죽는다. 무대 밖이 보이지 않게 가장자리에서 멈춘다.
+  void _moveCamera(double dt) {
+    final hero = _hero;
+    if (hero == null) return;
+
+    // 보스는 크다. 조금 물러나 전신이 들어오게 한다. 자르는 폭도 이 확대율을 따라간다.
+    final wantedZoom = (_last?.isBoss ?? false) ? 0.86 : 1.0;
+    final zoom = camera.viewfinder.zoom;
+    final nextZoom = zoom + (wantedZoom - zoom) * (1 - math.exp(-dt * 2.0));
+    camera.viewfinder.zoom = nextZoom;
+
+    final front = _queue.isEmpty ? null : _queue.first;
+    var targetX = front == null ? hero.pos.x : (hero.pos.x + front.pos.x) / 2;
+    var targetY = front == null ? hero.pos.y : (hero.pos.y + front.pos.y) / 2;
+
+    // 무대 밖이 보이지 않게 자른다. 물러날수록 더 많이 보이므로 여유가 줄어든다.
+    final halfW = math.min(stageWidth / 2, viewWidth / 2 / nextZoom);
+    final halfH = math.min(stageHeight / 2, viewHeight / 2 / nextZoom);
+    targetX = targetX.clamp(halfW, stageWidth - halfW);
+    targetY = targetY.clamp(halfH, stageHeight - halfH);
+
+    // 지수 감쇠로 따라간다. 즉시 붙으면 몬스터가 걸어올 때 화면이 덜컹거린다.
+    final k = 1 - math.exp(-dt * 3.2);
+    final now = camera.viewfinder.position;
+    camera.viewfinder.position = Vector2(
+      (now.x + (targetX - now.x) * k).clamp(halfW, stageWidth - halfW),
+      (now.y + (targetY - now.y) * k).clamp(halfH, stageHeight - halfH),
+    );
   }
 
   /// 새 상태를 받아 변화에 맞는 연출을 트리거한다. 매 틱 호출해도 싸다.

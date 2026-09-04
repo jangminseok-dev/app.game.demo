@@ -129,4 +129,53 @@ void main() {
     }
     expect(game.descendants().whereType<DamageText>(), isEmpty, reason: '연출은 수명이 끝나면 치워진다');
   });
+
+  test('카메라가 전투를 따라 움직인다', () async {
+    final game = await boot();
+    const engine = BattleEngine(c);
+    final rng = Random(2);
+    var s = GameState.initial(c);
+    game.sync(s);
+    await settle(game);
+    final start = game.camera.viewfinder.position.clone();
+
+    for (var i = 0; i < 180; i++) {
+      s = engine.tick(s, 1 / 60, rng);
+      game.sync(s);
+      await Future<void>.delayed(Duration.zero);
+      await game.ready();
+      game.update(1 / 60);
+    }
+    final now = game.camera.viewfinder.position;
+    expect((now - start).length, greaterThan(1), reason: '붙박이가 아니다');
+
+    // 무대 밖은 보이지 않는다. 보이는 폭은 확대율을 따라간다.
+    final zoom = game.camera.viewfinder.zoom;
+    final halfW = viewWidth / 2 / zoom;
+    final halfH = viewHeight / 2 / zoom;
+    expect(now.x, greaterThanOrEqualTo(halfW - 0.01));
+    expect(now.x, lessThanOrEqualTo(stageWidth - halfW + 0.01));
+    expect(now.y, greaterThanOrEqualTo(halfH - 0.01));
+    expect(now.y, lessThanOrEqualTo(stageHeight - halfH + 0.01));
+  });
+
+  test('보스가 나오면 카메라가 물러난다', () async {
+    final game = await boot();
+    var s = GameState.initial(c);
+    game.sync(s);
+    await settle(game);
+    final normal = game.camera.viewfinder.zoom;
+
+    s = s.copyWith(
+      isBoss: true,
+      wave: const [MonsterUnit(key: 99, id: 1, hp: 500, maxHp: 500, x: 200, y: heroHomeY)],
+    );
+    game.sync(s);
+    for (var i = 0; i < 120; i++) {
+      await Future<void>.delayed(Duration.zero);
+      await game.ready();
+      game.update(1 / 60);
+    }
+    expect(game.camera.viewfinder.zoom, lessThan(normal), reason: '보스는 크니 물러난다');
+  });
 }
