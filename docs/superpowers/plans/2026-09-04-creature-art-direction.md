@@ -139,8 +139,8 @@ multiple creatures, text, background
 | 3 | 하늘섬 · 폐허 | `+ small membrane wings` | 금·회색이 섞임 |
 | 4 | 마계 | `+ scale-covered body` | 가장 어두움, 진홍 포인트 |
 
-물려받은 특징은 `small` · `faint`를 붙여 눌러 둔다.
-마계 예시: `+ scale-covered body, small faint horns, small faint wings`
+물려받은 특징은 `small` · `faint`를 붙여 눌러 둔다. **빼지 않는다** — 단계 4는 1·2·3을 다 물려받는다.
+마계 예시: `+ scale-covered body, small faint horns, small faint tail, small faint wings`
 
 지역과 층 범위는 `GAME_DESIGN.md` 18.3을 따른다.
 
@@ -185,7 +185,9 @@ EOF
 grep -n "512×512\|카툰, 아기자기\|assets/monsters/\|지금은 벡터만\|Midjourney\|히어로 원정대" ART_GUIDE.md
 ```
 
-기대: **`2D 카툰(용·아기자기한 캐릭터)` 한 줄만 잡힌다** — §4 결정 기록의 폐기 표시가 붙은 이력이라 남긴다. `512×512` · `assets/monsters/` · `지금은 벡터만` · `Midjourney` · `히어로 원정대`는 **하나도 안 잡혀야 한다**. 잡히면 그 줄을 지운다.
+기대: **아무것도 안 잡힌다** — `grep`이 종료 코드 1로 끝난다. 여섯 패턴 전부 새 본문에 없다.
+
+§4 결정 기록에 남는 `2D 카툰(용·아기자기한 캐릭터)`은 폐기 표시가 붙은 이력이라 **일부러 남기는 것**이고, 패턴이 `카툰, 아기자기`(쉼표)라 괄호로 된 그 줄에는 안 걸린다. 한 줄이라도 잡히면 그 줄을 지운다.
 
 - [ ] **Step 4: 참조한 경로가 실제로 있는지 확인한다**
 
@@ -465,7 +467,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 | 1 | 숲 | 0 | `a round mossy boar` | (없음) |
 | 2 | 화산 | 1 | `a chubby lava toad` | `a pair of small horns` |
 | 3 | 심해 | 2 | `a plump deep-sea jelly creature` | `+ a fin` |
-| 4 | 마계 | 4 | `a stout shadow beast` | `+ scale-covered body, small faint horns, small faint wings, small faint tail` |
+| 4 | 마계 | 4 | `a stout shadow beast` | `+ scale-covered body, small faint horns, small faint tail, small faint wings` |
 
 단계 3(하늘섬·폐허, 날개막)을 뺀 것은 의도다 — 날개막은 단계 4에 포함되므로 마계 한 마리로 같이 검사된다. 마계에서 날개가 안 읽히면 3과 4를 갈라 다시 뽑는다.
 
@@ -483,7 +485,14 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - `shading: "flat shading"`
 - `detail: "low detail"`
 
-비동기다. 4개를 한꺼번에 걸고 `get_image(job_id)`로 받는다. 받은 PNG를 scratchpad의 `art-spike/1-forest.png` … `4-abyss.png`로 저장한다.
+비동기다. 4개를 한꺼번에 걸고 `get_image(job_id)`로 받는다. 받은 PNG를 scratchpad의 `art-spike/` 아래에 **정확히 이 네 이름으로** 저장한다 — Step 6의 대조 시트가 이 이름을 그대로 연다.
+
+| # | 파일명 |
+|---|---|
+| 1 | `1-forest.png` |
+| 2 | `2-volcano.png` |
+| 3 | `3-abyssal-sea.png` |
+| 4 | `4-abyss.png` |
 
 - [ ] **Step 4: 합격 기준 2번을 기계로 잰다**
 
