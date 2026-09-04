@@ -258,4 +258,10 @@ void main() {
     expect(back.heroHpOr(config), back.maxHeroHp(config));
     expect(back.heroMpOr(config), back.maxHeroMp(config));
   });
+
+  test('몬스터 띠가 무대 안에 있다 — 가로 전환 때 밖으로 나간 적이 있다', () {
+    expect(fieldTopY, greaterThanOrEqualTo(0));
+    expect(fieldBottomY, lessThanOrEqualTo(fieldHeight));
+    expect(heroHomeY, inInclusiveRange(fieldTopY, fieldBottomY));
+  });
 }

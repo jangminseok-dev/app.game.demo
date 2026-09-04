@@ -97,6 +97,12 @@ class BattleStageGame extends FlameGame {
 
   static final _heroHome = Vector2(heroHomeX, heroHomeY);
 
+  /// 무대가 화면을 덮는 최소 배율. 이보다 작으면 무대 밖 빈 곳이 보인다.
+  double get _cover {
+    final vp = camera.viewport.size;
+    return math.max(vp.x / stageWidth, vp.y / stageHeight);
+  }
+
   @override
   Color backgroundColor() => const Color(0xFF12161A);
 
@@ -106,9 +112,7 @@ class BattleStageGame extends FlameGame {
     camera.viewfinder.anchor = Anchor.center;
     camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);
     // 첫 프레임이 튀지 않게 cover 배율로 시작한다. 이후는 _follow가 이어받는다.
-    final vp0 = camera.viewport.size;
-    camera.viewfinder.zoom =
-        math.max(vp0.x / stageWidth, vp0.y / stageHeight) * normalZoomFactor;
+    camera.viewfinder.zoom = _cover * normalZoomFactor;
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
 
@@ -160,15 +164,22 @@ class BattleStageGame extends FlameGame {
 
     // 화면을 덮는 최소 배율. 기기 비율이 바뀌면 같이 바뀐다.
     final vp = camera.viewport.size;
-    final cover = math.max(vp.x / stageWidth, vp.y / stageHeight);
     // 보스는 크다. cover로 돌아가 전신이 들어오게 한다.
     // cover보다 더 물러나면 무대 밖 빈 곳이 보이므로 이 아래로는 안 내려간다.
-    final wantedZoom = cover * ((_last?.isBoss ?? false) ? 1.0 : normalZoomFactor);
+    final wantedZoom = _cover * ((_last?.isBoss ?? false) ? 1.0 : normalZoomFactor);
     final zoom = camera.viewfinder.zoom;
     final nextZoom = zoom + (wantedZoom - zoom) * (1 - math.exp(-dt * 2.0));
     camera.viewfinder.zoom = nextZoom;
 
-    final front = _queue.isEmpty ? null : _queue.first;
+    // 무대에 들어온 몬스터만 따라간다. 밖에서 걸어 들어오는 동안 중점을 잡으면
+    // 주인공이 프레임 밖으로 밀린다 — 웨이브마다 1초씩 그랬다.
+    StageActor? front;
+    for (final m in _queue) {
+      if (m.pos.x <= stageWidth) {
+        front = m;
+        break;
+      }
+    }
     var targetX = front == null ? hero.pos.x : (hero.pos.x + front.pos.x) / 2;
     var targetY = front == null ? hero.pos.y : (hero.pos.y + front.pos.y) / 2;
 
@@ -396,7 +407,7 @@ class _Background extends PositionComponent {
   static const skyRatio = 0.3;
 
   /// 지평선 y. 무대 높이에서 계산한다 — 무대 비율이 바뀌면 같이 움직인다.
-  static double get horizon => (stageHeight * skyRatio).roundToDouble();
+  static final horizon = (stageHeight * skyRatio).roundToDouble();
 
   final _pixel = Paint()
     ..filterQuality = FilterQuality.none
@@ -442,7 +453,7 @@ class _Background extends PositionComponent {
       );
       return;
     }
-    // 가로 무대는 배경 그림(360×270)보다 낮다. 늘리지 않고 잘라 쓴다 —
+    // 가로 무대는 배경 그림(far 360×110 + ground 360×160)보다 낮다. 늘리지 않고 잘라 쓴다 —
     // 픽셀아트는 비정수 배율로 줄이면 계단이 뭉개진다.
     // 하늘은 아래쪽(지평선에 가까운 쪽)을 남기고 꼭대기를 버린다.
     final skyKeep = math.min(horizon, far.height.toDouble());

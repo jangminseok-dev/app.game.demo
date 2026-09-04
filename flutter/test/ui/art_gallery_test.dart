@@ -95,6 +95,10 @@ void main() {
       }
     });
     await snap('battle_stage');
+    final vp = game.camera.viewport.size, z = game.camera.viewfinder.zoom;
+    final camX = game.camera.viewfinder.position.x;
+    expect(game.hero!.pos.x, inInclusiveRange(camX - vp.x / 2 / z, camX + vp.x / 2 / z),
+        reason: '주인공이 카메라 시야 안에 있다');
   });
 
   testWidgets('앱 화면 전체를 PNG로 내보낸다 — 무리 전투와 탭', (tester) async {

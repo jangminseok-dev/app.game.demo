@@ -178,5 +178,9 @@ void main() {
       game.update(1 / 60);
     }
     expect(game.camera.viewfinder.zoom, lessThan(normal), reason: '보스는 크니 물러난다');
+    final vp = game.camera.viewport.size;
+    final cover = max(vp.x / stageWidth, vp.y / stageHeight);
+    expect(game.camera.viewfinder.zoom, greaterThanOrEqualTo(cover - 1e-9),
+        reason: '보스 줌아웃이 cover 아래로 내려가면 무대 밖 빈 곳이 보인다');
   });
 }

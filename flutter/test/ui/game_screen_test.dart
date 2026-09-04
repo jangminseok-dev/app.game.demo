@@ -21,7 +21,7 @@ void main() {
       );
 
   testWidgets('화면이 뜨고 시간이 흐르면 골드가 생긴다', (tester) async {
-    // 전투 무대 아래 목록까지 한 화면에 보이도록 세로로 길게 (실기기 세로 화면 비율)
+    // 가로 화면 (2026-09-05 가로 전환)
     tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
