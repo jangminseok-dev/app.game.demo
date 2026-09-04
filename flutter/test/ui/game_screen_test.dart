@@ -29,7 +29,7 @@ void main() {
     expect(find.text('골드  0'), findsOneWidget);
     expect(find.byType(BattleArea), findsOneWidget);
     expect(find.byType(PartyRow), findsOneWidget);
-    expect(find.text('몬스터'), findsOneWidget, reason: '카탈로그가 비어 있으면 일반 이름');
+    expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
     expect(find.textContaining('저장 전'), findsOneWidget);
     for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {
       expect(find.textContaining(label), findsOneWidget);
@@ -51,9 +51,9 @@ void main() {
         child: const MaterialApp(home: GameScreen()),
       ),
     );
-    expect(find.text('슬라임  [무]'), findsOneWidget);
-    expect(find.text('숲'), findsOneWidget);
-    expect(find.textContaining('미등록 · 포획'), findsOneWidget);
+    expect(find.text('슬라임 [무]'), findsWidgets);
+    expect(find.text('숲'), findsWidgets);
+    expect(find.textContaining('미등록 ·'), findsWidgets);
   });
 
   testWidgets('오프라인 보상이 있으면 팝업이 한 번 뜬다', (tester) async {

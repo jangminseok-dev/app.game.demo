@@ -6,6 +6,7 @@ import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
 import '../domain/upgrade.dart';
 import 'battle_area.dart';
+import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
 import 'party_row.dart';
 
@@ -69,6 +70,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           child: Column(
             children: [
               const AspectRatio(aspectRatio: 4 / 3, child: BattleArea()),
+          const SkillBar(),
               const PartyRow(),
               const Divider(height: 1),
               Expanded(
