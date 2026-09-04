@@ -59,7 +59,7 @@
 ### ① 스타일 블록 (고정)
 
 ```
-cute minimal pixel art creature sprite, chunky rounded silhouette, exactly 5 colors,
+cute minimal pixel art creature sprite, chunky rounded silhouette, exactly 6 colors,
 flat fill with a single shadow step, no gradient, no texture, no inner lines,
 1px outline in a darker shade of the body color, never black,
 big simple eyes, white sclera with one highlight pixel,
