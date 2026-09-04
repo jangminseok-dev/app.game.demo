@@ -55,9 +55,10 @@ class BattleStageGame extends FlameGame {
   GameState? _last;
   double _hitStop = 0;
   bool _busy = false;
+  int _floaterSeq = 0;
 
   /// 몬스터가 서는 자리. 0번이 전투 지점.
-  static final _slots = [Vector2(214, 196), Vector2(258, 176), Vector2(292, 212), Vector2(324, 184)];
+  static final _slots = [Vector2(196, 198), Vector2(240, 176), Vector2(268, 216), Vector2(304, 190)];
   static final _heroHome = Vector2(76, 198);
   static const _spawnX = 400.0;
 
@@ -250,12 +251,16 @@ class BattleStageGame extends FlameGame {
     _root.shake(crit ? 6.5 : 3);
 
     final floaters = _fx.children.whereType<DamageText>().toList();
-    if (floaters.length >= 6) _fx.remove(floaters.first);
+    if (floaters.length >= 5) _fx.remove(floaters.first);
+    // 연속 타격이 한 점에 겹치지 않게 순번으로 부채꼴 배치한다.
+    final seq = _floaterSeq++ % 5;
+    const fan = [Offset(-26, -6), Offset(4, -20), Offset(28, 2), Offset(-8, 10), Offset(16, -12)];
     _fx.add(DamageText(
       text: formatNumber(amount),
       crit: crit,
-      start: target.pos + Vector2(_rng.nextDouble() * 24 - 12, -target.sizePx * 0.8 - _rng.nextDouble() * 12),
-      sizeScale: 0.9 + _rng.nextDouble() * 0.35,
+      start: target.pos +
+          Vector2(fan[seq].dx + _rng.nextDouble() * 8 - 4, -target.sizePx * 0.85 + fan[seq].dy),
+      sizeScale: 0.9 + _rng.nextDouble() * 0.3,
     ));
     _fx.add(ImpactStar(position: center, radius: crit ? 17 : 11));
     _fx.add(Burst(

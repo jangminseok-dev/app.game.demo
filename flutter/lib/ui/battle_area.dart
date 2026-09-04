@@ -122,8 +122,17 @@ class _BattleAreaState extends ConsumerState<BattleArea> with SingleTickerProvid
                     'HP ${formatNumber(state.monsterHp)} / ${formatNumber(state.monsterMaxHp)}',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
-                  const Spacer(),
-                  Text(captureLine(), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(width: 8),
+                  // 좁은 화면에서 넘치지 않게 — 포획 문구가 줄어든다.
+                  Expanded(
+                    child: Text(
+                      captureLine(),
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
                 ],
               ),
             ],

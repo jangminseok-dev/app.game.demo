@@ -35,9 +35,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       builder: (context) => AlertDialog(
         title: const Text('오프라인 보상'),
         content: Text('${h > 0 ? '$h시간 ' : ''}$m분 동안 자동 사냥\n골드 +${formatNumber(reward.gold)}'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('받기')),
-        ],
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('받기'))],
       ),
     );
   }
@@ -58,69 +56,71 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         title: Text('스테이지 ${state.stage}  (최고 ${state.highestStage})'),
         actions: [
           TextButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const CodexScreen()),
-            ),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CodexScreen())),
             icon: const Icon(Icons.menu_book),
             label: Text('도감 $registered'),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const Expanded(flex: 5, child: BattleArea()),
-          const PartyRow(),
-          const Divider(height: 1),
-          Expanded(
-            flex: 6,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+      body: Center(
+        child: ConstrainedBox(
+          // 세로 게임이라 데스크톱에서도 폰 폭으로 묶는다.
+          constraints: const BoxConstraints(maxWidth: 430),
+          child: Column(
+            children: [
+              const AspectRatio(aspectRatio: 4 / 3, child: BattleArea()),
+              const PartyRow(),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                   children: [
-                    Text('골드  ${formatNumber(state.gold)}', style: Theme.of(context).textTheme.titleLarge),
-                    const Spacer(),
-                    Text('DPS ${formatNumber(stats.dps(config))}', style: mono),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('골드  ${formatNumber(state.gold)}', style: Theme.of(context).textTheme.titleLarge),
+                        const Spacer(),
+                        Text('DPS ${formatNumber(stats.dps(config))}', style: mono),
+                      ],
+                    ),
+                    Text(
+                      '공격 ${formatNumber(stats.attack)}  속도 ${stats.attacksPerSecond.toStringAsFixed(1)}/s  '
+                      '치명 ${(stats.critChance * 100).toStringAsFixed(0)}%  골드 ×${stats.goldMultiplier.toStringAsFixed(2)}',
+                      style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final type in UpgradeType.values)
+                      _UpgradeRow(
+                        type: type,
+                        level: state.levelOf(type),
+                        cost: type.cost(state.levelOf(type), config),
+                        affordable: state.gold >= type.cost(state.levelOf(type), config),
+                        onBuy: () => controller.buyUpgrade(type),
+                      ),
+                    const SizedBox(height: 16),
+                    Text('총 처치 ${state.totalKills}  ·  미보고 처치 $pending', style: mono),
+                    Text(
+                      _saveLine(context, saveStatus),
+                      style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    if (saveStatus.lastRejectedRule != null)
+                      Text(
+                        '서버 검증 거부(${saveStatus.lastRejectedRule}) — 서버 상태로 되돌렸습니다',
+                        style: mono?.copyWith(color: Theme.of(context).colorScheme.error),
+                      ),
                   ],
                 ),
-                Text(
-                  '공격 ${formatNumber(stats.attack)}  속도 ${stats.attacksPerSecond.toStringAsFixed(1)}/s  '
-                  '치명 ${(stats.critChance * 100).toStringAsFixed(0)}%  골드 ×${stats.goldMultiplier.toStringAsFixed(2)}',
-                  style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
-                ),
-                const SizedBox(height: 8),
-                for (final type in UpgradeType.values)
-                  _UpgradeRow(
-                    type: type,
-                    level: state.levelOf(type),
-                    cost: type.cost(state.levelOf(type), config),
-                    affordable: state.gold >= type.cost(state.levelOf(type), config),
-                    onBuy: () => controller.buyUpgrade(type),
-                  ),
-                const SizedBox(height: 16),
-                Text('총 처치 ${state.totalKills}  ·  미보고 처치 $pending', style: mono),
-                Text(
-                  _saveLine(context, saveStatus),
-                  style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
-                ),
-                if (saveStatus.lastRejectedRule != null)
-                  Text(
-                    '서버 검증 거부(${saveStatus.lastRejectedRule}) — 서버 상태로 되돌렸습니다',
-                    style: mono?.copyWith(color: Theme.of(context).colorScheme.error),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
 String _saveLine(BuildContext context, SaveStatus s) {
-  String hms(DateTime t) =>
-      '${TimeOfDay.fromDateTime(t).format(context)}:${t.second.toString().padLeft(2, '0')}';
+  String hms(DateTime t) => '${TimeOfDay.fromDateTime(t).format(context)}:${t.second.toString().padLeft(2, '0')}';
   final saved = s.lastSavedAt == null ? '저장 전' : '로컬 저장 ${hms(s.lastSavedAt!)}';
   final synced = s.lastSyncedAt == null ? '서버 미동기화' : '서버 동기화 ${hms(s.lastSyncedAt!)}';
   return '$saved · $synced';
@@ -148,10 +148,7 @@ class _UpgradeRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text('${type.label}  Lv.$level')),
-          FilledButton(
-            onPressed: affordable ? onBuy : null,
-            child: Text('${formatNumber(cost)} G'),
-          ),
+          FilledButton(onPressed: affordable ? onBuy : null, child: Text('${formatNumber(cost)} G')),
         ],
       ),
     );
