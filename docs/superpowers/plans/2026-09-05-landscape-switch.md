@@ -24,6 +24,7 @@
 |---|---|---|
 | `flutter/lib/main.dart` | 앱 시작·방향 고정 | `portraitUp` → 가로 |
 | `flutter/lib/ui/stage/battle_stage_game.dart` | 무대 상수·카메라·배경 그리기 | 상수 + **카메라 cover** + `_Background.render` |
+| `flutter/lib/domain/field.dart` | 전투 판의 크기와 자리 (도메인) | **실행 중 추가** — 세로 값이 남아 캐릭터가 무대 밖에 있었다 |
 | `flutter/test/ui/game_screen_test.dart` | 화면 테스트 | 화면 크기를 가로로 |
 | `flutter/test/ui/art_gallery_test.dart` | 캡처 내보내기 | 화면 크기를 가로로 |
 | `flutter/test/ui/codex_screen_test.dart` | 도감 테스트 | 화면 크기를 가로로 |
@@ -533,6 +534,123 @@ git commit -m "docs: 가로 전환을 정본에 반영 — D2는 삭제가 아�
 숲은 지금 파일이 조건을 넘어 다시 안 그려도 된다.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 5: 도메인 좌표를 새 무대에 맞춘다 (실행 중 추가)
+
+**Files:**
+- Modify: `flutter/lib/domain/field.dart` (상수 4개)
+- Modify: `flutter/lib/ui/stage/battle_stage_game.dart:21-26` (`stageWidth`/`stageHeight`를 도메인에서 가져오게)
+
+**Interfaces:**
+- Consumes: Task 1의 `stageHeight = 202`, Task 3의 `horizon = 61`
+- Produces: 캐릭터가 무대 안에 서 있는 상태. 전체 리뷰와 다음 계획(자리 재배치)이 이걸 전제한다
+
+**왜 생긴 태스크인가**: Task 3 리뷰가 잡았다. `field.dart`가 `fieldHeight = 480`, `heroHomeY = 330`, `fieldTopY..fieldBottomY = 200..430`으로 **세로 무대 값**을 갖고 있다. 무대가 202가 됐으니 **주인공과 몬스터가 무대 아래에 있다** — 캡처에 캐릭터가 하나도 안 보이고, 카메라가 그들을 따라 바닥에 붙어 하늘이 4%만 보인다. 계획이 이 파일을 빠뜨렸다. 계획의 목표("안 깨지고 돌아간다")를 어기므로 이 계획 안에서 고친다.
+
+**값의 근거**: 지평선 61. 땅은 `61..202`(141px). 액터는 발이 `y`에 닿는다(`Anchor.bottomCenter`). 주인공 56px, 보스 96px.
+
+| 상수 | 옛 값 | 새 값 | 이유 |
+|---|---|---|---|
+| `fieldHeight` | 480 | **202** | 무대와 같아야 한다 |
+| `fieldTopY` | 200 | **80** | 발이 지평선(61)보다 19px 아래. 머리(56 위)가 24 — 하늘에 안 걸린다 |
+| `fieldBottomY` | 430 | **190** | 아래 여유 12px |
+| `heroHomeY` | 330 | **140** | 땅 띠(80..190)의 가운데 |
+
+`heroHomeX = 58`, `monsterSpawnX = 400`(오른쪽 밖), `separationRadius = 28`은 그대로 — 가로 폭이 안 바뀌었다. 세로 띠 110px에 몬스터 3~5마리를 28px 간격으로 퍼뜨리면 들어간다.
+
+- [ ] **Step 1: 지금 값과 사용처를 확인한다**
+
+```bash
+sed -n '1,20p' flutter/lib/domain/field.dart
+grep -rn "fieldHeight\|heroHomeY\|fieldTopY\|fieldBottomY" flutter/lib flutter/test | grep -v "lib/domain/field.dart" | wc -l
+```
+
+기대: 상수 4개가 옛 값이고, 사용처가 **전부 이름으로** 참조한다(숫자 330·430을 박은 곳이 없다). 그래서 상수만 바꾸면 도메인·UI·테스트가 다 따라온다.
+
+- [ ] **Step 2: 상수를 바꾼다**
+
+파일로 저장해서 실행한다.
+
+```python
+# fix_field.py
+import pathlib
+p = pathlib.Path('flutter/lib/domain/field.dart')
+s = p.read_text()
+pairs = [
+    ('const fieldHeight = 480.0;', 'const fieldHeight = 202.0;'),
+    ('const heroHomeY = 330.0;', 'const heroHomeY = 140.0;'),
+    ('const fieldTopY = 200.0;', 'const fieldTopY = 80.0;'),
+    ('const fieldBottomY = 430.0;', 'const fieldBottomY = 190.0;'),
+    ('/// 몬스터가 설 수 있는 세로 범위. 3/4 시점이라 위아래로 퍼져야 깊이가 보인다.',
+     '/// 몬스터가 설 수 있는 세로 범위. 3/4 시점이라 위아래로 퍼져야 깊이가 보인다.\n'
+     '/// 가로 무대(202)의 땅 띠(지평선 61 아래)에 들어간다. 발이 y에 닿으므로 위쪽은 머리가 하늘에 안 걸리게 잡는다.'),
+]
+for old, new in pairs:
+    assert old in s, old
+    s = s.replace(old, new, 1)
+p.write_text(s)
+print('ok')
+```
+
+- [ ] **Step 3: UI 무대 크기가 도메인에서 값을 가져오게 묶는다**
+
+이 어긋남이 생긴 이유는 `stageHeight`(UI)와 `fieldHeight`(도메인)가 **따로 정의돼** 있어서다. Task 1이 한쪽만 바꿨다. 한쪽이 다른 쪽을 가리키게 하면 다시는 안 갈라진다. **UI가 도메인을 본다** — 도메인은 UI를 몰라야 한다.
+
+```python
+# fix_stage_consts.py
+import pathlib
+p = pathlib.Path('flutter/lib/ui/stage/battle_stage_game.dart')
+s = p.read_text()
+old = 'const stageWidth = 360.0;'
+new = 'const stageWidth = fieldWidth;'
+assert old in s, 'stageWidth'
+s = s.replace(old, new, 1)
+old = 'const stageHeight = 202.0;'
+new = ('const stageHeight = fieldHeight;\n'
+       '// 무대 크기는 도메인(field.dart)이 정한다. 여기서 따로 숫자를 두면 둘이 갈라진다 —\n'
+       '// 2026-09-05 가로 전환 때 실제로 갈라져 캐릭터가 무대 아래로 나갔다.')
+assert old in s, 'stageHeight'
+s = s.replace(old, new, 1)
+p.write_text(s)
+print('ok')
+```
+
+`field.dart`는 이미 import돼 있다(10행). 더하지 마라.
+
+- [ ] **Step 4: 테스트를 돌린다**
+
+```bash
+cd flutter && flutter test 2>&1 | tail -12
+```
+
+기대: 전부 통과. 테스트가 상수를 이름으로 쓰므로 값이 바뀌어도 따라온다. 깨지면 **어느 테스트가 어떤 숫자를 박아 뒀는지** 리포트에 적고, 그 테스트만 상수 참조로 고쳐라. 도메인 로직이 깨졌으면 BLOCKED.
+
+- [ ] **Step 5: 캡처를 다시 만들고 캐릭터가 보이는지 확인한다**
+
+```bash
+cd flutter && flutter test test/ui/art_gallery_test.dart 2>&1 | tail -3
+ls -la build/*.png
+```
+
+기대: `app_screen.png`과 `battle_stage.png`에 **주인공이 보인다.** 파일 크기·시각을 리포트에 적어라. 리뷰어가 열어 본다.
+
+- [ ] **Step 6: 커밋**
+
+```bash
+git add flutter/lib/domain/field.dart flutter/lib/ui/stage/battle_stage_game.dart
+git commit -m "fix(flutter): 도메인 좌표를 가로 무대에 맞춘다 — 캐릭터가 무대 아래에 있었다
+
+field.dart가 세로 무대(480) 값을 갖고 있었다. 무대가 202가 되자
+주인공(y=330)과 몬스터(200..430)가 화면 아래로 나갔다. 카메라가 그들을
+따라 바닥에 붙어 하늘도 4%만 보였다.
+
+UI의 stageWidth/stageHeight가 도메인의 fieldWidth/fieldHeight를
+가리키게 묶었다. 따로 두면 또 갈라진다.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
 ---
