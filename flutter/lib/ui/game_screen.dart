@@ -44,20 +44,20 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  /// 쓰러졌을 때 어디를 키워야 하는지 알려 준다.
+  /// 막혔을 때 어디를 키워야 하는지 알려 준다.
   ///
   /// 지는 것은 벌이 아니라 다음 할 일 안내다. 레퍼런스도 패배 즉시 성장 바로가기를 띄운다.
-  Future<void> _showDefeat() async {
+  Future<void> _showGrowthHint({required String title, required String message}) async {
     _defeatShown = true;
     await showGamePopup(
       context,
-      title: '전투에 패배했습니다',
+      title: title,
       heightFactor: 0.34,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const PixelText('무엇을 키울지 골라 보세요', size: 12, color: PixelPalette.textDim),
+            PixelText(message, size: 12, color: PixelPalette.textDim),
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -125,7 +125,13 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
     // 보스 등장과 패배는 순간이라 상태를 보고 있다가 그때만 연출한다.
     ref.listen(gameControllerProvider, (before, after) {
       if (before != null && !before.isBoss && after.isBoss) _bossWarning.forward(from: 0);
-      if (before != null && !before.isDown && after.isDown && !_defeatShown) _showDefeat();
+      if (before != null && !_defeatShown) {
+        if (!before.isDown && after.isDown) {
+          _showGrowthHint(title: '전투에 패배했습니다', message: '무엇을 키울지 골라 보세요');
+        } else if (after.stageFailCount > before.stageFailCount) {
+          _showGrowthHint(title: '시간이 모자랍니다', message: '이 층이 벽입니다. 무엇을 키울지 골라 보세요');
+        }
+      }
 
       // 던전을 깨고 나온 순간에만 보상 창을 띄운다.
       final run = before?.dungeon.run;

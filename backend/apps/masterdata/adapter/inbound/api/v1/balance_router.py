@@ -54,6 +54,8 @@ async def fetch_balance(
         adSpeedUpSeconds=r.ad_speed_up_seconds,
         waveSizeMin=r.wave_size_min,
         waveSizeMax=r.wave_size_max,
+        stageTimeLimit=r.stage_time_limit,
+        stageFailKillPenalty=r.stage_fail_kill_penalty,
         heroHpBase=r.hero_hp_base,
         heroHpPerLevel=r.hero_hp_per_level,
         heroHpRegenRate=r.hero_hp_regen_rate,

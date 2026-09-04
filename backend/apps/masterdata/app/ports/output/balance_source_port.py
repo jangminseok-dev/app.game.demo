@@ -51,6 +51,9 @@ class BalanceRecord:
     # 한 무리에 서는 일반 몬스터 수.
     wave_size_min: int = 3
     wave_size_max: int = 5
+    # 한 층에 주어지는 시간과 넘겼을 때 잃는 진행 비율.
+    stage_time_limit: float = 120
+    stage_fail_kill_penalty: float = 0.5
     # 주인공의 체력·마력·이동과 몬스터의 반격.
     hero_hp_base: float = 200
     hero_hp_per_level: float = 25

@@ -57,6 +57,13 @@ class BattleEngine {
 
     // 쓰러져 있으면 일어설 때까지 아무 일도 없다.
     if (s.isDown) return _reviveTick(s, dt);
+
+    // 층 제한 시간 — 필드에서만, 보스전에는 보스 시간이 따로 돈다.
+    if (s.dungeon.run == null && !s.isBoss) {
+      final left = s.stageTimeLeftOr(config) - dt;
+      if (left <= 0) return _failStage(s, rng);
+      s = s.copyWith(stageTimeLeft: left);
+    }
     s = _regenerate(s, dt);
 
     final stats = s.statsWith(config);
@@ -206,6 +213,7 @@ class BattleEngine {
       heroY: heroHomeY,
       reviveLeft: config.heroReviveSeconds,
       killsOnStage: 0,
+      stageTimeLeft: config.stageTimeLimit,
       attackTimer: 0,
       isBoss: false,
       bossTimeLeft: 0,
@@ -283,13 +291,36 @@ class BattleEngine {
     );
   }
 
+  /// 시간을 넘겼다. 진행을 일부 잃고 같은 층을 처음 무리부터 다시 한다.
+  ///
+  /// 레퍼런스는 전부 잃지만 우리는 무한 층이라 전부 잃게 하면 어느 층에서 영영 막힌다.
+  /// 잃는 비율은 마스터 데이터에 있고, 전생이 들어오면 1.0으로 올린다.
+  GameState _failStage(GameState s, Random rng) {
+    final kept = (s.killsOnStage * (1 - config.stageFailKillPenalty)).floor();
+    return _spawnNormal(
+      s.copyWith(
+        killsOnStage: kept.clamp(0, config.killsPerStage),
+        stageTimeLeft: config.stageTimeLimit,
+        stageFailCount: s.stageFailCount + 1,
+        attackTimer: 0,
+      ),
+      rng,
+    );
+  }
+
   /// 무리를 다 잡았다. 다음에 무엇이 오는지 정한다.
   GameState _refill(GameState s, Random rng) {
     if (s.dungeon.run != null) return _onDungeonWaveCleared(s, rng);
     if (s.isBoss) {
       final next = s.stage + 1;
+      // 새 층이 시작되면 시간도 새로 준다.
       return _spawnNormal(
-        s.copyWith(stage: next, highestStage: max(s.highestStage, next), killsOnStage: 0),
+        s.copyWith(
+          stage: next,
+          highestStage: max(s.highestStage, next),
+          killsOnStage: 0,
+          stageTimeLeft: config.stageTimeLimit,
+        ),
         rng,
       );
     }

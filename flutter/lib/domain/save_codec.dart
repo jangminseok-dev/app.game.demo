@@ -58,6 +58,8 @@ Map<String, dynamic> encodeState(GameState s) => {
       'waveSeq': s.waveSeq,
       'heroHp': s.heroHp,
       'heroMp': s.heroMp,
+      'stageTimeLeft': s.stageTimeLeft,
+      'stageFailCount': s.stageFailCount,
       'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
       'codex': _encodeIntMap(s.codex),
       'pity': _encodeIntMap(s.pity),
@@ -90,6 +92,8 @@ GameState? decodeState(Map<String, dynamic> j) {
       // 없으면 -1 — 다음 틱에 최대치로 채워진다.
       heroHp: (j['heroHp'] as num?)?.toDouble() ?? -1,
       heroMp: (j['heroMp'] as num?)?.toDouble() ?? -1,
+      stageTimeLeft: (j['stageTimeLeft'] as num?)?.toDouble() ?? -1,
+      stageFailCount: (j['stageFailCount'] as num?)?.toInt() ?? 0,
       isBoss: j['isBoss'] as bool,
       bossTimeLeft: (j['bossTimeLeft'] as num).toDouble(),
       killsOnStage: (j['killsOnStage'] as num).toInt(),

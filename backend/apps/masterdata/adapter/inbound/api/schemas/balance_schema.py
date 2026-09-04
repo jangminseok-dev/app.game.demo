@@ -41,6 +41,8 @@ class BalanceResponseSchema(BaseModel):
     adSpeedUpSeconds: float
     waveSizeMin: int
     waveSizeMax: int
+    stageTimeLimit: float
+    stageFailKillPenalty: float
     heroHpBase: float
     heroHpPerLevel: float
     heroHpRegenRate: float

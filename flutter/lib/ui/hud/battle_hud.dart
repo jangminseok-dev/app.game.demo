@@ -68,6 +68,22 @@ class BattleHud extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
+          // ── 층에 남은 시간. 이 안에 보스까지 못 가면 진행이 절반 밀린다.
+          if (run == null && !state.isBoss)
+            Row(
+              children: [
+                Expanded(
+                  child: PixelGauge(
+                    value: state.stageTimeRatio(config),
+                    color: state.stageTimeRatio(config) > 0.25 ? PixelPalette.gold : PixelPalette.hpLow,
+                    height: 7,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                PixelText('${state.stageTimeLeftOr(config).ceil()}초', size: 10, color: PixelPalette.textDim),
+              ],
+            ),
+          const SizedBox(height: 4),
           // ── 스테이지 진행 게이지
           Row(
             children: [

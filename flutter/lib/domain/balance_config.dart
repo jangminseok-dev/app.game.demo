@@ -18,6 +18,8 @@ class BalanceConfig {
     this.killsPerStage = 10,
     this.waveSizeMin = 3,
     this.waveSizeMax = 5,
+    this.stageTimeLimit = 120,
+    this.stageFailKillPenalty = 0.5,
     this.heroHpBase = 200,
     this.heroHpPerLevel = 25,
     this.heroHpRegenRate = 0.03,
@@ -150,6 +152,16 @@ class BalanceConfig {
   /// 한 무리에 서는 일반 몬스터 수. 이 범위에서 무작위로 정한다.
   final int waveSizeMin;
   final int waveSizeMax;
+
+  /// 한 층에 주어지는 시간(초). 이 안에 보스까지 못 가면 밀린다.
+  ///
+  /// 레퍼런스는 시간을 넘기면 진행을 전부 잃지만 우리는 무한 층이고 전생이 아직 없다.
+  /// 전부 잃게 하면 어느 층에서 완전히 막혀 게임이 끝난다. 그래서 절반만 잃는다.
+  /// 전생이 들어오면 [stageFailKillPenalty]를 1.0으로 올린다.
+  final double stageTimeLimit;
+
+  /// 시간을 넘겼을 때 잃는 처치 진행 비율(0~1).
+  final double stageFailKillPenalty;
 
   // ── 주인공의 체력·마력과 이동. 무리에게 둘러싸이면 죽을 수 있어야 무리 전투가 뜻이 생긴다.
 

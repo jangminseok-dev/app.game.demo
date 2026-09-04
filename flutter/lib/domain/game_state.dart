@@ -30,6 +30,8 @@ class GameState {
     this.heroX = heroHomeX,
     this.heroY = heroHomeY,
     this.reviveLeft = 0,
+    this.stageTimeLeft = -1,
+    this.stageFailCount = 0,
     this.killLog = const {},
     this.bossKillLog = const {},
     this.codex = const {},
@@ -98,6 +100,17 @@ class GameState {
   final double reviveLeft;
 
   bool get isDown => reviveLeft > 0;
+
+  /// 이 층에 남은 시간(초). -1은 "아직 시작 안 함"이며 첫 틱에 채워진다.
+  final double stageTimeLeft;
+
+  /// 시간을 넘겨 밀린 횟수. 화면이 "벽에 닿았다"를 알아채는 데 쓴다.
+  final int stageFailCount;
+
+  double stageTimeLeftOr(BalanceConfig c) => stageTimeLeft < 0 ? c.stageTimeLimit : stageTimeLeft;
+
+  double stageTimeRatio(BalanceConfig c) =>
+      (stageTimeLeftOr(c) / c.stageTimeLimit).clamp(0.0, 1.0);
 
   /// 업그레이드에 투자한 만큼 몸도 단단해진다.
   int get totalUpgradeLevels => levels.values.fold(0, (a, b) => a + b);
@@ -196,6 +209,8 @@ class GameState {
     double? heroX,
     double? heroY,
     double? reviveLeft,
+    double? stageTimeLeft,
+    int? stageFailCount,
     bool? isBoss,
     double? bossTimeLeft,
     int? killsOnStage,
@@ -225,6 +240,8 @@ class GameState {
       heroX: heroX ?? this.heroX,
       heroY: heroY ?? this.heroY,
       reviveLeft: reviveLeft ?? this.reviveLeft,
+      stageTimeLeft: stageTimeLeft ?? this.stageTimeLeft,
+      stageFailCount: stageFailCount ?? this.stageFailCount,
       isBoss: isBoss ?? this.isBoss,
       bossTimeLeft: bossTimeLeft ?? this.bossTimeLeft,
       killsOnStage: killsOnStage ?? this.killsOnStage,
