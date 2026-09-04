@@ -132,6 +132,12 @@ class GameController extends Notifier<GameState> {
   /// 던전을 포기하고 필드로 돌아온다. 입장권은 돌려주지 않는다.
   void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false);
 
+  /// 조건을 채운 퀘스트 보상을 받는다. 아직이면 아무 일도 안 일어난다.
+  void claimQuest() {
+    final next = _engine.claimQuest(state);
+    if (next != null) state = next;
+  }
+
   /// 강화석이 충분하면 강화를 한 단계 올린다. 실패도 파괴도 없다.
   void enhance() {
     final next = state.equipment.enhance();

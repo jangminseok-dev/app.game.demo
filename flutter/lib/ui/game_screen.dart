@@ -11,6 +11,7 @@ import 'codex_screen.dart';
 import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
 import 'party_row.dart';
+import 'quest_strip.dart';
 
 /// 메인 화면(세로): 전투 무대 → 편성 → 골드·업그레이드 → 저장 상태.
 class GameScreen extends ConsumerStatefulWidget {
@@ -68,7 +69,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           child: Column(
             children: [
               const AspectRatio(aspectRatio: 4 / 3, child: BattleArea()),
-          const SkillBar(),
+              const SkillBar(),
+              const QuestStrip(),
               const Divider(height: 1),
               Expanded(
                 child: IndexedStack(

@@ -1,0 +1,138 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/battle_engine.dart';
+import 'package:idle_fantasy/domain/dungeon.dart';
+import 'package:idle_fantasy/domain/equipment.dart';
+import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/quest.dart';
+import 'package:idle_fantasy/domain/save_codec.dart';
+
+void main() {
+  const config = BalanceConfig();
+  const engine = BattleEngine(config);
+  final initial = GameState.initial(config);
+
+  group('퀘스트 표', () {
+    test('60개가 1번부터 번호순으로 있다', () {
+      expect(questTable.length, 60);
+      for (var i = 0; i < questTable.length; i++) {
+        expect(questTable[i].number, i + 1);
+      }
+    });
+
+    test('같은 목표는 뒤로 갈수록 목표치가 커진다', () {
+      for (final goal in QuestGoal.values) {
+        final targets = questTable.where((q) => q.goal == goal).map((q) => q.target).toList();
+        expect(targets.length, greaterThan(1));
+        for (var i = 1; i < targets.length; i++) {
+          expect(targets[i], greaterThan(targets[i - 1]));
+        }
+      }
+    });
+
+    test('목표 5종과 보상 5종이 모두 쓰인다', () {
+      expect(questTable.map((q) => q.goal).toSet(), QuestGoal.values.toSet());
+      expect(questTable.map((q) => q.reward).toSet(), RewardKind.values.toSet());
+    });
+
+    test('보상은 항상 1 이상이다', () {
+      for (final q in questTable) {
+        expect(q.rewardAmount, greaterThan(0), reason: '${q.number}번');
+      }
+    });
+  });
+
+  group('진행과 수령', () {
+    test('처음에는 1번이 진행 중이고 아직 못 받는다', () {
+      expect(initial.quests.current?.number, 1);
+      expect(questReady(initial), isFalse);
+      expect(engine.claimQuest(initial), isNull);
+    });
+
+    test('조건을 채우면 받을 수 있고 다음 번호로 넘어간다', () {
+      final first = questTable.first;
+      final s = initial.copyWith(highestStage: first.target);
+      expect(questReady(s), isTrue);
+      final claimed = engine.claimQuest(s)!;
+      expect(claimed.quests.current?.number, 2);
+    });
+
+    test('보상이 재화별 자리에 들어간다', () {
+      // 1번은 골드, 2번은 강화석, 3번은 입장권이다.
+      var s = initial.copyWith(highestStage: 1000, totalKills: 100000, dungeon: const DungeonState(tickets: 0));
+      s = s.copyWith(equipment: const EquipmentState(enhanceLevel: 100));
+      final gold = engine.claimQuest(s)!;
+      expect(gold.gold, greaterThan(s.gold));
+      final stone = engine.claimQuest(gold)!;
+      expect(stone.equipment.stones, greaterThan(gold.equipment.stones));
+      final ticket = engine.claimQuest(stone)!;
+      expect(ticket.dungeon.tickets, greaterThan(stone.dungeon.tickets));
+    });
+
+    test('입장권 보상도 상한을 넘지 않는다', () {
+      var s = initial.copyWith(
+        highestStage: 1000,
+        totalKills: 100000,
+        equipment: const EquipmentState(enhanceLevel: 100),
+        dungeon: DungeonState(tickets: config.dungeonTicketCap),
+      );
+      s = engine.claimQuest(s)!; // 1번 골드
+      s = engine.claimQuest(s)!; // 2번 강화석
+      s = engine.claimQuest(s)!; // 3번 입장권
+      expect(s.dungeon.tickets, config.dungeonTicketCap);
+    });
+
+    test('진행도는 상태에서 계산한다 — 따로 세지 않는다', () {
+      final kills = questTable.firstWhere((q) => q.goal == QuestGoal.totalKills);
+      expect(questProgress(kills, initial.copyWith(totalKills: 7)), 7);
+
+      final codex = questTable.firstWhere((q) => q.goal == QuestGoal.codexRegistered);
+      expect(questProgress(codex, initial.copyWith(codex: {1: 2, 2: 0, 3: 1})), 2);
+
+      final floors = questTable.firstWhere((q) => q.goal == QuestGoal.dungeonFloors);
+      final s = initial.copyWith(
+        dungeon: const DungeonState(cleared: {DungeonType.goldCave: 3, DungeonType.stoneMine: 2}),
+      );
+      expect(questProgress(floors, s), 5);
+    });
+
+    test('60개를 다 받으면 더 없다', () {
+      var s = initial.copyWith(quests: const QuestState(claimed: 60));
+      expect(s.quests.current, isNull);
+      expect(questReady(s), isFalse);
+      expect(engine.claimQuest(s), isNull);
+      s = s.copyWith(highestStage: 100000);
+      expect(engine.claimQuest(s), isNull);
+    });
+  });
+
+  group('해금표', () {
+    test('아직 안 열린 것 중 가장 가까운 것을 알려 준다', () {
+      expect(nextUnlock(1)?.$1, 10);
+      expect(nextUnlock(10)?.$1, 20);
+      expect(nextUnlock(99)?.$1, 100);
+      expect(nextUnlock(100000), isNull);
+    });
+
+    test('층은 오름차순이다', () {
+      for (var i = 1; i < unlockTable.length; i++) {
+        expect(unlockTable[i].$1, greaterThan(unlockTable[i - 1].$1));
+      }
+    });
+
+    test('던전 해금 층은 던전 정의와 같다', () {
+      for (final type in DungeonType.values) {
+        final row = unlockTable.where((e) => e.$2 == type.label).firstOrNull;
+        expect(row, isNotNull, reason: '${type.label}이 해금표에 있다');
+        expect(row!.$1, type.unlockStage);
+      }
+    });
+  });
+
+  test('받은 퀘스트 수는 저장된다', () {
+    final s = initial.copyWith(quests: const QuestState(claimed: 7));
+    expect(decodeState(encodeState(s))!.quests.claimed, 7);
+    final old = encodeState(initial)..remove('quests');
+    expect(decodeState(old)!.quests.claimed, 0);
+  });
+}

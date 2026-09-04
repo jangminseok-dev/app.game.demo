@@ -7,6 +7,7 @@ import 'formulas.dart';
 import 'equipment.dart';
 import 'game_state.dart';
 import 'monster.dart';
+import 'quest.dart';
 import 'upgrade.dart';
 
 /// 코어 루프의 전투 부분. GAME_DESIGN.md 2장·15장.
@@ -172,6 +173,13 @@ class BattleEngine {
       bossTimeLeft: config.bossTimeLimit,
       monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
     );
+  }
+
+  /// 조건을 채웠으면 지금 퀘스트 보상을 받고 다음 번호로 넘어간다. 아니면 null.
+  GameState? claimQuest(GameState s) {
+    final quest = s.quests.current;
+    if (quest == null || questProgress(quest, s) < quest.target) return null;
+    return grantQuestReward(s, quest, config).copyWith(quests: s.quests.claim());
   }
 
   /// 골드가 충분하면 업그레이드 1레벨을 사고, 아니면 null.

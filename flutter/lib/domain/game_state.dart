@@ -3,6 +3,7 @@ import 'codex.dart';
 import 'dungeon.dart';
 import 'equipment.dart';
 import 'formulas.dart' as formulas;
+import 'quest.dart';
 import 'upgrade.dart';
 
 /// 게임 진행 상태. 불변 객체이며 [BattleEngine]이 새 상태를 만들어 돌려준다.
@@ -27,6 +28,7 @@ class GameState {
     this.passives = Passives.none,
     this.equipment = EquipmentState.empty,
     this.dungeon = DungeonState.empty,
+    this.quests = QuestState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -82,6 +84,9 @@ class GameState {
   /// 던전 진행·입장권·던전 재화. [DungeonState.run]이 있으면 필드가 아니라 던전에서 싸운다.
   final DungeonState dungeon;
 
+  /// 받은 퀘스트 수. 진행도는 저장하지 않고 이 상태에서 그때그때 계산한다.
+  final QuestState quests;
+
   Stats statsWith(BalanceConfig config) =>
       Stats.fromLevels(levels, config, passives).scaledBy(equipment.powerWith(config));
 
@@ -109,6 +114,7 @@ class GameState {
     Passives? passives,
     EquipmentState? equipment,
     DungeonState? dungeon,
+    QuestState? quests,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -130,6 +136,7 @@ class GameState {
       passives: passives ?? this.passives,
       equipment: equipment ?? this.equipment,
       dungeon: dungeon ?? this.dungeon,
+      quests: quests ?? this.quests,
     );
   }
 }
