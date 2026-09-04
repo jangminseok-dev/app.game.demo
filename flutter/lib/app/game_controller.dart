@@ -116,6 +116,18 @@ class GameController extends Notifier<GameState> {
     if (next != null) state = next;
   }
 
+  /// 인벤토리를 전부 분해해 강화석으로 바꾼다. 착용 중인 장비는 건드리지 않는다.
+  void scrapAll() {
+    final next = state.equipment.scrapAll();
+    if (!identical(next, state.equipment)) state = state.copyWith(equipment: next);
+  }
+
+  /// 강화석이 충분하면 강화를 한 단계 올린다. 실패도 파괴도 없다.
+  void enhance() {
+    final next = state.equipment.enhance();
+    if (!identical(next, state.equipment)) state = state.copyWith(equipment: next);
+  }
+
   /// 로컬 저장은 항상, 서버 동기화는 연결돼 있을 때.
   /// 수락: 보낸 처치 보고를 기록에서 빼고 포획 결과를 도감에 반영. 거부: 서버 상태로 롤백.
   Future<void> saveNow() async {

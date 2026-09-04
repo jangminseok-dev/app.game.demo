@@ -6,9 +6,24 @@ import '../domain/codex.dart';
 import '../domain/monster.dart';
 import 'sprites/monster_sprite.dart';
 
-/// 도감 화면 — 지역별 스프라이트 그리드. 미등록은 실루엣, 탭하면 상세.
+/// 도감 화면 — 탭 밖에서 단독으로 열 때 쓴다.
 class CodexScreen extends ConsumerWidget {
   const CodexScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalog = ref.watch(monsterCatalogProvider);
+    final registered = ref.watch(gameControllerProvider).codex.values.where((s) => s > 0).length;
+    return Scaffold(
+      appBar: AppBar(title: Text('도감  $registered/${catalog.monsters.length}')),
+      body: const CodexTab(),
+    );
+  }
+}
+
+/// 도감 본문 — 지역별 스프라이트 그리드. 미등록은 실루엣, 탭하면 상세.
+class CodexTab extends ConsumerWidget {
+  const CodexTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,11 +32,8 @@ class CodexScreen extends ConsumerWidget {
     final codex = state.codex;
     final completion = regionCompletion(codex, catalog);
     final p = state.passives;
-    final registered = codex.values.where((s) => s > 0).length;
 
-    return Scaffold(
-      appBar: AppBar(title: Text('도감  $registered/${catalog.monsters.length}')),
-      body: ListView(
+    return ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -51,7 +63,6 @@ class CodexScreen extends ConsumerWidget {
             ),
           ],
         ],
-      ),
     );
   }
 }

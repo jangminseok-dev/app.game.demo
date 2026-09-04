@@ -8,6 +8,7 @@ import '../domain/upgrade.dart';
 import 'battle_area.dart';
 import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
+import 'equipment_panel.dart';
 import 'party_row.dart';
 
 /// 메인 화면(세로): 전투 무대 → 편성 → 골드·업그레이드 → 저장 상태.
@@ -19,6 +20,8 @@ class GameScreen extends ConsumerStatefulWidget {
 }
 
 class _GameScreenState extends ConsumerState<GameScreen> {
+  int _tab = 0;
+
   @override
   void initState() {
     super.initState();
@@ -44,13 +47,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameControllerProvider);
-    final config = ref.watch(balanceConfigProvider);
-    final saveStatus = ref.watch(saveStatusProvider);
-    final controller = ref.read(gameControllerProvider.notifier);
-    final stats = state.statsWith(config);
-    final mono = Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace');
     final registered = state.codex.values.where((s) => s > 0).length;
-    final pending = state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b);
 
     return Scaffold(
       appBar: AppBar(
@@ -71,10 +68,53 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             children: [
               const AspectRatio(aspectRatio: 4 / 3, child: BattleArea()),
           const SkillBar(),
-              const PartyRow(),
               const Divider(height: 1),
               Expanded(
-                child: ListView(
+                child: IndexedStack(
+                  index: _tab,
+                  children: const [_UpgradeTab(), EquipmentPanel(), _PartyTab(), CodexTab()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        height: 56,
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: [
+          const NavigationDestination(icon: Icon(Icons.trending_up), label: '강화'),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
+              child: const Icon(Icons.shield_outlined),
+            ),
+            label: '장비',
+          ),
+          const NavigationDestination(icon: Icon(Icons.groups), label: '편성'),
+          NavigationDestination(icon: const Icon(Icons.menu_book), label: '도감 $registered'),
+        ],
+      ),
+    );
+  }
+}
+
+/// 강화 탭 — 골드·능력치 5종·저장 상태.
+class _UpgradeTab extends ConsumerWidget {
+  const _UpgradeTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(gameControllerProvider);
+    final config = ref.watch(balanceConfigProvider);
+    final saveStatus = ref.watch(saveStatusProvider);
+    final controller = ref.read(gameControllerProvider.notifier);
+    final stats = state.statsWith(config);
+    final mono = Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace');
+    final pending = state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b);
+    return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                   children: [
                     Row(
@@ -111,14 +151,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         style: mono?.copyWith(color: Theme.of(context).colorScheme.error),
                       ),
                   ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+                );
   }
+}
+
+/// 편성 탭 — 동료 3칸 + 펫 1칸. 알·펫 서브프로젝트에서 채운다.
+class _PartyTab extends StatelessWidget {
+  const _PartyTab();
+
+  @override
+  Widget build(BuildContext context) => const SingleChildScrollView(child: PartyRow());
 }
 
 String _saveLine(BuildContext context, SaveStatus s) {
