@@ -5,12 +5,14 @@ import '../app/game_controller.dart';
 import '../domain/game_state.dart';
 import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
+import '../domain/daily.dart';
 import '../domain/dungeon.dart';
 import '../domain/attendance.dart';
 import '../domain/quest.dart';
 import '../domain/upgrade.dart';
 import 'attendance_panel.dart';
 import 'battle_area.dart';
+import 'daily_panel.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
@@ -186,6 +188,14 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                       badge: '${state.dungeon.tickets}',
                       alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
                       onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                    ),
+                    const SizedBox(height: 10),
+                    HudButton(
+                      label: '오늘',
+                      icon: Icons.today_outlined,
+                      alert: anyDailyReady(state),
+                      onTap: () => showGamePopup(context, title: '오늘 과제',
+                          heightFactor: 0.5, child: const DailyPanel()),
                     ),
                     const SizedBox(height: 10),
                     HudButton(

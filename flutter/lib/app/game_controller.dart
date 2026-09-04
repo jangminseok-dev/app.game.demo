@@ -10,6 +10,7 @@ import '../domain/balance_config.dart';
 import '../domain/attendance.dart';
 import '../domain/battle_engine.dart';
 import '../domain/codex.dart';
+import '../domain/daily.dart';
 import '../domain/dungeon.dart';
 import '../domain/equipment.dart';
 import '../domain/game_state.dart';
@@ -114,12 +115,24 @@ class GameController extends Notifier<GameState> {
   }
 
   void _onTick() {
-    state = _engine.tick(state, _tick.inMilliseconds / 1000, _rng);
+    // 날이 바뀌면 오늘치 과제를 새로 시작한다. 같은 날이면 아무것도 안 한다.
+    state = _engine.refreshDaily(
+      _engine.tick(state, _tick.inMilliseconds / 1000, _rng),
+      epochDayOf(DateTime.now()),
+    );
   }
 
   void buyUpgrade(UpgradeType type) {
     final next = _engine.buyUpgrade(state, type);
     if (next != null) state = next;
+  }
+
+  /// 오늘치 과제 하나를 받는다. 받은 양을 돌려준다.
+  int? claimDaily(DailyGoal goal) {
+    final result = _engine.claimDaily(state, goal);
+    if (result == null) return null;
+    state = result.$1;
+    return result.$2;
   }
 
   /// 오늘 출석 보상을 받는다. 받았으면 무엇을 얼마나 받았는지 돌려준다.

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'balance_config.dart';
 import 'codex.dart';
+import 'daily.dart';
 import 'dungeon.dart';
 import 'formulas.dart';
 import 'equipment.dart';
@@ -533,6 +534,33 @@ class BattleEngine {
       dungeon: s.dungeon.copyWith(eggShards: s.dungeon.eggShards + expeditionShards(config)),
       hatchery: s.hatchery.takeExpedition(index),
     );
+  }
+
+  /// 날이 바뀌었으면 오늘치 과제를 새로 시작한다. 같은 날이면 그대로 돌려준다.
+  GameState refreshDaily(GameState s, int today) {
+    if (s.daily.day == today) return s;
+    return s.copyWith(
+      daily: DailyState(
+        day: today,
+        killsAtStart: s.totalKills,
+        floorsAtStart: s.dungeon.cleared.values.fold(0, (a, b) => a + b),
+        craftsAtStart: s.equipment.craftLevel,
+      ),
+    );
+  }
+
+  /// 오늘치 과제 하나를 받는다. 아직이거나 이미 받았으면 null.
+  (GameState, int)? claimDaily(GameState s, DailyGoal goal) {
+    if (!dailyReady(goal, s)) return null;
+    final quest = Quest(
+      number: 0,
+      goal: QuestGoal.stage,
+      target: 0,
+      reward: goal.reward,
+      rewardAmount: goal.rewardAmount,
+    );
+    final next = grantQuestReward(s, quest, config).copyWith(daily: s.daily.claim(goal));
+    return (next, goal.rewardAmount);
   }
 
   /// 오늘 출석 보상을 받는다. 이미 받았으면 null.
