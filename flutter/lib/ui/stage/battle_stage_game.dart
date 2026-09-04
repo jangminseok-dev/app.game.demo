@@ -57,6 +57,11 @@ class BattleStageGame extends FlameGame {
   bool _busy = false;
   int _floaterSeq = 0;
 
+  /// 연출 쿨다운. 공격속도가 초당 9회를 넘으므로 타격마다 흔들면 화면이 계속 떨린다.
+  /// 흔들림·히트스톱은 치명타에만, 그것도 이 간격 이상 떨어져 있을 때만 건다.
+  double _juiceCool = 0;
+  static const _juiceGap = 0.55;
+
   /// 몬스터가 서는 자리. 0번이 전투 지점.
   static final _slots = [Vector2(196, 198), Vector2(240, 176), Vector2(268, 216), Vector2(304, 190)];
   static final _heroHome = Vector2(76, 198);
@@ -95,6 +100,7 @@ class BattleStageGame extends FlameGame {
       _hitStop -= dt;
       if (_hitStop <= 0) _actors.timeScale = 1;
     }
+    if (_juiceCool > 0) _juiceCool -= dt;
     // 주인공은 맨 앞 몬스터 앞까지 걸어간다. 펫은 주인공을 따라간다.
     final front = _queue.isEmpty ? null : _queue.first;
     final hero = _hero;
@@ -163,7 +169,7 @@ class BattleStageGame extends FlameGame {
         a.die();
       }
       _queue.clear();
-      _root.shake(8);
+      _root.shake(6); // 보스 등장은 한 번만이라 세게
     }
     for (var i = 0; i < _queue.length; i++) {
       _queue[i].target.setFrom(_slots[i]);
@@ -246,9 +252,13 @@ class BattleStageGame extends FlameGame {
     target.flash();
     target.knockback(crit ? 12 : 6);
 
-    _hitStop = crit ? 0.08 : 0.045;
-    _actors.timeScale = 0;
-    _root.shake(crit ? 6.5 : 3);
+    // 흔들림·히트스톱은 치명타에만, 쿨다운을 두고 건다.
+    if (crit && _juiceCool <= 0) {
+      _juiceCool = _juiceGap;
+      _hitStop = 0.06;
+      _actors.timeScale = 0;
+      _root.shake(3.2);
+    }
 
     final floaters = _fx.children.whereType<DamageText>().toList();
     if (floaters.length >= 5) _fx.remove(floaters.first);
