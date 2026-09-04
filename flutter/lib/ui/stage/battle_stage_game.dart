@@ -19,7 +19,8 @@ import 'stage_actor.dart';
 
 /// 무대 가상 해상도. 기기 폭에 맞춰 통째로 확대한다.
 const stageWidth = 360.0;
-const stageHeight = 270.0;
+/// 세로 화면을 채우도록 3:4로 잡는다. 배경 그림(360×270)은 지평선 아래를 세로로 반복해 채운다.
+const stageHeight = 480.0;
 
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
@@ -225,7 +226,13 @@ class BattleStageGame extends FlameGame {
       _queue[i].showHpBar = true;
       _queue[i].hpRatio = unit.hpRatio;
     }
-    _hero?.target.setValues(s.heroX, s.heroY);
+    final hero = _hero;
+    if (hero != null) {
+      hero.target.setValues(s.heroX, s.heroY);
+      hero.showHpBar = true;
+      hero.hpRatio = s.heroHpRatio(config);
+      hero.mpRatio = s.heroMpRatio(config);
+    }
   }
 
   /// 무리의 몬스터 하나를 만든다. 보스는 혼자 크게 선다.
@@ -377,7 +384,15 @@ class _Background extends PositionComponent {
       return;
     }
     canvas.drawImage(far, Offset.zero, _pixel);
-    canvas.drawImage(ground, const Offset(0, horizon), _pixel);
+    // 배경 그림(360×270)보다 무대가 길다. 지평선 아래를 세로로 늘려 채운다.
+    // 이어붙이면 바위·버섯이 반복돼 티가 나므로 늘리는 쪽을 택했다.
+    // 세로 배경 그림이 들어오면 이 늘림은 사라진다.
+    canvas.drawImageRect(
+      ground,
+      Rect.fromLTWH(0, 0, ground.width.toDouble(), ground.height.toDouble()),
+      Rect.fromLTWH(0, horizon, stageWidth, stageHeight - horizon),
+      _pixel,
+    );
     final veil = _veil;
     if (veil != null) canvas.drawRect(Rect.fromLTWH(0, 0, stageWidth, stageHeight), Paint()..color = veil);
   }

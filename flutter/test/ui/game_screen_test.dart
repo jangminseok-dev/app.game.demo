@@ -24,20 +24,27 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
-    expect(find.textContaining('스테이지 1'), findsOneWidget);
-    expect(find.text('골드  0'), findsWidgets, reason: '외곽선 글자라 stroke·fill 2개');
+    expect(find.textContaining('스테이지 1'), findsWidgets);
     expect(find.byType(BattleArea), findsOneWidget);
-    expect(find.text('펫'), findsWidgets, reason: '펫은 탭으로 옮겼다');
     expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
-    expect(find.textContaining('저장 전'), findsWidgets);
-    for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {
-      expect(find.textContaining(label), findsWidgets);
+    // 기능은 전부 전투 위 단추다.
+    for (final label in ['성장', '장비', '펫', '퀘스트', '던전']) {
+      expect(find.text(label), findsWidgets, reason: '$label 단추');
     }
 
     // 3초 진행: 스테이지 1 몬스터(HP 11.8)는 공격 10으로 2회면 죽는다.
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text('골드  0'), findsNothing);
     expect(tester.takeException(), isNull, reason: '피격·등장 연출이 예외 없이 돈다');
+
+    // 성장 단추를 누르면 팝업이 뜨고 골드가 쌓여 있다.
+    await tester.tap(find.text('성장').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('골드'), findsWidgets);
+    expect(find.text('골드  0'), findsNothing, reason: '3초 동안 골드가 생겼다');
+    for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {
+      expect(find.textContaining(label), findsWidgets);
+    }
+    expect(find.textContaining('저장 전'), findsWidgets);
   });
 
   testWidgets('카탈로그가 있으면 전투 무대에 몬스터 이름·속성·지역이 나온다', (tester) async {
@@ -51,7 +58,7 @@ void main() {
       ),
     );
     expect(find.text('슬라임 [무]'), findsWidgets);
-    expect(find.text('숲'), findsWidgets);
+    expect(find.textContaining('숲'), findsWidgets);
     expect(find.textContaining('미등록 ·'), findsWidgets);
   });
 
@@ -60,12 +67,12 @@ void main() {
       reward: const OfflineReward(elapsed: Duration(hours: 2, minutes: 5), gold: 1500),
     ));
     await tester.pump();
-    expect(find.text('오프라인 보상'), findsOneWidget);
-    expect(find.textContaining('2시간 5분'), findsOneWidget);
-    expect(find.textContaining('+1.50K'), findsOneWidget);
+    expect(find.text('오프라인 보상'), findsWidgets);
+    expect(find.textContaining('2시간 5분'), findsWidgets);
+    expect(find.textContaining('+1.50K'), findsWidgets);
 
-    await tester.tap(find.text('받기'));
-    await tester.pump();
+    await tester.tap(find.widgetWithText(GestureDetector, 'X').first);
+    await tester.pumpAndSettle();
     expect(find.text('오프라인 보상'), findsNothing);
   });
 }

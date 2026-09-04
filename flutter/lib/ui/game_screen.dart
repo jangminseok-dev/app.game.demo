@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/game_controller.dart';
+import '../domain/game_state.dart';
 import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
+import '../domain/quest.dart';
 import '../domain/upgrade.dart';
 import 'battle_area.dart';
-import 'hud/pixel_ui.dart';
-import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
+import 'hud/game_popup.dart';
+import 'hud/pixel_ui.dart';
+import 'hud/skill_bar.dart';
 import 'pet_panel.dart';
 import 'quest_strip.dart';
 
-/// 메인 화면(세로): 전투 무대 → 편성 → 골드·업그레이드 → 저장 상태.
+/// 메인 화면 — 전투가 화면을 다 채우고 기능은 그 위에 팝업으로 뜬다.
+///
+/// 탭으로 화면을 갈아 끼우면 전투가 사라져 "계속 크고 있다"는 감각이 끊긴다.
+/// 레퍼런스처럼 전투를 배경으로 깔고 창을 띄운다.
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
 
@@ -23,8 +29,6 @@ class GameScreen extends ConsumerStatefulWidget {
 }
 
 class _GameScreenState extends ConsumerState<GameScreen> {
-  int _tab = 0;
-
   @override
   void initState() {
     super.initState();
@@ -37,12 +41,19 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void _showOfflineReward(OfflineReward reward) {
     final h = reward.elapsed.inHours;
     final m = reward.elapsed.inMinutes % 60;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('오프라인 보상'),
-        content: Text('${h > 0 ? '$h시간 ' : ''}$m분 동안 자동 사냥\n골드 +${formatNumber(reward.gold)}'),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('받기'))],
+    showGamePopup(
+      context,
+      title: '오프라인 보상',
+      heightFactor: 0.3,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PixelText('${h > 0 ? '$h시간 ' : ''}$m분 동안 자동 사냥', size: 12),
+            const SizedBox(height: 8),
+            PixelText('골드 +${formatNumber(reward.gold)}', size: 16, color: PixelPalette.gold),
+          ],
+        ),
       ),
     );
   }
@@ -53,73 +64,105 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final registered = state.codex.values.where((s) => s > 0).length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('스테이지 ${state.stage}  (최고 ${state.highestStage})'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CodexScreen())),
-            icon: const Icon(Icons.menu_book),
-            label: Text('도감 $registered'),
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFF12161A),
       body: Center(
         child: ConstrainedBox(
           // 세로 게임이라 데스크톱에서도 폰 폭으로 묶는다.
-          constraints: const BoxConstraints(maxWidth: 430),
-          child: Column(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Stack(
             children: [
-              const AspectRatio(aspectRatio: 4 / 3, child: BattleArea()),
-              const SkillBar(),
-              const QuestStrip(),
-              const Divider(height: 1),
-              Expanded(
-                child: IndexedStack(
-                  index: _tab,
-                  children: const [_UpgradeTab(), EquipmentPanel(), DungeonPanel(), PetPanel(), CodexTab()],
+              // ── 전투가 화면을 다 채운다. 위에 얹히는 것은 전부 겹침이다.
+              const Positioned.fill(child: BattleArea()),
+
+              // ── 왼쪽: 지금 할 일
+              const Positioned(left: 6, top: 84, child: QuestStrip()),
+
+              // ── 오른쪽: 콘텐츠 · 도감
+              Positioned(
+                right: 6,
+                top: 84,
+                child: Column(
+                  children: [
+                    HudButton(
+                      label: '던전',
+                      icon: Icons.castle_outlined,
+                      badge: '${state.dungeon.tickets}',
+                      alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
+                      onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                    ),
+                    const SizedBox(height: 10),
+                    HudButton(
+                      label: '도감 $registered',
+                      icon: Icons.menu_book,
+                      onTap: () => showGamePopup(context, title: '도감', child: const CodexTab()),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── 아래: 스킬 칸과 기능 단추
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 66,
+                child: SafeArea(top: false, child: const SkillBar()),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 4,
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      HudButton(
+                        label: '성장',
+                        icon: Icons.trending_up,
+                        alert: _canBuyAnything(state),
+                        onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
+                      ),
+                      HudButton(
+                        label: '장비',
+                        icon: Icons.shield_outlined,
+                        alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
+                        onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
+                      ),
+                      HudButton(
+                        label: '펫',
+                        icon: Icons.egg_outlined,
+                        alert: state.hatchery.hasReady,
+                        onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
+                      ),
+                      HudButton(
+                        label: '퀘스트',
+                        icon: Icons.flag_outlined,
+                        alert: questReady(state),
+                        onTap: () => showGamePopup(
+                          context,
+                          title: '퀘스트',
+                          heightFactor: 0.4,
+                          child: const Padding(padding: EdgeInsets.all(10), child: QuestStrip()),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        height: 56,
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          const NavigationDestination(icon: Icon(Icons.trending_up), label: '강화'),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
-              child: const Icon(Icons.shield_outlined),
-            ),
-            label: '장비',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: state.dungeon.tickets > 0 && state.dungeon.run == null,
-              label: Text('${state.dungeon.tickets}'),
-              child: const Icon(Icons.castle_outlined),
-            ),
-            label: '던전',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: state.hatchery.hasReady,
-              child: const Icon(Icons.egg_outlined),
-            ),
-            label: '펫',
-          ),
-          NavigationDestination(icon: const Icon(Icons.menu_book), label: '도감 $registered'),
-        ],
-      ),
     );
+  }
+
+  /// 골드로 지금 살 수 있는 업그레이드가 하나라도 있는가. 성장 단추의 빨간 점 조건이다.
+  bool _canBuyAnything(GameState state) {
+    final config = ref.read(balanceConfigProvider);
+    return UpgradeType.values.any((t) => state.gold >= t.cost(state.levelOf(t), config));
   }
 }
 
-/// 강화 탭 — 골드·능력치 5종·저장 상태. 무대와 같은 픽셀 UI로 맞춘다.
 class _UpgradeTab extends ConsumerWidget {
   const _UpgradeTab();
 

@@ -56,6 +56,9 @@ class StageActor extends PositionComponent {
   bool showHpBar = false;
   double hpRatio = 1;
 
+  /// 마력 바. null이면 안 그린다 — 주인공만 쓴다.
+  double? mpRatio;
+
   double get sizePx => pixelSize.toDouble();
   String get state => _state;
   bool get arrived => (pos - target).length < 1.5;
@@ -178,6 +181,18 @@ class StageActor extends PositionComponent {
       Rect.fromLTWH(x, y, w * r, h),
       Paint()..color = r > 0.5 ? const Color(0xFF56D364) : (r > 0.25 ? const Color(0xFFE3B341) : const Color(0xFFE5534B)),
     );
+    // 마력 바 — 체력 바 바로 아래 한 줄.
+    final mp = mpRatio;
+    if (mp != null) {
+      const mh = 2.0;
+      final my = y + h + 2;
+      canvas.drawRect(Rect.fromLTWH(x - 1, my - 1, w + 2, mh + 2), Paint()..color = Colors.black.withValues(alpha: 0.9));
+      canvas.drawRect(Rect.fromLTWH(x, my, w, mh), Paint()..color = const Color(0xFF3A3352));
+      canvas.drawRect(
+        Rect.fromLTWH(x, my, w * mp.clamp(0.0, 1.0), mh),
+        Paint()..color = const Color(0xFF63C7FF),
+      );
+    }
     canvas.restore();
   }
 }

@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "monster_hp_base": 10,
   "monster_hp_growth": 1.18,
   "boss_hp_multiplier": 10,
@@ -19,9 +19,9 @@
   "hero_mp_per_level": 4,
   "hero_mp_regen_per_second": 5,
   "hero_move_speed": 100,
-  "hero_attack_range": 34,
+  "hero_attack_range": 42,
   "monster_move_speed": 160,
-  "monster_attack_range": 28,
+  "monster_attack_range": 36,
   "monster_attack_base": 2,
   "monster_attack_growth": 1.15,
   "monster_attacks_per_second": 0.6,

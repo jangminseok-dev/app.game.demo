@@ -30,7 +30,6 @@ class BattleHud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = state.statsWith(config);
-    final hp = state.monsterMaxHp == 0 ? 0.0 : (state.monsterHp / state.monsterMaxHp).clamp(0.0, 1.0);
     // 던전에 들어가 있으면 같은 자리에 던전 진행을 보여 준다.
     final run = state.dungeon.run;
     final progress = run != null
@@ -61,7 +60,7 @@ class BattleHud extends StatelessWidget {
               PixelPanel(
                 border: run == null ? PixelPalette.ink : PixelPalette.gem,
                 child: PixelText(
-                  run == null ? regionName : '${run.type.label} ${run.floor}층',
+                  run == null ? '$regionName 스테이지 ${state.stage}' : '${run.type.label} ${run.floor}층',
                   size: 11,
                   color: run == null ? PixelPalette.textDim : PixelPalette.gem,
                 ),
@@ -84,59 +83,29 @@ class BattleHud extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          // ── 주인공 체력·마력
-          Row(
-            children: [
-              const PixelText('HP', size: 10, color: PixelPalette.textDim),
-              const SizedBox(width: 4),
-              Expanded(
-                child: PixelGauge(
-                  value: state.heroHpRatio(config),
-                  color: state.heroHpRatio(config) > 0.3 ? PixelPalette.hp : PixelPalette.hpLow,
-                  height: 9,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const PixelText('MP', size: 10, color: PixelPalette.textDim),
-              const SizedBox(width: 4),
-              Expanded(
-                child: PixelGauge(value: state.heroMpRatio(config), color: PixelPalette.gem, height: 9),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          PixelText(
-            state.isDown
-                ? '쓰러졌습니다 · ${state.reviveLeft.ceil()}초 뒤 일어섭니다'
-                : '${formatNumber(state.heroHpOr(config))} / ${formatNumber(state.maxHeroHp(config))}'
-                    ' · 마력 ${formatNumber(state.heroMpOr(config))}',
-            size: 10,
-            color: state.isDown ? PixelPalette.hpLow : PixelPalette.textDim,
-          ),
-          const SizedBox(height: 4),
-          // ── 하단: 몬스터 정보
+          // ── 하단 한 줄: 지금 무엇을 상대하는지와 포획 정보. 체력 바는 캐릭터 발밑에 붙는다.
           Row(
             children: [
               PixelText(
                 monster == null ? '몬스터' : '${monster!.name} [${monster!.element.label}]',
-                size: 12,
+                size: 11,
               ),
               if (state.wave.length > 1) ...[
                 const SizedBox(width: 6),
-                PixelText('남은 ${state.wave.length}마리', size: 11, color: PixelPalette.gold),
+                PixelText('남은 ${state.wave.length}마리', size: 10, color: PixelPalette.gold),
               ],
               const Spacer(),
               Flexible(child: PixelText(captureLine, size: 10, color: PixelPalette.textDim)),
             ],
           ),
-          const SizedBox(height: 3),
-          PixelGauge(value: hp, color: hp > 0.3 ? PixelPalette.hp : PixelPalette.hpLow, height: 11),
-          const SizedBox(height: 2),
-          PixelText(
-            'HP ${formatNumber(state.monsterHp)} / ${formatNumber(state.monsterMaxHp)}',
-            size: 10,
-            color: PixelPalette.textDim,
-          ),
+          if (state.isDown) ...[
+            const SizedBox(height: 3),
+            PixelText(
+              '쓰러졌습니다 · ${state.reviveLeft.ceil()}초 뒤 일어섭니다',
+              size: 11,
+              color: PixelPalette.hpLow,
+            ),
+          ],
         ],
       ),
     );
