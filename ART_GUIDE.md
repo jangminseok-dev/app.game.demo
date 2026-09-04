@@ -26,6 +26,9 @@
 
 색 수는 눈으로 세지 않는다. `flutter/tools/count_colors.py`로 센다.
 
+**등신 프롬프트(`2-head-tall`)는 범위(2~2.5등신)의 하한을 못 박은 것이다.** 합격 판정받은 그림이
+이 문자열로 나왔으므로 바꾸지 않는다.
+
 **왜 5색이 아니라 6색인가**: 눈이 흰자와 동공 두 색을 쓴다. 5색으로 줄이면 양자화가 흰자를 지우고
 (2026-09-04 실측: 숲을 5색으로 줄이면 가장 밝은 색이 분홍 코 `#C392A6`이고 흰색이 사라진다)
 눈이 죽는다. 동공은 외곽선과 같은 어두운 색을 쓰므로 실제로 더 필요한 것은 흰자 하나다.
@@ -40,10 +43,11 @@
 방향은 회전이 아니라 **지역별 6색 팔레트 교체**다. 색이 6개로 고정이면 지역당 6줄, 10지역에 60줄이라
 손으로 고를 만하다. 코드 변경이 필요하므로 별도 작업으로 남긴다.
 
-**팔레트 스왑**: 앱이 `hueRotation`(`flutter/lib/ui/stage/stage_actor.dart`)으로 색상환을 돌려
-지역 기본 형태 20종을 100종으로 늘린다. 이 행렬은 휘도를 보존하므로 **무채색을 그대로 둔다**.
+**지금 구현**: 앱이 `hueRotation`(`flutter/lib/ui/stage/stage_actor.dart`)으로 색상환을 돌려
+지역 기본 형태를 변종으로 늘린다. 이 행렬은 휘도를 보존하므로 **무채색을 그대로 둔다**.
 따라서 눈과 외곽선을 어둡고 채도 낮게 그리면 스왑에서 자동으로 제외된다. 코드로 막을 것이 없다.
 반대로 눈을 채도 높은 색으로 그리면 변종마다 눈 색이 달라져 표정이 무너진다.
+단, 위 문단대로 `hueRotation` 자체가 지역별 6색 팔레트 교체로 바뀔 예정이므로 이 방식은 교체 대상이다.
 
 **속성 색** (`monster_sprite.dart`의 `elementColor`, 코드와 묶여 있으므로 바꾸지 않는다):
 화 `#E85D3A` · 수 `#3B82F6` · 지 `#6B8E23` · 풍 `#2DD4BF` · 무 `#9CA3AF`
@@ -87,7 +91,7 @@ multiple creatures, text, background
 | 3 | 하늘섬 · 폐허 | `+ small membrane wings` | 금·회색이 섞임 |
 | 4 | 마계 | `+ a ridge of scales along the back` | 가장 어두움, 진홍 포인트 |
 
-물려받은 특징은 `small` · `faint`를 붙여 눌러 둔다. **빼지 않는다** — 단계 4는 1·2·3을 다 물려받는다.
+물려받은 특징은 `tiny` · `faint`를 붙여 눌러 둔다. **빼지 않는다** — 단계 4는 1·2·3을 다 물려받는다.
 마계 예시: `+ a ridge of scales along the back, tiny faint horns, tiny faint tail, tiny faint wings`
 
 **2026-09-04 스파이크에서 배운 것**: `scale-covered body`와 `small faint`로는 안 된다.
@@ -104,6 +108,10 @@ multiple creatures, text, background
 
 주인공 4직업은 사람형이라 ①은 그대로 쓰고 ②는 붙이지 않는다.
 
+**주인공 예외**: 주인공은 왼팔 방패가 앞을 가리므로 ①의 `facing east`를 `facing west`로 바꿔 뽑고
+`sheet_pack.py --flip`으로 반전해 묶는다(`2026-09-03-art-pipeline-design.md` §1, 스파이크 결정 2026-09-04).
+①의 고정 문자열 자체는 바꾸지 않는다 — 그 문자열로 합격 판정을 받았다.
+
 ### 호출 규칙
 
 `2026-09-03-art-pipeline-design.md` §1을 따른다.
@@ -116,11 +124,15 @@ multiple creatures, text, background
 ## 3. 앱에 넣는 절차
 
 - **생성기는 색 수를 안 지킨다.** 2026-09-04 실측으로 48×48 한 장이 11~14색으로 나왔다.
-  묶기 전에 6색으로 양자화한다. 투명 픽셀의 RGB가 팔레트 자리를 먹지 않게 최빈 불투명색으로 채운 뒤 줄인다
+  묶기 전에 6색으로 양자화한다. 투명 픽셀의 RGB가 팔레트 자리를 먹지 않게 최빈 불투명색으로 채운 뒤 줄인다.
+  PixelLab MCP에 `reduce_colors` 도구가 있다 — 직접 알고리즘을 짤 필요 없다
 - 프레임 PNG 폴더 → `flutter/tools/sheet_pack.py`로 가로 스트립 PNG + JSON으로 묶는다
 - 묶인 시트를 `flutter/assets/sprites/<종류>/<id>.png`(+ `.json`)에 둔다.
   종류는 `hero` · `monster` · `boss` · `pet`. 배경은 `flutter/assets/backgrounds/<지역>/`
-- `flutter/lib/ui/stage/sheet_loader.dart`의 `SheetLoader`가 시트+JSON을 읽는다. 파일만 갈아 끼우면 호출부는 안 건드린다
+- `flutter/lib/ui/stage/sheet_loader.dart`의 `SheetLoader`가 시트+JSON을 읽는다.
+  시트 id는 `<지역>_<순번>` 형식이고 지역은 `flutter/assets/monsters.json`의 region 값이다.
+  지역이나 형태 수를 늘리면 `flutter/lib/ui/stage/battle_stage_game.dart`의 `_sheetsPerRegion`도
+  같이 고쳐야 화면에 뜬다 — **파일만 갈아 끼운다고 호출부를 안 건드리는 것이 아니다.**
 - 묶인 시트는 **항상 오른쪽을 본다**. 앱이 적을 좌우 반전한다
 
 ## 4. 결정 기록
@@ -132,7 +144,7 @@ multiple creatures, text, background
   근거와 검토했으나 택하지 않은 안은 `2026-09-04-creature-art-direction-design.md`
 - 2026-09-04: 화풍 스파이크 — `create_image_pixflux` 2장(숲 단계0 `a round mossy boar`, 마계 단계4
   `a stout shadow beast`), 48×48. 크레딧이 2뿐이라 양 끝만 뽑았다.
-  **그림체는 사용자 합격 판정.** 규격 결함 둘이 드러났다:
+  **그림체는 사용자 합격 판정.** 규격 결함 셋이 드러났다:
   ① 5색은 산술이 안 맞는다(흰자가 목록에 없다) → 6색으로 고침
   ② 단계 4에서 비늘이 안 보인다(뿔·날개가 자리를 다 먹는다) → 등줄기로 한정, **미검증**
   ③ 색상환 회전으로는 변종을 못 만든다. 채도 낮은 원본을 돌리면 탁한 색만 나온다
@@ -141,4 +153,4 @@ multiple creatures, text, background
   실측 색 수: 생성 원본 숲 14색 · 마계 11색. 양자화 뒤 6색.
   기준 5(계통감)는 판정 못 했다 — 캐릭터 블록을 네발과 두발로 골라 계통이 안 보였다.
   다음 물량에서는 **같은 몸 형태**로 두 단계를 뽑아 확인한다.
-  다음: 지역별 기본 형태 20종(지역 5 × 형태 4)의 캐릭터 블록 문안
+  다음: 지역별 기본 형태의 캐릭터 블록 문안. 형태 수와 지역 배분은 20종 → 100종 확장 설계에서 정한다(미정)
