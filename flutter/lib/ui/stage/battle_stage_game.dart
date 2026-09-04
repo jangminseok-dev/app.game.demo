@@ -22,6 +22,15 @@ const stageHeight = 270.0;
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
 
+/// 아트 세트 전환 — 에셋 팩(한 아티스트) vs AI 생성. 비교용 스위치.
+/// 팩: Zerie "Tiny RPG Character Asset Pack 01" (병사·오크, 상업 이용 가능)
+const _useAssetPack = true;
+const _heroSheetId = _useAssetPack ? 'soldier' : 'warrior_1';
+const _heroSize = _useAssetPack ? 68 : 56;
+const _bossSheetId = _useAssetPack ? 'orc' : 'forest';
+const _bossSize = _useAssetPack ? 108 : 96;
+const _monsterSize = _useAssetPack ? 74 : 48;
+
 /// 배경 에셋이 있는 지역. 나머지는 기존 그라데이션으로 그린다.
 /// (Flame의 Images.load는 실패한 Future를 캐시에 남겨 비동기 예외가 새므로, 없는 파일은 아예 요청하지 않는다.)
 const _regionsWithBackground = <String>{'forest'};
@@ -52,6 +61,13 @@ class BattleStageGame extends FlameGame {
   final _queue = <StageActor>[];
   StageActor? _hero;
   StageActor? _pet;
+
+  /// 조회용(테스트·디버그). 무대 밖에서 상태를 바꾸지 않는다.
+  StageActor? get hero => _hero;
+  StageActor? get pet => _pet;
+  List<StageActor> get monsters => List.unmodifiable(_queue);
+  static const monsterPixelSize = _monsterSize;
+  static const bossPixelSize = _bossSize;
   GameState? _last;
   double _hitStop = 0;
   bool _busy = false;
@@ -77,8 +93,8 @@ class BattleStageGame extends FlameGame {
     await _root.addAll([_bg, _actors, _fx]);
 
     _hero = StageActor(
-      sheet: await _loader.load('hero', 'warrior_1', size: 56, color: Colors.blue.shade300),
-      pixelSize: 56,
+      sheet: await _loader.load('hero', _heroSheetId, size: _heroSize, color: Colors.blue.shade300),
+      pixelSize: _heroSize,
       facingRight: true,
       at: _heroHome.clone(),
       walkSpeed: 42,
@@ -202,10 +218,10 @@ class BattleStageGame extends FlameGame {
       if (pool.isNotEmpty) m = pool[_rng.nextInt(pool.length)];
     }
     final isBoss = s.isBoss && index == 0;
-    final size = isBoss ? 96 : 48;
-    final sheetId = isBoss ? 'forest' : _monsterSheet(m, region?.id);
+    final size = isBoss ? _bossSize : _monsterSize;
+    final sheetId = isBoss ? _bossSheetId : _monsterSheet(m, region?.id);
     final sheet = await _loader.load(
-      isBoss ? 'boss' : 'monster',
+      isBoss && !_useAssetPack ? 'boss' : 'monster',
       sheetId,
       size: size,
       color: elementColor(m?.element ?? MonsterElement.neutral),
@@ -224,6 +240,7 @@ class BattleStageGame extends FlameGame {
   }
 
   String _monsterSheet(Monster? m, String? regionId) {
+    if (_useAssetPack) return 'orc'; // 팩에 오크 한 종뿐 — 색만 갈라 변종을 만든다
     final region = m?.region ?? regionId ?? 'forest';
     final count = _sheetsPerRegion[region];
     if (count == null) return 'forest_${(m?.id ?? 1) % (_sheetsPerRegion['forest'] ?? 1) + 1}'; // 아직 없는 지역은 숲 형태 + 색만

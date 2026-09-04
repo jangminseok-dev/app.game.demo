@@ -53,7 +53,7 @@ void main() {
     game.sync(GameState.initial(c));
     await settle(game, frames: 2);
 
-    final monsters = actorsOf(game).where((a) => a.pixelSize != 56 && a.pixelSize != 32).toList();
+    final monsters = game.monsters;
     expect(monsters, isNotEmpty);
     for (final m in monsters) {
       expect(m.pos.x, greaterThan(stageWidth), reason: '화면 밖에서 시작');
@@ -68,9 +68,8 @@ void main() {
     for (var i = 0; i < 60 * 8; i++) {
       game.update(1 / 60);
     }
-    final all = actorsOf(game);
-    final hero = all.firstWhere((a) => a.pixelSize == 56);
-    final front = all.where((a) => a.showHpBar).toList();
+    final hero = game.hero!;
+    final front = game.monsters.where((a) => a.showHpBar).toList();
     expect(front.length, 1, reason: '맨 앞 몬스터만 HP 바');
     expect(hero.pos.x, greaterThan(76), reason: '집에서 앞으로 나왔다');
     expect(hero.pos.x, lessThan(front.single.pos.x), reason: '주인공이 왼쪽');
@@ -98,7 +97,11 @@ void main() {
     s = s.copyWith(isBoss: true, monsterHp: 500, monsterMaxHp: 500, monsterId: 2); // 보스
     game.sync(s);
     await settle(game);
-    expect(actorsOf(game).any((a) => a.pixelSize == 96), isTrue, reason: '보스는 96px');
+    expect(
+      game.monsters.any((a) => a.pixelSize == BattleStageGame.bossPixelSize),
+      isTrue,
+      reason: '보스는 일반 몬스터보다 크다',
+    );
 
     for (var i = 0; i < 60 * 4; i++) {
       game.update(1 / 60);

@@ -16,3 +16,6 @@ __pycache__/
 # 아트 도구 (flutter/tools/)
 flutter/tools/.venv/
 flutter/tools/frames/
+
+# 구매한 에셋 팩 원본 (재배포 금지)
+pack/
