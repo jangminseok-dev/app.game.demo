@@ -18,27 +18,29 @@ from PIL import Image, ImageOps
 DEFAULT_ANIMS = ["idle", "walk", "attack", "hit", "death"]
 
 
-def fit(im: Image.Image, size: int, flip: bool) -> Image.Image:
-    im = im.convert("RGBA")
-    if flip:
-        im = ImageOps.mirror(im)
-    bbox = im.getbbox()
-    if bbox is None:
-        return Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    content = im.crop(bbox)
+def union_bbox(images: list[Image.Image]) -> tuple[int, int, int, int]:
+    """모든 프레임의 내용 경계 합집합. 같은 창으로 잘라야 프레임 간 위치가 흔들리지 않는다."""
+    boxes = [im.getbbox() for im in images if im.getbbox()]
+    return (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+
+
+def fit(im: Image.Image, size: int, window: tuple[int, int, int, int]) -> Image.Image:
+    """window(합집합 경계)를 바닥 중앙 정렬로 size 정사각에 놓는다."""
+    content = im.crop(window)
     if content.width > size or content.height > size:
-        print(f"  경고: 내용 {content.size} > {size}, 최근접 축소", file=sys.stderr)
+        print(f"  경고: 내용 {content.size} > {size}, 최근접 축소 (size를 키우는 게 낫다)", file=sys.stderr)
         content.thumbnail((size, size), Image.NEAREST)
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     canvas.paste(content, ((size - content.width) // 2, size - content.height), content)
     return canvas
 
 
-def load_frames(folder: Path, size: int, flip: bool) -> list[Image.Image]:
+def load_raw(folder: Path, flip: bool) -> list[Image.Image]:
     files = sorted(folder.glob("*.png"))
     if not files:
         sys.exit(f"프레임 없음: {folder}")
-    return [fit(Image.open(f), size, flip) for f in files]
+    ims = [Image.open(f).convert("RGBA") for f in files]
+    return [ImageOps.mirror(im) for im in ims] if flip else ims
 
 
 def main() -> None:
@@ -52,10 +54,14 @@ def main() -> None:
     a = p.parse_args()
 
     root = Path(a.root)
+    names = a.anims.split(",")
+    raw = {name: load_raw(root / name, a.flip) for name in names}
+    window = union_bbox([im for frames in raw.values() for im in frames])
+    print(f"내용 창 {window} = {window[2]-window[0]}x{window[3]-window[1]}px → 프레임 {a.size}px")
     all_frames: list[Image.Image] = []
     ranges: dict[str, list[int]] = {}
-    for name in a.anims.split(","):
-        frames = load_frames(root / name, a.size, a.flip)
+    for name in names:
+        frames = [fit(im, a.size, window) for im in raw[name]]
         start = len(all_frames)
         all_frames.extend(frames)
         ranges[name] = [start, len(all_frames) - 1]
