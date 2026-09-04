@@ -133,7 +133,7 @@ class DamageText extends PositionComponent implements Expiring {
   void update(double dt) {
     super.update(dt);
     _t += dt;
-    position.y -= dt * 26;
+    position.y -= dt * 30;
   }
 
   @override
@@ -142,7 +142,7 @@ class DamageText extends PositionComponent implements Expiring {
     final alpha = p < 0.72 ? 1.0 : (1 - p) / 0.28;
     // 치명타는 더 크고, 더 세게 튀어나오고, 색과 기울기가 다르다.
     final pop = 1 + (crit ? 0.85 : 0.35) * math.max(0, 1 - p / (crit ? 0.22 : 0.16));
-    final size = (crit ? 14.0 : 9.0) * sizeScale * pop;
+    final size = (crit ? 11.0 : 7.5) * sizeScale * pop;
     final outline = crit ? const Color(0xFF6B1200) : Colors.black;
     final top = crit ? const Color(0xFFFFF3B0) : Colors.white;
     final bottom = crit ? const Color(0xFFFF6A00) : const Color(0xFFCFD8DC);

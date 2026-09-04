@@ -73,14 +73,25 @@ class BattleStageGame extends FlameGame {
   bool _busy = false;
   int _floaterSeq = 0;
 
+  /// 데미지 숫자 간격. 공격속도가 초당 15회를 넘어도 화면이 숫자로 덮이지 않게 한다.
+  double _floaterCool = 0;
+
   /// 히트스톱 쿨다운. 공격속도가 초당 9회를 넘어 타격마다 걸면 시간이 계속 멈춘다.
   /// 치명타에만, 그것도 이 간격 이상 떨어져 있을 때만 건다. 화면 흔들림은 쓰지 않는다(어지럽다).
   double _juiceCool = 0;
   static const _juiceGap = 0.55;
 
   /// 몬스터가 서는 자리. 0번이 전투 지점.
-  static final _slots = [Vector2(196, 198), Vector2(240, 176), Vector2(268, 216), Vector2(304, 190)];
-  static final _heroHome = Vector2(76, 198);
+  /// 몬스터가 서는 자리. 0번이 전투 지점. 레퍼런스처럼 화면 전체에 퍼뜨린다.
+  static final _slots = [
+    Vector2(150, 200),
+    Vector2(196, 172),
+    Vector2(212, 232),
+    Vector2(254, 196),
+    Vector2(292, 168),
+    Vector2(308, 226),
+  ];
+  static final _heroHome = Vector2(58, 204);
   static const _spawnX = 400.0;
 
   @override
@@ -97,14 +108,14 @@ class BattleStageGame extends FlameGame {
       pixelSize: _heroSize,
       facingRight: true,
       at: _heroHome.clone(),
-      walkSpeed: 42,
+      walkSpeed: 90,
     );
     _pet = StageActor(
       sheet: await _loader.load('pet', 'fire_baby', size: 32, color: Colors.deepOrange.shade300),
       pixelSize: 32,
       facingRight: true,
       at: _heroHome + Vector2(-24, 12),
-      walkSpeed: 46,
+      walkSpeed: 100,
     );
     await _actors.addAll([_hero!, _pet!]);
   }
@@ -117,12 +128,13 @@ class BattleStageGame extends FlameGame {
       if (_hitStop <= 0) _actors.timeScale = 1;
     }
     if (_juiceCool > 0) _juiceCool -= dt;
+    if (_floaterCool > 0) _floaterCool -= dt;
     // 주인공은 맨 앞 몬스터 앞까지 걸어간다. 펫은 주인공을 따라간다.
     final front = _queue.isEmpty ? null : _queue.first;
     final hero = _hero;
     if (hero != null) {
       hero.target.setValues(
-        front == null ? _heroHome.x : math.min(front.pos.x - 46, stageWidth * 0.62),
+        front == null ? _heroHome.x : math.min(front.pos.x - 34, stageWidth * 0.5),
         front == null ? _heroHome.y : front.pos.y + 4,
       );
       _pet?.target.setValues(hero.pos.x - 26, hero.pos.y + 12);
@@ -227,13 +239,16 @@ class BattleStageGame extends FlameGame {
       color: elementColor(m?.element ?? MonsterElement.neutral),
     );
     final slot = _slots[math.min(index, _slots.length - 1)];
+    final from = Vector2(_spawnX + index * 22, slot.y);
+    // 고레벨에서는 몬스터가 3초 안에 죽는다. 거리와 무관하게 약 0.9초에 자리에 닿게 속도를 맞춘다.
+    final speed = (from - slot).length / (0.85 + _rng.nextDouble() * 0.25);
     return StageActor(
       sheet: sheet,
       pixelSize: size,
       facingRight: false,
-      at: Vector2(_spawnX + index * 26, slot.y),
+      at: from,
       hue: isBoss ? 0 : _monsterHue(m),
-      walkSpeed: 30 + _rng.nextDouble() * 8,
+      walkSpeed: speed,
     )
       ..target.setFrom(slot)
       ..hpRatio = 1;
@@ -276,18 +291,21 @@ class BattleStageGame extends FlameGame {
       _actors.timeScale = 0;
     }
 
-    final floaters = _fx.children.whereType<DamageText>().toList();
-    if (floaters.length >= 5) _fx.remove(floaters.first);
-    // 연속 타격이 한 점에 겹치지 않게 순번으로 부채꼴 배치한다.
-    final seq = _floaterSeq++ % 5;
-    const fan = [Offset(-26, -6), Offset(4, -20), Offset(28, 2), Offset(-8, 10), Offset(16, -12)];
-    _fx.add(DamageText(
-      text: formatNumber(amount),
-      crit: crit,
-      start: target.pos +
-          Vector2(fan[seq].dx + _rng.nextDouble() * 8 - 4, -target.sizePx * 0.85 + fan[seq].dy),
-      sizeScale: 0.9 + _rng.nextDouble() * 0.3,
-    ));
+    // 치명타는 항상, 평타는 간격을 두고만 띄운다.
+    if (crit || _floaterCool <= 0) {
+      _floaterCool = 0.18;
+      final floaters = _fx.children.whereType<DamageText>().toList();
+      if (floaters.length >= 4) _fx.remove(floaters.first);
+      // 연속 타격이 한 점에 겹치지 않게 순번으로 부채꼴 배치한다.
+      final seq = _floaterSeq++ % 4;
+      const fan = [Offset(-34, -4), Offset(-2, -26), Offset(34, 0), Offset(10, 14)];
+      _fx.add(DamageText(
+        text: formatNumber(amount),
+        crit: crit,
+        start: target.pos + Vector2(fan[seq].dx + _rng.nextDouble() * 8 - 4, -target.sizePx * 0.8 + fan[seq].dy),
+        sizeScale: 0.9 + _rng.nextDouble() * 0.25,
+      ));
+    }
     _fx.add(ImpactStar(position: center, radius: crit ? 17 : 11));
     _fx.add(Burst(
       position: center,
@@ -311,20 +329,29 @@ class _Background extends PositionComponent {
   String? region;
   ui.Image? _far, _ground;
 
+  /// 전용 배경이 없는 지역은 숲 배경 위에 지역색 덮개를 얹는다.
+  Color? _veil;
+
   Future<void> setRegion(String? regionId, Images images) async {
     region = regionId;
-    _far = null;
-    _ground = null;
-    if (regionId == null || !_regionsWithBackground.contains(regionId)) return;
+    if (regionId == null) {
+      _far = null;
+      _ground = null;
+      return;
+    }
+    final own = _regionsWithBackground.contains(regionId);
     try {
-      final far = await images.load('$regionId/far.png');
-      final ground = await images.load('$regionId/ground.png');
-      if (region == regionId) {
-        _far = far;
-        _ground = ground;
-      }
+      final source = own ? regionId : 'forest';
+      final far = await images.load('$source/far.png');
+      final ground = await images.load('$source/ground.png');
+      if (region != regionId) return;
+      _far = far;
+      _ground = ground;
+      _veil = own ? null : regionColors(regionId).last.withValues(alpha: 0.5);
     } on Object {
-      // 아직 배경이 없는 지역 — 그라데이션으로 둔다.
+      // 숲 배경조차 없으면 그라데이션으로 둔다.
+      _far = null;
+      _ground = null;
     }
   }
 
@@ -342,5 +369,7 @@ class _Background extends PositionComponent {
     }
     canvas.drawImage(far, Offset.zero, _pixel);
     canvas.drawImage(ground, const Offset(0, horizon), _pixel);
+    final veil = _veil;
+    if (veil != null) canvas.drawRect(Rect.fromLTWH(0, 0, stageWidth, stageHeight), Paint()..color = veil);
   }
 }
