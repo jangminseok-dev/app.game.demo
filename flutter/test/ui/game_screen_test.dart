@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/app/game_controller.dart';
+import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/offline_reward.dart';
 import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
@@ -74,5 +76,53 @@ void main() {
     await tester.tap(find.widgetWithText(GestureDetector, 'X').first);
     await tester.pumpAndSettle();
     expect(find.text('오프라인 보상'), findsNothing);
+  });
+
+  testWidgets('보스가 나오면 경고 띠가 뜬다', (tester) async {
+    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+    expect(find.textContaining('WARNING'), findsNothing);
+
+    // 보스가 나올 때까지 돌린다.
+    for (var i = 0; i < 400; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      if (find.textContaining('WARNING').evaluate().isNotEmpty) break;
+    }
+    expect(find.textContaining('WARNING'), findsWidgets, reason: '보스 등장 경고');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('퀘스트 보상을 받으면 획득 창이 뜬다', (tester) async {
+    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const config = BalanceConfig();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          saveRepositoryProvider.overrideWithValue(InMemorySaveRepository()),
+          offlineRewardProvider.overrideWithValue(null),
+          // 1번 퀘스트(10층 도달)를 이미 채운 상태로 시작한다.
+          initialStateProvider.overrideWithValue(
+            GameState.initial(config).copyWith(highestStage: 10),
+          ),
+        ],
+        child: const MaterialApp(home: GameScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('받기'), findsWidgets, reason: '받을 수 있는 퀘스트');
+    await tester.tap(find.widgetWithText(GestureDetector, '받기').first);
+    await tester.pumpAndSettle();
+    expect(find.text('보상'), findsWidgets);
+    expect(find.textContaining('빈 곳을 터치'), findsWidgets);
+
+    // 빈 곳을 누르면 닫힌다.
+    await tester.tapAt(const Offset(30, 30));
+    await tester.pumpAndSettle();
+    expect(find.text('보상'), findsNothing);
   });
 }

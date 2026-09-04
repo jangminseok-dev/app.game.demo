@@ -5,6 +5,7 @@ import '../app/game_controller.dart';
 import '../domain/game_state.dart';
 import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
+import '../domain/dungeon.dart';
 import '../domain/quest.dart';
 import '../domain/upgrade.dart';
 import 'battle_area.dart';
@@ -13,6 +14,7 @@ import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
 import 'hud/game_popup.dart';
 import 'hud/pixel_ui.dart';
+import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
 import 'pet_panel.dart';
 import 'quest_strip.dart';
@@ -28,7 +30,67 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProviderStateMixin {
+  /// 보스 경고 띠. 보스가 나타난 순간에만 한 번 돈다.
+  late final AnimationController _bossWarning =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+
+  /// 패배 팝업이 겹쳐 뜨는 것을 막는다.
+  bool _defeatShown = false;
+
+  @override
+  void dispose() {
+    _bossWarning.dispose();
+    super.dispose();
+  }
+
+  /// 쓰러졌을 때 어디를 키워야 하는지 알려 준다.
+  ///
+  /// 지는 것은 벌이 아니라 다음 할 일 안내다. 레퍼런스도 패배 즉시 성장 바로가기를 띄운다.
+  Future<void> _showDefeat() async {
+    _defeatShown = true;
+    await showGamePopup(
+      context,
+      title: '전투에 패배했습니다',
+      heightFactor: 0.34,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const PixelText('무엇을 키울지 골라 보세요', size: 12, color: PixelPalette.textDim),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                HudButton(
+                  label: '성장',
+                  icon: Icons.trending_up,
+                  onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
+                ),
+                HudButton(
+                  label: '장비',
+                  icon: Icons.shield_outlined,
+                  onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
+                ),
+                HudButton(
+                  label: '스킬',
+                  icon: Icons.auto_awesome,
+                  onTap: () => showGamePopup(context, title: '스킬', child: const SkillSheet()),
+                ),
+                HudButton(
+                  label: '펫',
+                  icon: Icons.egg_outlined,
+                  onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (mounted) _defeatShown = false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +122,23 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 보스 등장과 패배는 순간이라 상태를 보고 있다가 그때만 연출한다.
+    ref.listen(gameControllerProvider, (before, after) {
+      if (before != null && !before.isBoss && after.isBoss) _bossWarning.forward(from: 0);
+      if (before != null && !before.isDown && after.isDown && !_defeatShown) _showDefeat();
+
+      // 던전을 깨고 나온 순간에만 보상 창을 띄운다.
+      final run = before?.dungeon.run;
+      if (run != null &&
+          after.dungeon.run == null &&
+          after.dungeon.clearedFloor(run.type) >= run.floor) {
+        final config = ref.read(balanceConfigProvider);
+        showRewardPopup(context, title: '${run.type.label} ${run.floor}층 클리어', lines: [
+          '${run.type.currency.label} +${formatNumber(dungeonReward(run.type, run.floor, config))}',
+        ]);
+      }
+    });
+
     final state = ref.watch(gameControllerProvider);
     final registered = state.codex.values.where((s) => s > 0).length;
 
@@ -73,6 +152,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             children: [
               // ── 전투가 화면을 다 채운다. 위에 얹히는 것은 전부 겹침이다.
               const Positioned.fill(child: BattleArea()),
+
+              // ── 보스 경고 띠
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 150,
+                child: BossWarningBanner(animation: _bossWarning),
+              ),
 
               // ── 왼쪽: 지금 할 일
               const Positioned(left: 6, top: 84, child: QuestStrip()),

@@ -5,6 +5,7 @@ import '../app/game_controller.dart';
 import '../domain/number_format.dart';
 import '../domain/quest.dart';
 import 'hud/pixel_ui.dart';
+import 'hud/reward_popup.dart';
 
 /// 화면 왼쪽에 늘 붙어 있는 퀘스트 카드.
 ///
@@ -49,7 +50,14 @@ class QuestStrip extends ConsumerWidget {
               PixelText('퀘스트 ${quest.number}', size: 11, color: PixelPalette.gold),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: ready ? ref.read(gameControllerProvider.notifier).claimQuest : null,
+                onTap: ready
+                    ? () {
+                        ref.read(gameControllerProvider.notifier).claimQuest();
+                        showRewardPopup(context, lines: [
+                          '${quest.reward.label} +${formatNumber(quest.rewardAmount.toDouble())}',
+                        ]);
+                      }
+                    : null,
                 child: PixelPanel(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   color: ready ? PixelPalette.goldDark : const Color(0xFF3A3342),
