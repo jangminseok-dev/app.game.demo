@@ -249,7 +249,8 @@ class BattleStageGame extends FlameGame {
 
   double _monsterHue(Monster? m) {
     if (m == null) return 0;
-    // 같은 형태를 색으로 갈라 변종을 만든다. 속성색을 기준으로 순번만큼 돌린다.
+    // 팩 세트는 오크 한 종뿐이라 크게 돌리면 보라 오크가 된다. 원색을 유지하며 살짝만 흔든다.
+    if (_useAssetPack) return (m.id % 5 - 2) * 9.0;
     final base = HSLColor.fromColor(elementColor(m.element)).hue;
     return (base + (m.id % 5) * 24) % 360;
   }
