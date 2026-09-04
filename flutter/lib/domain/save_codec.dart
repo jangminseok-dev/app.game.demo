@@ -4,6 +4,7 @@ import 'game_state.dart';
 import 'hatchery.dart';
 import 'pet.dart';
 import 'quest.dart';
+import 'skill.dart';
 import 'upgrade.dart';
 
 /// 저장 단위. 상태 + 저장 시각.
@@ -58,6 +59,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'quests': s.quests.toJson(),
       'pets': s.pets.toJson(),
       'hatchery': s.hatchery.toJson(),
+      'skills': s.skills.toJson(),
     };
 
 /// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
@@ -93,6 +95,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       quests: QuestState.fromJson(j['quests'] as Map<String, dynamic>? ?? const {}),
       pets: PetState.fromJson(j['pets'] as Map<String, dynamic>? ?? const {}),
       hatchery: HatcheryState.fromJson(j['hatchery'] as Map<String, dynamic>? ?? const {}),
+      skills: SkillState.fromJson(j['skills'] as Map<String, dynamic>? ?? const {}),
     );
   } on TypeError {
     return null;

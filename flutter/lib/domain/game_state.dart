@@ -6,6 +6,7 @@ import 'formulas.dart' as formulas;
 import 'hatchery.dart';
 import 'pet.dart';
 import 'quest.dart';
+import 'skill.dart';
 import 'upgrade.dart';
 
 /// 게임 진행 상태. 불변 객체이며 [BattleEngine]이 새 상태를 만들어 돌려준다.
@@ -33,6 +34,7 @@ class GameState {
     this.quests = QuestState.empty,
     this.pets = PetState.empty,
     this.hatchery = HatcheryState.empty,
+    this.skills = SkillState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -97,6 +99,9 @@ class GameState {
   /// 부화 3칸과 탐험 3칸. 시간이 지나야 끝난다.
   final HatcheryState hatchery;
 
+  /// 해금·장착한 스킬과 남은 대기 시간.
+  final SkillState skills;
+
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
       .withPet(pets);
@@ -128,6 +133,7 @@ class GameState {
     QuestState? quests,
     PetState? pets,
     HatcheryState? hatchery,
+    SkillState? skills,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -152,6 +158,7 @@ class GameState {
       quests: quests ?? this.quests,
       pets: pets ?? this.pets,
       hatchery: hatchery ?? this.hatchery,
+      skills: skills ?? this.skills,
     );
   }
 }

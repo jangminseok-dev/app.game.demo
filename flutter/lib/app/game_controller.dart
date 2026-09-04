@@ -15,6 +15,7 @@ import '../domain/hatchery.dart';
 import '../domain/monster.dart';
 import '../domain/offline_reward.dart';
 import '../domain/save_codec.dart';
+import '../domain/skill.dart';
 import '../domain/upgrade.dart';
 
 /// 서버 마스터 데이터(또는 캐시). main()에서 override한다. 없으면 내장 기본값.
@@ -132,6 +133,22 @@ class GameController extends Notifier<GameState> {
 
   /// 던전을 포기하고 필드로 돌아온다. 입장권은 돌려주지 않는다.
   void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false);
+
+  /// 스킬서 조각을 내고 스킬을 연다. 조각이 모자라면 아무 일도 안 일어난다.
+  void unlockSkill(SkillId id) {
+    final next = _engine.unlockSkill(state, id);
+    if (next != null) state = next;
+  }
+
+  void equipSkill(int slot, SkillId id) => state = _engine.equipSkill(state, slot, id);
+
+  void toggleSkillAuto(int slot) => state = _engine.toggleSkillAuto(state, slot);
+
+  /// 탭으로 스킬을 즉시 쓴다. 대기 중이면 아무 일도 안 일어난다.
+  void useSkill(int slot) {
+    final next = _engine.useSkill(state, slot, _rng);
+    if (next != null) state = next;
+  }
 
   /// 알 조각을 내고 알을 올린다. 조각이 모자라면 아무 일도 안 일어난다.
   void startHatch(int index, EggKind kind) {

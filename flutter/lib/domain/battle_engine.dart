@@ -10,6 +10,7 @@ import 'hatchery.dart';
 import 'monster.dart';
 import 'pet.dart';
 import 'quest.dart';
+import 'skill.dart';
 import 'upgrade.dart';
 
 /// 코어 루프의 전투 부분. GAME_DESIGN.md 2장·15장.
@@ -53,6 +54,12 @@ class BattleEngine {
     }
 
     final stats = s.statsWith(config);
+    // 자동 스킬이 먼저 나간다. 대기 시간이 돌아온 칸만 쏜다.
+    s = s.copyWith(skills: s.skills.advance(dt));
+    for (final slot in s.skills.autoReadySlots.toList()) {
+      s = _castSkill(s, stats, slot, rng);
+    }
+
     final interval = 1 / stats.attacksPerSecond;
     var timer = s.attackTimer + dt;
     var hits = 0;
@@ -67,12 +74,46 @@ class BattleEngine {
   /// 공격 1회. 몬스터가 죽으면 보상과 다음 몬스터까지 처리한다.
   GameState _hit(GameState s, Stats stats, Random rng) {
     final isCrit = rng.nextDouble() < stats.critChance;
-    final damage = stats.attack * (isCrit ? config.critMultiplier : 1);
+    return _damage(s, stats, stats.attack * (isCrit ? config.critMultiplier : 1), rng);
+  }
+
+  GameState _damage(GameState s, Stats stats, double damage, Random rng) {
     final hp = s.monsterHp - damage;
-    if (hp > 0) {
-      return s.copyWith(monsterHp: hp);
-    }
+    if (hp > 0) return s.copyWith(monsterHp: hp);
     return _onKill(s, stats, rng);
+  }
+
+  // ── 스킬. 자동으로 나가고 탭하면 즉시 나간다.
+
+  /// 스킬서 조각을 내고 스킬을 연다. 조각이 모자라거나 이미 열었으면 null.
+  GameState? unlockSkill(GameState s, SkillId id) {
+    if (s.skills.unlocked.contains(id) || s.dungeon.skillPages < id.pageCost) return null;
+    final skills = s.skills.unlock(id);
+    // 빈 칸이 있으면 바로 끼워 준다 — 열고도 안 쓰는 일이 없게.
+    final open = skillSlotsOpen(s.highestStage);
+    final free = [for (var i = 0; i < open; i++) if (skills.at(i) == null) i];
+    return s.copyWith(
+      dungeon: s.dungeon.copyWith(skillPages: s.dungeon.skillPages - id.pageCost),
+      skills: free.isEmpty ? skills : skills.equip(free.first, id),
+    );
+  }
+
+  /// 열린 칸에 스킬을 끼운다. 아직 안 열린 칸이면 그대로 둔다.
+  GameState equipSkill(GameState s, int slot, SkillId id) =>
+      slot >= skillSlotsOpen(s.highestStage) ? s : s.copyWith(skills: s.skills.equip(slot, id));
+
+  GameState toggleSkillAuto(GameState s, int slot) => s.copyWith(skills: s.skills.toggleAuto(slot));
+
+  /// 탭으로 즉시 발동. 대기 중이면 null.
+  GameState? useSkill(GameState s, int slot, Random rng) {
+    if (!s.skills.isReady(slot)) return null;
+    return _castSkill(s, s.statsWith(config), slot, rng);
+  }
+
+  GameState _castSkill(GameState s, Stats stats, int slot, Random rng) {
+    final id = s.skills.at(slot);
+    if (id == null) return s;
+    return _damage(s.copyWith(skills: s.skills.fire(slot)), stats, stats.attack * id.damageMultiplier, rng);
   }
 
   GameState _onKill(GameState s, Stats stats, Random rng) {
