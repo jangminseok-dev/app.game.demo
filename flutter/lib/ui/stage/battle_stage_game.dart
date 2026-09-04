@@ -390,7 +390,11 @@ class _ActorLayer extends PositionComponent with HasTimeScale {}
 class _Background extends PositionComponent {
   _Background() : super(priority: -1000);
 
-  static const horizon = 110.0;
+  /// 하늘이 차지하는 비율. 가로 화면에서 하늘이 절반을 넘으면 전투가 아래로 눌린다.
+  static const skyRatio = 0.3;
+
+  /// 지평선 y. 무대 높이에서 계산한다 — 무대 비율이 바뀌면 같이 움직인다.
+  static double get horizon => (stageHeight * skyRatio).roundToDouble();
 
   final _pixel = Paint()
     ..filterQuality = FilterQuality.none
@@ -436,14 +440,23 @@ class _Background extends PositionComponent {
       );
       return;
     }
-    canvas.drawImage(far, Offset.zero, _pixel);
-    // 배경 그림(360×270)보다 무대가 길다. 지평선 아래를 세로로 늘려 채운다.
-    // 이어붙이면 바위·버섯이 반복돼 티가 나므로 늘리는 쪽을 택했다.
-    // 세로 배경 그림이 들어오면 이 늘림은 사라진다.
+    // 가로 무대는 배경 그림(360×270)보다 낮다. 늘리지 않고 잘라 쓴다 —
+    // 픽셀아트는 비정수 배율로 줄이면 계단이 뭉개진다.
+    // 하늘은 아래쪽(지평선에 가까운 쪽)을 남기고 꼭대기를 버린다.
+    final skyKeep = math.min(horizon, far.height.toDouble());
+    canvas.drawImageRect(
+      far,
+      Rect.fromLTWH(0, far.height - skyKeep, far.width.toDouble(), skyKeep),
+      Rect.fromLTWH(0, horizon - skyKeep, stageWidth, skyKeep),
+      _pixel,
+    );
+    // 땅은 위쪽(먼 땅)을 버리고 아래쪽을 남긴다. 캐릭터가 서는 곳이 아래다.
+    final groundNeed = stageHeight - horizon;
+    final groundKeep = math.min(groundNeed, ground.height.toDouble());
     canvas.drawImageRect(
       ground,
-      Rect.fromLTWH(0, 0, ground.width.toDouble(), ground.height.toDouble()),
-      Rect.fromLTWH(0, horizon, stageWidth, stageHeight - horizon),
+      Rect.fromLTWH(0, ground.height - groundKeep, ground.width.toDouble(), groundKeep),
+      Rect.fromLTWH(0, stageHeight - groundKeep, stageWidth, groundKeep),
       _pixel,
     );
     final veil = _veil;
