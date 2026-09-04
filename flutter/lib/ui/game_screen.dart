@@ -6,8 +6,10 @@ import '../domain/game_state.dart';
 import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
 import '../domain/dungeon.dart';
+import '../domain/attendance.dart';
 import '../domain/quest.dart';
 import '../domain/upgrade.dart';
+import 'attendance_panel.dart';
 import 'battle_area.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
@@ -184,6 +186,14 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                       badge: '${state.dungeon.tickets}',
                       alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
                       onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                    ),
+                    const SizedBox(height: 10),
+                    HudButton(
+                      label: '출석',
+                      icon: Icons.event_available_outlined,
+                      alert: state.attendance.canClaim(epochDayOf(DateTime.now())),
+                      onTap: () => showGamePopup(context, title: '출석부',
+                          heightFactor: 0.55, child: const AttendancePanel()),
                     ),
                     const SizedBox(height: 10),
                     HudButton(

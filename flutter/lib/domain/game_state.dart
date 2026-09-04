@@ -1,3 +1,4 @@
+import 'attendance.dart';
 import 'balance_config.dart';
 import 'codex.dart';
 import 'dungeon.dart';
@@ -43,6 +44,7 @@ class GameState {
     this.pets = PetState.empty,
     this.hatchery = HatcheryState.empty,
     this.skills = SkillState.empty,
+    this.attendance = AttendanceState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -189,6 +191,9 @@ class GameState {
   /// 해금·장착한 스킬과 남은 대기 시간.
   final SkillState skills;
 
+  /// 출석부. 하루 한 번 받는다.
+  final AttendanceState attendance;
+
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
       .withPet(pets);
@@ -227,6 +232,7 @@ class GameState {
     PetState? pets,
     HatcheryState? hatchery,
     SkillState? skills,
+    AttendanceState? attendance,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -258,6 +264,7 @@ class GameState {
       pets: pets ?? this.pets,
       hatchery: hatchery ?? this.hatchery,
       skills: skills ?? this.skills,
+      attendance: attendance ?? this.attendance,
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'attendance.dart';
 import 'dungeon.dart';
 import 'equipment.dart';
 import 'field.dart';
@@ -69,6 +70,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'pets': s.pets.toJson(),
       'hatchery': s.hatchery.toJson(),
       'skills': s.skills.toJson(),
+      'attendance': s.attendance.toJson(),
     };
 
 /// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
@@ -109,6 +111,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       pets: PetState.fromJson(j['pets'] as Map<String, dynamic>? ?? const {}),
       hatchery: HatcheryState.fromJson(j['hatchery'] as Map<String, dynamic>? ?? const {}),
       skills: SkillState.fromJson(j['skills'] as Map<String, dynamic>? ?? const {}),
+      attendance: AttendanceState.fromJson(j['attendance'] as Map<String, dynamic>? ?? const {}),
     );
   } on TypeError {
     return null;

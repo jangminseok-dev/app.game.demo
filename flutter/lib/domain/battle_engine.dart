@@ -8,6 +8,7 @@ import 'equipment.dart';
 import 'field.dart';
 import 'game_state.dart';
 import 'hatchery.dart';
+import 'attendance.dart';
 import 'monster.dart';
 import 'monster_unit.dart';
 import 'pet.dart';
@@ -532,6 +533,21 @@ class BattleEngine {
       dungeon: s.dungeon.copyWith(eggShards: s.dungeon.eggShards + expeditionShards(config)),
       hatchery: s.hatchery.takeExpedition(index),
     );
+  }
+
+  /// 오늘 출석 보상을 받는다. 이미 받았으면 null.
+  (GameState, RewardKind, int)? claimAttendance(GameState s, int today) {
+    if (!s.attendance.canClaim(today)) return null;
+    final (kind, amount) = attendanceTable[s.attendance.todaySlot];
+    final quest = Quest(
+      number: 0,
+      goal: QuestGoal.stage,
+      target: 0,
+      reward: kind,
+      rewardAmount: amount,
+    );
+    final next = grantQuestReward(s, quest, config).copyWith(attendance: s.attendance.claim(today));
+    return (next, kind, amount);
   }
 
   // ── 대장간. 강화석을 장비로 바꾼다.

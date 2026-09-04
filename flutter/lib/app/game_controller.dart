@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/cloud_save_gateway.dart';
 import '../data/save_repository.dart';
 import '../domain/balance_config.dart';
+import '../domain/attendance.dart';
 import '../domain/battle_engine.dart';
 import '../domain/codex.dart';
 import '../domain/dungeon.dart';
@@ -15,6 +16,7 @@ import '../domain/game_state.dart';
 import '../domain/hatchery.dart';
 import '../domain/monster.dart';
 import '../domain/offline_reward.dart';
+import '../domain/quest.dart';
 import '../domain/save_codec.dart';
 import '../domain/skill.dart';
 import '../domain/upgrade.dart';
@@ -118,6 +120,14 @@ class GameController extends Notifier<GameState> {
   void buyUpgrade(UpgradeType type) {
     final next = _engine.buyUpgrade(state, type);
     if (next != null) state = next;
+  }
+
+  /// 오늘 출석 보상을 받는다. 받았으면 무엇을 얼마나 받았는지 돌려준다.
+  (RewardKind, int)? claimAttendance() {
+    final result = _engine.claimAttendance(state, epochDayOf(DateTime.now()));
+    if (result == null) return null;
+    state = result.$1;
+    return (result.$2, result.$3);
   }
 
   /// 강화석을 내고 장비를 만든다. 만든 것을 돌려준다. 못 만들면 null.
