@@ -4,7 +4,7 @@
 
 **Goal:** 게임을 세로 고정에서 가로 고정으로 바꾸고, 무대 비율과 배경 지평선을 가로에 맞게 다시 잡는다. **화면이 안 깨지고 돌아가는 것까지**가 이 계획의 끝이다.
 
-**Architecture:** 세 겹이다. ① `main.dart`의 방향 고정 ② `battle_stage_game.dart`의 무대·카메라 상수 ③ 배경 그리기(지평선 비율). 여기에 세로를 전제한 테스트의 화면 크기를 고친다. **자리 재배치는 이 계획이 아니다** — `game_screen.dart`의 좌표는 어긋나 보여도 그대로 두고, 다음 계획에서 일곱 자리로 옮긴다.
+**Architecture:** 네 겹이다. ① `main.dart`의 방향 고정 ② 무대 상수 ③ **카메라를 레터박스에서 cover로** ④ 배경 그리기(지평선 비율). 여기에 세로를 전제한 테스트의 화면 크기를 고친다. **자리 재배치는 이 계획이 아니다** — `game_screen.dart`의 좌표는 어긋나 보여도 그대로 두고, 다음 계획에서 일곱 자리로 옮긴다.
 
 **Tech Stack:** Flutter + Flame. `CameraComponent.withFixedResolution`.
 
@@ -23,7 +23,7 @@
 | 파일 | 책임 | 처리 |
 |---|---|---|
 | `flutter/lib/main.dart` | 앱 시작·방향 고정 | `portraitUp` → 가로 |
-| `flutter/lib/ui/stage/battle_stage_game.dart` | 무대 상수·카메라·배경 그리기 | 상수 4개 + `_Background.render` |
+| `flutter/lib/ui/stage/battle_stage_game.dart` | 무대 상수·카메라·배경 그리기 | 상수 + **카메라 cover** + `_Background.render` |
 | `flutter/test/ui/game_screen_test.dart` | 화면 테스트 | 화면 크기를 가로로 |
 | `flutter/test/ui/art_gallery_test.dart` | 캡처 내보내기 | 화면 크기를 가로로 |
 | `flutter/test/ui/codex_screen_test.dart` | 도감 테스트 | 화면 크기를 가로로 |
@@ -47,7 +47,9 @@
 - Consumes: 없음
 - Produces: `stageHeight` · `viewHeight` 새 값. Task 2의 배경 그리기가 이 값을 쓴다
 
-**왜 이 값인가**: 무대를 **`360×202`(약 16:9)**로 잡는다. 요즘 폰 가로가 16:9~20:9 사이인데, `withFixedResolution`은 **레터박스**(맞춰 넣고 남는 곳에 검은 띠)라 넓은 쪽 기기에서 좌우에 얇은 띠가 생긴다. 20:9에 맞추면 반대로 16:9 기기와 태블릿에서 위아래가 잘린다. **띠가 생기는 쪽이 잘리는 쪽보다 낫다** — 잘리면 UI가 화면 밖으로 나간다.
+**왜 이 값인가**: 무대를 **`360×202`(약 16:9)**로 잡는다. 요즘 폰 가로가 16:9~20:9 사이의 한가운데다.
+
+**Task 2에서 카메라를 cover(화면을 꽉 채우고 남는 쪽을 자름)로 바꾸므로 검은 띠는 안 생긴다.** 대신 기기 비율에 따라 잘리는 방향이 다르다 — 20:9 폰은 위아래가, 4:3 태블릿은 좌우가 잘린다. **안전 영역은 가운데 `269×162`**다. 그 밖은 어느 기기에선가 잘릴 수 있다. 카메라가 주인공을 따라다니므로 전투는 늘 가운데에 있어 문제되지 않는다.
 
 - [ ] **Step 1: 지금 값을 눈으로 확인한다**
 
@@ -90,8 +92,8 @@ s = p.read_text()
 old = """/// 세로 화면을 채우도록 3:4로 잡는다. 배경 그림(360×270)은 지평선 아래를 세로로 반복해 채운다.
 const stageHeight = 480.0;"""
 new = """/// 가로 화면을 채우도록 약 16:9로 잡는다(2026-09-05 세로→가로 전환).
-/// `withFixedResolution`은 레터박스라 이보다 넓은 기기에서는 좌우에 얇은 띠가 생긴다.
-/// 20:9에 맞추면 반대로 16:9 기기와 태블릿에서 위아래가 잘려 UI가 화면 밖으로 나간다.
+/// 카메라가 cover라 기기 비율에 따라 잘리는 방향이 다르다 — 넓은 폰은 위아래, 태블릿은 좌우.
+/// 안전 영역은 가운데 269×162. 그 밖은 잘릴 수 있다.
 const stageHeight = 202.0;"""
 assert old in s, "stageHeight 줄을 못 찾았다"
 s = s.replace(old, new)
@@ -106,7 +108,9 @@ print("ok")
 EOF
 ```
 
-`viewHeight`는 `stageHeight`와 같은 비율로 줄인다 — 지금 `400/480 = 0.833`이고 `202 × 0.833 ≈ 168`이다. 카메라가 무대보다 좁아야 따라 움직일 자리가 생긴다는 원래 주석의 뜻을 그대로 지킨다.
+`viewHeight`는 `stageHeight`와 같은 비율로 줄인다 — 지금 `400/480 = 0.833`이고 `202 × 0.833 ≈ 168`이다.
+
+**이 두 상수는 Task 2에서 사라진다.** cover 카메라는 보이는 크기를 기기에서 계산하므로 고정값이 필요 없다. 그래도 Task 1에서 값을 맞춰 두는 이유는 **Task 1만 끝난 상태에서도 화면이 안 깨지고 돌아가야** 하기 때문이다.
 
 - [ ] **Step 4: 테스트의 화면 크기를 가로로 바꾼다**
 
@@ -149,22 +153,162 @@ git commit -m "feat(flutter): 가로 고정 — 무대를 360×202로
 
 무대 폭 360은 유지한다. 스프라이트 크기가 이 폭을 전제로 정해졌다.
 
-약 16:9로 잡았다. withFixedResolution은 레터박스라 더 넓은 기기에서
-좌우에 얇은 띠가 생기는데, 20:9에 맞춰 잘리게 하는 것보다 낫다.
-잘리면 UI가 화면 밖으로 나간다.
+약 16:9로 잡았다. 요즘 폰 가로가 16:9~20:9 사이의 한가운데다.
+카메라는 다음 커밋에서 cover로 바꾼다. 이 커밋만으로도 화면은 돈다.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 2: 배경 지평선을 가로에 맞게
+### Task 2: 카메라를 cover로
+
+**Files:**
+- Modify: `flutter/lib/ui/stage/battle_stage_game.dart` (카메라 생성, `_follow`의 줌·클램프, 상수 `viewWidth`/`viewHeight` 제거)
+
+**Interfaces:**
+- Consumes: Task 1의 `stageWidth = 360`, `stageHeight = 202`
+- Produces: 검은 띠 없는 화면. Task 3의 배경이 이 위에 그려진다
+
+**문제**: `CameraComponent.withFixedResolution`은 **레터박스**다 — 정해진 해상도를 화면에 맞춰 넣고 남는 곳에 검은 띠를 둔다. 레퍼런스는 화면을 꽉 채운다. 띠가 있으면 싸구려로 보인다.
+
+**cover로 바꿀 때 생기는 진짜 문제**: 지금 `_follow`는 보스일 때 `zoom × 0.86`으로 **물러난다**(`battle_stage_game.dart` 154행 부근). cover 상태에서 더 물러나면 **무대 밖 빈 곳이 보인다.** 무대 폭 360은 아트 규격이라 늘릴 수 없다.
+
+**해결 — 방향을 뒤집는다.** 평소에 살짝 당겨 두고(`×1.16`), 보스일 때 cover 배율로 **돌아온다**. 체감은 똑같이 "보스에서 물러난다"인데 무대 밖으로는 절대 안 나간다.
+
+- [ ] **Step 1: 지금 카메라 코드를 확인한다**
+
+```bash
+grep -n "withFixedResolution\|viewWidth\|viewHeight\|wantedZoom\|halfW\|halfH" flutter/lib/ui/stage/battle_stage_game.dart
+```
+
+기대: `super(camera: CameraComponent.withFixedResolution(width: viewWidth, height: viewHeight))`, `wantedZoom = (isBoss) ? 0.86 : 1.0`, `halfW/halfH`가 `viewWidth/viewHeight`를 쓴다.
+
+- [ ] **Step 2: 카메라를 기본 뷰포트로 바꾸고 cover 배율을 계산한다**
+
+`CameraComponent`의 기본 뷰포트가 `MaxViewport`(화면 전체, 자르지 않음)다. 배율은 **화면을 덮는 최소 배율**이다.
+
+`fix_camera.py`로 저장해서 실행하라 — heredoc 안에 삼중 따옴표를 겹치면 파이썬이 깨진다.
+
+```python
+# fix_camera.py
+import pathlib
+p = pathlib.Path('flutter/lib/ui/stage/battle_stage_game.dart')
+s = p.read_text()
+
+# ① 고정 해상도 뷰포트를 버린다
+old = 'super(camera: CameraComponent.withFixedResolution(width: viewWidth, height: viewHeight));'
+new = 'super(camera: CameraComponent());'
+assert old in s, '카메라 생성부를 못 찾았다'
+s = s.replace(old, new)
+
+# ② 상수 둘을 지우고 cover 배율 설명으로 바꾼다
+old2 = """/// 카메라가 한 번에 보여 주는 크기. 무대보다 작아야 카메라가 움직일 자리가 생긴다.
+///
+/// 무대와 같은 크기면 카메라가 붙박이가 되어 화면이 죽는다. 조금 좁게 잘라 두면
+/// 주인공과 몬스터 사이를 따라다니며 전투가 살아 있는 것처럼 보인다.
+const viewWidth = 300.0;
+const viewHeight = 168.0;"""
+new2 = """/// 평소에 얼마나 당겨 두는가. cover 배율의 몇 배인지다.
+///
+/// 1.0이면 화면이 무대를 딱 덮어 카메라가 움직일 자리가 없다. 조금 당겨 두면
+/// 주인공과 몬스터 사이를 따라다니며 전투가 살아 있는 것처럼 보인다.
+/// 보스일 때는 1.0으로 돌아가 물러난다 — cover보다 더 물러나면 무대 밖이 보인다.
+const normalZoomFactor = 1.16;"""
+assert old2 in s, 'view 상수 블록을 못 찾았다'
+s = s.replace(old2, new2)
+
+# ③ 줌과 클램프를 cover 기준으로
+old3 = """    // 보스는 크다. 조금 물러나 전신이 들어오게 한다. 자르는 폭도 이 확대율을 따라간다.
+    final wantedZoom = (_last?.isBoss ?? false) ? 0.86 : 1.0;"""
+new3 = """    // 화면을 덮는 최소 배율. 기기 비율이 바뀌면 같이 바뀐다.
+    final vp = camera.viewport.size;
+    final cover = math.max(vp.x / stageWidth, vp.y / stageHeight);
+    // 보스는 크다. cover로 돌아가 전신이 들어오게 한다.
+    // cover보다 더 물러나면 무대 밖 빈 곳이 보이므로 이 아래로는 안 내려간다.
+    final wantedZoom = cover * ((_last?.isBoss ?? false) ? 1.0 : normalZoomFactor);"""
+assert old3 in s, '줌 계산부를 못 찾았다'
+s = s.replace(old3, new3)
+
+old4 = """    final halfW = math.min(stageWidth / 2, viewWidth / 2 / nextZoom);
+    final halfH = math.min(stageHeight / 2, viewHeight / 2 / nextZoom);"""
+new4 = """    final halfW = math.min(stageWidth / 2, vp.x / 2 / nextZoom);
+    final halfH = math.min(stageHeight / 2, vp.y / 2 / nextZoom);"""
+assert old4 in s, '클램프부를 못 찾았다'
+s = s.replace(old4, new4)
+
+p.write_text(s)
+print('ok')
+```
+
+- [ ] **Step 3: 카메라 초기 위치가 여전히 맞는지 확인한다**
+
+```bash
+grep -n "viewfinder.anchor\|viewfinder.position\|viewfinder.zoom" flutter/lib/ui/stage/battle_stage_game.dart
+```
+
+기대: `onLoad`에서 `anchor = Anchor.center`, `position = Vector2(stageWidth / 2, stageHeight / 2)`. **이건 안 바꾼다** — 무대 한가운데를 보는 것은 그대로 맞다.
+
+다만 **초기 `zoom`이 1.0이면 첫 프레임이 아주 작게 나온다.** `_follow`가 지수 감쇠로 따라오므로 몇 프레임 뒤엔 맞지만, 첫 프레임이 튄다. `onLoad`에서 초기 줌을 cover로 한 번 맞춰 준다.
+
+```python
+# fix_camera_init.py
+import pathlib
+p = pathlib.Path('flutter/lib/ui/stage/battle_stage_game.dart')
+s = p.read_text()
+old = "    camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);"
+new = """    camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);
+    // 첫 프레임이 튀지 않게 cover 배율로 시작한다. 이후는 _follow가 이어받는다.
+    final vp0 = camera.viewport.size;
+    camera.viewfinder.zoom =
+        math.max(vp0.x / stageWidth, vp0.y / stageHeight) * normalZoomFactor;"""
+assert old in s, '초기 위치 줄을 못 찾았다'
+p.write_text(s.replace(old, new))
+print('ok')
+```
+
+- [ ] **Step 4: `viewWidth`/`viewHeight`가 다른 곳에 안 남았는지 확인한다**
+
+```bash
+grep -rn "viewWidth\|viewHeight" flutter/lib flutter/test
+```
+
+기대: **하나도 안 잡힌다.** 잡히면 그 파일도 고쳐야 한다 — 어디서 잡혔는지 리포트에 적어라.
+
+- [ ] **Step 5: 테스트를 돌린다**
+
+```bash
+cd flutter && flutter test 2>&1 | tail -12
+```
+
+기대: 전부 통과. `camera.viewport.size`가 테스트 환경에서 0이 될 수 있다 — 그러면 `cover`가 0이 되고 배율이 0이 되어 화면이 안 보인다. **`vp.x`나 `vp.y`가 0이면 이전 배율을 그대로 두도록 방어해야 하는지** 테스트 결과로 판단하라. 통과하면 방어를 넣지 마라(YAGNI). 깨지면 그때 넣고 그 사실을 리포트에 적어라.
+
+- [ ] **Step 6: 커밋**
+
+```bash
+git add flutter/lib/ui/stage/battle_stage_game.dart
+git commit -m "feat(flutter): 카메라를 cover로 — 검은 띠를 없앤다
+
+withFixedResolution은 레터박스라 기기 비율이 다르면 검은 띠가 생긴다.
+레퍼런스는 화면을 꽉 채운다.
+
+보스 줌아웃의 방향을 뒤집었다. cover 상태에서 더 물러나면 무대 밖
+빈 곳이 보이는데 무대 폭 360은 아트 규격이라 못 늘린다. 그래서
+평소에 1.16배 당겨 두고 보스일 때 cover로 돌아온다. 체감은 같고
+무대 밖으로는 안 나간다.
+
+viewWidth/viewHeight 상수는 지웠다. 보이는 크기를 기기에서 계산한다.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+### Task 3: 배경 지평선을 가로에 맞게
 
 **Files:**
 - Modify: `flutter/lib/ui/stage/battle_stage_game.dart` (`_Background.render`)
 
 **Interfaces:**
-- Consumes: Task 1의 `stageHeight = 202`
+- Consumes: Task 1의 `stageHeight = 202`, Task 2의 cover 카메라
 - Produces: 가로 무대를 채우는 배경. 판정은 사용자가 캡처를 보고 한다
 
 **문제**: 지금 코드는 `far.png`(360×110, 하늘)를 그대로 위에 그리고 `ground.png`(360×160)를 지평선 110 아래로 **늘려서** 채운다(`stageHeight - horizon = 370`, 2.3배). 무대가 202가 되면 지평선 아래가 92px뿐이라 늘림은 사라지지만, **하늘이 110으로 화면의 54%**가 된다. 가로 화면에서 하늘이 절반 넘게 차지하면 전투가 아래에 눌린다.
@@ -283,7 +427,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 3: 문서를 사실에 맞춘다
+### Task 4: 문서를 사실에 맞춘다
 
 **Files:**
 - Modify: `GAME_DESIGN.md` 1장
@@ -291,7 +435,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `docs/superpowers/specs/2026-09-03-art-pipeline-design.md` (무대 규격)
 
 **Interfaces:**
-- Consumes: Task 1·2가 확정한 값 (`360×202`, 하늘 30%)
+- Consumes: Task 1~3이 확정한 값 (`360×202`, 하늘 30%)
 - Produces: 다음 사람이 읽을 정본
 
 - [ ] **Step 1: 기획서 1장을 고친다**
@@ -398,7 +542,6 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - **자리 재배치.** `game_screen.dart`의 `Positioned(left: 6, top: 84)` 같은 세로 전제 좌표는 **그대로 둔다.** 가로에서 어긋나 보이겠지만 안 깨진다. 일곱 자리로 옮기는 것은 다음 계획이다
 - **메뉴 그리드 신설** — 다음 계획
 - **팝업 좌측 초상 열** — 그다음 계획
-- **레터박스 대신 화면을 꽉 채우기(cover).** `withFixedResolution`은 레터박스다. 띠가 거슬리면 카메라 뷰포트를 바꿔야 하는데, 그건 값 하나가 아니라 구조 변경이라 따로 본다
 - **배경 9지역 그리기** — 크레딧이 필요하다
 
 ## 알려진 위험
@@ -407,5 +550,6 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 |---|---|---|
 | 테스트가 세로를 전제해 깨진다 | Task 1 Step 5 | 크기만 고쳐서 통과하면 정상. 코드가 깨졌으면 BLOCKED |
 | 하늘 30%가 너무 좁아 보인다 | Task 2 Step 5 캡처 | `skyRatio` 하나만 고치면 된다. 상수로 뺀 이유가 이것이다 |
-| 레터박스 띠가 거슬린다 | 실기기에서 | 이 계획 밖. 구조 변경이라 따로 본다 |
+| 테스트에서 `camera.viewport.size`가 0이다 | Task 2 Step 5 | 배율이 0이 되어 화면이 안 보인다. 테스트가 통과하면 방어를 넣지 마라 |
+| 기기 비율에 따라 무대 가장자리가 잘린다 | 실기기에서 | cover의 대가다. 안전 영역은 가운데 `269×162`. 카메라가 주인공을 따라다니므로 전투는 늘 가운데에 있다 |
 | `game_screen`의 세로 좌표가 화면 밖으로 나간다 | Task 1 Step 5 | 안 깨지면 통과. 다음 계획에서 옮긴다 |
