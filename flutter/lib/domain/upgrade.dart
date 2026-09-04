@@ -46,6 +46,16 @@ class Stats {
   final double critChance;
   final double goldMultiplier;
 
+  /// 장비·강화가 주는 배수를 공격력에만 곱한다. 공속·치명·골드는 건드리지 않는다.
+  Stats scaledBy(double multiplier) => multiplier == 1
+      ? this
+      : Stats(
+          attack: attack * multiplier,
+          attacksPerSecond: attacksPerSecond,
+          critChance: critChance,
+          goldMultiplier: goldMultiplier,
+        );
+
   /// 치명타 기대값을 반영한 초당 피해량. 화면 표시와 오프라인 보상 계산에 쓴다.
   double dps(BalanceConfig config) =>
       attack * (1 + critChance * (config.critMultiplier - 1)) * attacksPerSecond;

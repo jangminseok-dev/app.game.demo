@@ -1,5 +1,6 @@
 import 'balance_config.dart';
 import 'codex.dart';
+import 'equipment.dart';
 import 'formulas.dart' as formulas;
 import 'upgrade.dart';
 
@@ -23,6 +24,7 @@ class GameState {
     this.codex = const {},
     this.pity = const {},
     this.passives = Passives.none,
+    this.equipment = EquipmentState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -72,7 +74,11 @@ class GameState {
   /// [codex]에서 계산한 패시브 합계. codex가 바뀔 때 [BattleEngine.withCodex]가 함께 갱신한다.
   final Passives passives;
 
-  Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives);
+  /// 장비·강화석·강화 레벨. 공격력에 배수로 곱해진다.
+  final EquipmentState equipment;
+
+  Stats statsWith(BalanceConfig config) =>
+      Stats.fromLevels(levels, config, passives).scaledBy(equipment.power);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 
@@ -96,6 +102,7 @@ class GameState {
     Map<int, int>? codex,
     Map<int, int>? pity,
     Passives? passives,
+    EquipmentState? equipment,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -115,6 +122,7 @@ class GameState {
       codex: codex ?? this.codex,
       pity: pity ?? this.pity,
       passives: passives ?? this.passives,
+      equipment: equipment ?? this.equipment,
     );
   }
 }

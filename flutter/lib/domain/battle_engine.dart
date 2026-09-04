@@ -3,6 +3,7 @@ import 'dart:math';
 import 'balance_config.dart';
 import 'codex.dart';
 import 'formulas.dart';
+import 'equipment.dart';
 import 'game_state.dart';
 import 'monster.dart';
 import 'upgrade.dart';
@@ -18,10 +19,13 @@ import 'upgrade.dart';
 ///
 /// 포획은 여기서 굴리지 않는다. 처치를 [GameState.killLog]에 세어 두면 서버가 판정한다(6장).
 class BattleEngine {
-  const BattleEngine(this.config, {this.catalog = MonsterCatalog.empty});
+  const BattleEngine(this.config, {this.catalog = MonsterCatalog.empty, this.dropTable = const DropTable()});
 
   final BalanceConfig config;
   final MonsterCatalog catalog;
+
+  /// 장비 드롭 판정. 확률을 바꾸려면 이것만 갈아 끼운다.
+  final DropTable dropTable;
 
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {
@@ -53,19 +57,22 @@ class BattleEngine {
     if (hp > 0) {
       return s.copyWith(monsterHp: hp);
     }
-    return _onKill(s, stats);
+    return _onKill(s, stats, rng);
   }
 
-  GameState _onKill(GameState s, Stats stats) {
+  GameState _onKill(GameState s, Stats stats, Random rng) {
     final reward = (s.isBoss
             ? bossGoldReward(s.stage, config)
             : goldReward(s.stage, config)) *
         stats.goldMultiplier;
+    // 장비 드롭 — 보스는 반드시, 필드는 가끔. 더 센 것이면 자동 착용되고 밀린 것은 인벤토리로 간다.
+    final drop = dropTable.roll(s.stage, isBoss: s.isBoss, rng: rng);
     s = s.copyWith(
       gold: s.gold + reward,
       totalKills: s.totalKills + 1,
       killLog: s.isBoss ? null : _increment(s.killLog, s.monsterId),
       bossKillLog: s.isBoss ? _increment(s.bossKillLog, s.monsterId) : null,
+      equipment: drop == null ? null : s.equipment.pickUp(drop),
     );
 
     if (s.isBoss) {
