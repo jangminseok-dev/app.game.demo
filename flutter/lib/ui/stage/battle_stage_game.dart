@@ -24,7 +24,7 @@ const _sheetsPerRegion = <String, int>{'forest': 2};
 
 /// 아트 세트 전환 — 에셋 팩(한 아티스트) vs AI 생성. 비교용 스위치.
 /// 팩: Zerie "Tiny RPG Character Asset Pack 01" (병사·오크, 상업 이용 가능)
-const _useAssetPack = true;
+const _useAssetPack = false;
 const _heroSheetId = _useAssetPack ? 'soldier' : 'warrior_1';
 const _heroSize = _useAssetPack ? 68 : 56;
 const _bossSheetId = _useAssetPack ? 'orc' : 'forest';
