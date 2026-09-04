@@ -18,6 +18,7 @@ import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
 import 'pet_panel.dart';
 import 'quest_strip.dart';
+import 'stage_select_panel.dart';
 
 /// 메인 화면 — 전투가 화면을 다 채우고 기능은 그 위에 팝업으로 뜬다.
 ///
@@ -182,6 +183,13 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                       badge: '${state.dungeon.tickets}',
                       alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
                       onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                    ),
+                    const SizedBox(height: 10),
+                    HudButton(
+                      label: '이동',
+                      icon: Icons.map_outlined,
+                      alert: state.stageFailCount > 0 && state.stage == state.highestStage,
+                      onTap: () => showGamePopup(context, title: '층 이동', child: const StageSelectPanel()),
                     ),
                     const SizedBox(height: 10),
                     HudButton(

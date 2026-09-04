@@ -125,6 +125,12 @@ class GameController extends Notifier<GameState> {
     if (!identical(next, state.equipment)) state = state.copyWith(equipment: next);
   }
 
+  /// 다른 층으로 옮겨 간다. 최고 층 이하로만 갈 수 있다.
+  void travelTo(int stage) {
+    final next = _engine.travelTo(state, stage, _rng);
+    if (next != null) state = next;
+  }
+
   /// 입장권을 쓰고 던전 다음 층에 들어간다. 조건이 안 되면 아무 일도 안 일어난다.
   void enterDungeon(DungeonType type) {
     final next = _engine.enterDungeon(state, type, _rng);

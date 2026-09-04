@@ -291,6 +291,27 @@ class BattleEngine {
     );
   }
 
+  /// 다른 층으로 옮겨 간다. 최고 층 이하로만 갈 수 있고, 던전 중이거나 쓰러져 있으면 못 간다.
+  ///
+  /// 벽에 막히면 한 층만 반복하게 된다. 낮은 층에 내려가 사냥할 길이 있어야
+  /// "막혔다"가 "할 일이 없다"로 이어지지 않는다(기획서 6장).
+  GameState? travelTo(GameState s, int stage, Random rng) {
+    if (s.dungeon.run != null || s.isDown) return null;
+    final target = stage.clamp(1, s.highestStage);
+    if (target == s.stage) return null;
+    return _spawnNormal(
+      s.copyWith(
+        stage: target,
+        killsOnStage: 0,
+        isBoss: false,
+        bossTimeLeft: 0,
+        stageTimeLeft: config.stageTimeLimit,
+        attackTimer: 0,
+      ),
+      rng,
+    );
+  }
+
   /// 시간을 넘겼다. 진행을 일부 잃고 같은 층을 처음 무리부터 다시 한다.
   ///
   /// 레퍼런스는 전부 잃지만 우리는 무한 층이라 전부 잃게 하면 어느 층에서 영영 막힌다.
