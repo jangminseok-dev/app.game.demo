@@ -1,5 +1,6 @@
 import 'balance_config.dart';
 import 'codex.dart';
+import 'dungeon.dart';
 import 'equipment.dart';
 import 'formulas.dart' as formulas;
 import 'upgrade.dart';
@@ -25,6 +26,7 @@ class GameState {
     this.pity = const {},
     this.passives = Passives.none,
     this.equipment = EquipmentState.empty,
+    this.dungeon = DungeonState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -77,6 +79,9 @@ class GameState {
   /// 장비·강화석·강화 레벨. 공격력에 배수로 곱해진다.
   final EquipmentState equipment;
 
+  /// 던전 진행·입장권·던전 재화. [DungeonState.run]이 있으면 필드가 아니라 던전에서 싸운다.
+  final DungeonState dungeon;
+
   Stats statsWith(BalanceConfig config) =>
       Stats.fromLevels(levels, config, passives).scaledBy(equipment.powerWith(config));
 
@@ -103,6 +108,7 @@ class GameState {
     Map<int, int>? pity,
     Passives? passives,
     EquipmentState? equipment,
+    DungeonState? dungeon,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -123,6 +129,7 @@ class GameState {
       pity: pity ?? this.pity,
       passives: passives ?? this.passives,
       equipment: equipment ?? this.equipment,
+      dungeon: dungeon ?? this.dungeon,
     );
   }
 }

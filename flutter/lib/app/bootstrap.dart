@@ -47,8 +47,13 @@ class Bootstrap {
     // 로컬 세이브의 도감으로 패시브를 다시 계산한다(카탈로그가 바뀌었을 수 있다).
     final restored = engine.withCodex(save.state, save.state.codex);
     final reward = OfflineReward.calculate(restored, save.savedAt, now, config);
+    // 입장권은 오프라인 상한과 무관하게 실제 경과 시간만큼 찬다 — 며칠 쉬어도 손해가 없어야 한다.
+    final away = now.difference(save.savedAt).inSeconds.toDouble();
     return Bootstrap(
-      state: restored.copyWith(gold: restored.gold + reward.gold),
+      state: restored.copyWith(
+        gold: restored.gold + reward.gold,
+        dungeon: restored.dungeon.regenerate(away > 0 ? away : 0, config),
+      ),
       offlineReward: reward.gold > 0 ? reward : null,
       fromCloud: false,
     );

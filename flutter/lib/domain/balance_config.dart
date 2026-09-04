@@ -37,6 +37,15 @@ class BalanceConfig {
     this.equipStagesPerTier = 50,
     this.equipGearCoefficient = 0.02,
     this.equipEnhancePerLevel = 0.03,
+    this.dungeonTicketSeconds = 8 * 3600,
+    this.dungeonTicketCap = 12,
+    this.dungeonWaves = 5,
+    this.dungeonTimeLimit = 90,
+    this.dungeonStagesPerFloor = 5,
+    this.dungeonHpMultiplier = 1.4,
+    this.dungeonGoldMultiplier = 40,
+    this.dungeonMaterialBase = 5,
+    this.dungeonMaterialPerFloor = 3,
     this.upgradeBaseCosts = const {
       UpgradeType.attack: 10,
       UpgradeType.attackSpeed: 25,
@@ -65,6 +74,33 @@ class BalanceConfig {
 
   /// 강화 1레벨당 공격력 배수 증가분.
   final double equipEnhancePerLevel;
+
+  // ── 던전. 필드를 그대로 쓰되 입장권을 쓰고 층 보상만 다르다.
+
+  /// 입장권 1장이 차는 데 걸리는 시간(초). 하루 3장.
+  final double dungeonTicketSeconds;
+
+  /// 쌓아 둘 수 있는 입장권 최대치. 며칠 못 들어와도 손해가 없어야 한다.
+  final int dungeonTicketCap;
+
+  /// 한 층에서 잡아야 하는 몬스터 수.
+  final int dungeonWaves;
+
+  /// 한 층의 제한 시간(초). 넘기면 실패이고 입장권은 돌려주지 않는다.
+  final double dungeonTimeLimit;
+
+  /// 던전 1층이 필드 몇 층에 해당하는가. 층 난이도 환산에 쓴다.
+  final int dungeonStagesPerFloor;
+
+  /// 같은 난이도의 필드 몬스터 대비 던전 몬스터의 체력 배수.
+  final double dungeonHpMultiplier;
+
+  /// 황금 동굴 보상 = 환산 층의 필드 골드 × 이 배수.
+  final double dungeonGoldMultiplier;
+
+  /// 재료형 던전 보상 = base + perFloor × 층.
+  final double dungeonMaterialBase;
+  final double dungeonMaterialPerFloor;
 
   final double monsterHpBase;
   final double monsterHpGrowth;

@@ -1,3 +1,4 @@
+import 'dungeon.dart';
 import 'equipment.dart';
 import 'game_state.dart';
 import 'upgrade.dart';
@@ -50,6 +51,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'codex': _encodeIntMap(s.codex),
       'pity': _encodeIntMap(s.pity),
       'equipment': s.equipment.toJson(),
+      'dungeon': s.dungeon.toJson(),
     };
 
 /// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
@@ -81,6 +83,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       codex: _decodeIntMap(j['codex']),
       pity: _decodeIntMap(j['pity']),
       equipment: EquipmentState.fromJson(j['equipment'] as Map<String, dynamic>? ?? const {}),
+      dungeon: DungeonState.fromJson(j['dungeon'] as Map<String, dynamic>? ?? const {}),
     );
   } on TypeError {
     return null;

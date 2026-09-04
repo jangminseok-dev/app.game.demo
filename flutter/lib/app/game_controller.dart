@@ -9,6 +9,7 @@ import '../data/save_repository.dart';
 import '../domain/balance_config.dart';
 import '../domain/battle_engine.dart';
 import '../domain/codex.dart';
+import '../domain/dungeon.dart';
 import '../domain/game_state.dart';
 import '../domain/monster.dart';
 import '../domain/offline_reward.dart';
@@ -121,6 +122,15 @@ class GameController extends Notifier<GameState> {
     final next = state.equipment.scrapAll();
     if (!identical(next, state.equipment)) state = state.copyWith(equipment: next);
   }
+
+  /// 입장권을 쓰고 던전 다음 층에 들어간다. 조건이 안 되면 아무 일도 안 일어난다.
+  void enterDungeon(DungeonType type) {
+    final next = _engine.enterDungeon(state, type);
+    if (next != null) state = next;
+  }
+
+  /// 던전을 포기하고 필드로 돌아온다. 입장권은 돌려주지 않는다.
+  void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false);
 
   /// 강화석이 충분하면 강화를 한 단계 올린다. 실패도 파괴도 없다.
   void enhance() {

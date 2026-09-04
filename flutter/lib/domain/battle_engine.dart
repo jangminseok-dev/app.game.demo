@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'balance_config.dart';
 import 'codex.dart';
+import 'dungeon.dart';
 import 'formulas.dart';
 import 'equipment.dart';
 import 'game_state.dart';
@@ -29,7 +30,15 @@ class BattleEngine {
 
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {
-    if (s.isBoss) {
+    s = s.copyWith(dungeon: s.dungeon.regenerate(dt, config));
+
+    final run = s.dungeon.run;
+    if (run != null) {
+      final left = run.timeLeft - dt;
+      // 시간 초과 — 실패다. 입장권은 돌려주지 않는다.
+      if (left <= 0) return leaveDungeon(s, cleared: false);
+      s = s.copyWith(dungeon: s.dungeon.copyWith(run: run.copyWith(timeLeft: left)));
+    } else if (s.isBoss) {
       final left = s.bossTimeLeft - dt;
       if (left <= 0) {
         return _spawnNormal(s.copyWith(killsOnStage: 0));
@@ -61,6 +70,8 @@ class BattleEngine {
   }
 
   GameState _onKill(GameState s, Stats stats, Random rng) {
+    if (s.dungeon.run != null) return _onDungeonKill(s);
+
     final reward = (s.isBoss
             ? bossGoldReward(s.stage, config)
             : goldReward(s.stage, config)) *
@@ -89,6 +100,56 @@ class BattleEngine {
       return _spawnBoss(s.copyWith(killsOnStage: kills));
     }
     return _spawnNormal(s.copyWith(killsOnStage: kills));
+  }
+
+  // ── 던전. 필드와 같은 전투 루프를 쓰고 몬스터 체력과 보상만 다르다.
+
+  /// 입장권을 쓰고 다음 층에 들어간다. 조건이 안 되면 null.
+  GameState? enterDungeon(GameState s, DungeonType type) {
+    if (!s.dungeon.canEnter(type, s.highestStage, config)) return null;
+    final dungeon = s.dungeon.enter(type, s.highestStage, config);
+    return _spawnDungeonWave(s.copyWith(dungeon: dungeon), dungeon.run!);
+  }
+
+  /// 던전을 끝내고 필드로 돌아온다. 클리어면 층이 오르고, 포기·시간 초과면 그대로다.
+  GameState leaveDungeon(GameState s, {required bool cleared}) {
+    final run = s.dungeon.run;
+    if (run == null) return s;
+    var next = s.copyWith(dungeon: s.dungeon.finish(cleared: cleared));
+    if (cleared) next = _grantDungeonReward(next, run);
+    // 필드로 복귀 — 보스 직전이었으면 보스부터 다시 만난다.
+    return next.killsOnStage >= config.killsPerStage ? _spawnBoss(next) : _spawnNormal(next);
+  }
+
+  GameState _onDungeonKill(GameState s) {
+    final run = s.dungeon.run!;
+    s = s.copyWith(totalKills: s.totalKills + 1);
+    final waves = run.wavesLeft - 1;
+    if (waves <= 0) return leaveDungeon(s, cleared: true);
+    final next = run.copyWith(wavesLeft: waves);
+    return _spawnDungeonWave(s.copyWith(dungeon: s.dungeon.copyWith(run: next)), next);
+  }
+
+  GameState _spawnDungeonWave(GameState s, DungeonRun run) {
+    final hp = dungeonMonsterHp(run.floor, config);
+    return s.copyWith(
+      monsterHp: hp,
+      monsterMaxHp: hp,
+      isBoss: false,
+      bossTimeLeft: 0,
+      monsterId: catalog.forStage(dungeonEquivalentStage(run.floor, config))?.id ?? s.monsterId,
+    );
+  }
+
+  /// 층 보상을 재화별 자리에 넣는다. 골드와 강화석은 이미 있는 지갑으로 간다.
+  GameState _grantDungeonReward(GameState s, DungeonRun run) {
+    final amount = dungeonReward(run.type, run.floor, config);
+    return switch (run.type.currency) {
+      DungeonCurrency.gold => s.copyWith(gold: s.gold + amount),
+      DungeonCurrency.stone =>
+        s.copyWith(equipment: s.equipment.copyWith(stones: s.equipment.stones + amount.round())),
+      final c => s.copyWith(dungeon: s.dungeon.addCurrency(c, amount.round())),
+    };
   }
 
   GameState _spawnNormal(GameState s) {

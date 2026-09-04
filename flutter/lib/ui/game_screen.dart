@@ -8,6 +8,7 @@ import '../domain/upgrade.dart';
 import 'battle_area.dart';
 import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
+import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
 import 'party_row.dart';
 
@@ -72,7 +73,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               Expanded(
                 child: IndexedStack(
                   index: _tab,
-                  children: const [_UpgradeTab(), EquipmentPanel(), _PartyTab(), CodexTab()],
+                  children: const [_UpgradeTab(), EquipmentPanel(), DungeonPanel(), _PartyTab(), CodexTab()],
                 ),
               ),
             ],
@@ -92,6 +93,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               child: const Icon(Icons.shield_outlined),
             ),
             label: '장비',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: state.dungeon.tickets > 0 && state.dungeon.run == null,
+              label: Text('${state.dungeon.tickets}'),
+              child: const Icon(Icons.castle_outlined),
+            ),
+            label: '던전',
           ),
           const NavigationDestination(icon: Icon(Icons.groups), label: '편성'),
           NavigationDestination(icon: const Icon(Icons.menu_book), label: '도감 $registered'),

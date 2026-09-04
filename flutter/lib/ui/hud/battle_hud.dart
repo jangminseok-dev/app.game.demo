@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/balance_config.dart';
+import '../../domain/dungeon.dart';
 import '../../domain/game_state.dart';
 import '../../domain/monster.dart';
 import '../../domain/number_format.dart';
@@ -30,7 +31,18 @@ class BattleHud extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = state.statsWith(config);
     final hp = state.monsterMaxHp == 0 ? 0.0 : (state.monsterHp / state.monsterMaxHp).clamp(0.0, 1.0);
-    final progress = state.isBoss ? 1.0 : (state.killsOnStage / config.killsPerStage).clamp(0.0, 1.0);
+    // 던전에 들어가 있으면 같은 자리에 던전 진행을 보여 준다.
+    final run = state.dungeon.run;
+    final progress = run != null
+        ? (1 - run.wavesLeft / config.dungeonWaves).clamp(0.0, 1.0)
+        : state.isBoss
+            ? 1.0
+            : (state.killsOnStage / config.killsPerStage).clamp(0.0, 1.0);
+    final accent = run != null
+        ? PixelPalette.gem
+        : state.isBoss
+            ? PixelPalette.boss
+            : PixelPalette.gold;
 
     return Padding(
       padding: const EdgeInsets.all(6),
@@ -46,7 +58,14 @@ class BattleHud extends StatelessWidget {
               const SizedBox(width: 5),
               const CurrencyChip(amount: '0', color: PixelPalette.gem, gem: true),
               const Spacer(),
-              PixelPanel(child: PixelText(regionName, size: 11, color: PixelPalette.textDim)),
+              PixelPanel(
+                border: run == null ? PixelPalette.ink : PixelPalette.gem,
+                child: PixelText(
+                  run == null ? regionName : '${run.type.label} ${run.floor}층',
+                  size: 11,
+                  color: run == null ? PixelPalette.textDim : PixelPalette.gem,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 5),
@@ -54,20 +73,13 @@ class BattleHud extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: PixelGauge(
-                  value: progress,
-                  color: state.isBoss ? PixelPalette.boss : PixelPalette.gold,
-                  height: 12,
-                ),
+                child: PixelGauge(value: progress, color: accent, height: 12),
               ),
               const SizedBox(width: 5),
               PixelPanel(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                color: state.isBoss ? PixelPalette.boss : PixelPalette.panel,
-                child: PixelText(
-                  state.isBoss ? '보스 ${state.bossTimeLeft.toStringAsFixed(1)}' : '${state.killsOnStage}/${config.killsPerStage}',
-                  size: 11,
-                ),
+                color: run != null || state.isBoss ? accent : PixelPalette.panel,
+                child: PixelText(_progressLabel(state, config, run), size: 11),
               ),
             ],
           ),
@@ -137,4 +149,11 @@ class _SwordIcon extends CustomPainter {
 
   @override
   bool shouldRepaint(_SwordIcon old) => false;
+}
+
+/// 진행 게이지 옆 숫자. 던전 · 보스 · 일반 순으로 다르게 읽힌다.
+String _progressLabel(GameState state, BalanceConfig config, DungeonRun? run) {
+  if (run != null) return '남은 ${run.wavesLeft} · ${run.timeLeft.toStringAsFixed(0)}초';
+  if (state.isBoss) return '보스 ${state.bossTimeLeft.toStringAsFixed(1)}';
+  return '${state.killsOnStage}/${config.killsPerStage}';
 }
