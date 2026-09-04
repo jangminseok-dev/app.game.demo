@@ -5,18 +5,19 @@ import 'dart:math';
 /// 좌표를 도메인에 두는 이유는 "가까운 몬스터에게 간다", "몬스터가 한꺼번에 달려든다" 같은
 /// 규칙이 연출이 아니라 전투 규칙이기 때문이다. 무대는 이 좌표를 그대로 그린다.
 const fieldWidth = 360.0;
-const fieldHeight = 480.0;
+const fieldHeight = 202.0;
 
 /// 주인공이 아무도 없을 때 서 있는 자리.
 const heroHomeX = 58.0;
-const heroHomeY = 330.0;
+const heroHomeY = 140.0;
 
 /// 몬스터가 걸어 들어오기 시작하는 x. 화면 밖이다.
 const monsterSpawnX = 400.0;
 
 /// 몬스터가 설 수 있는 세로 범위. 3/4 시점이라 위아래로 퍼져야 깊이가 보인다.
-const fieldTopY = 200.0;
-const fieldBottomY = 430.0;
+/// 가로 무대(202)의 땅 띠(지평선 61 아래)에 들어간다. 발이 y에 닿으므로 위쪽은 머리가 하늘에 안 걸리게 잡는다.
+const fieldTopY = 80.0;
+const fieldBottomY = 190.0;
 
 /// 서로 겹치지 않게 밀어내는 거리.
 const separationRadius = 28.0;

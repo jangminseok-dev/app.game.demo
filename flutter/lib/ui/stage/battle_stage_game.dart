@@ -18,11 +18,13 @@ import 'sheet_loader.dart';
 import 'stage_actor.dart';
 
 /// 무대 가상 해상도. 기기 폭에 맞춰 통째로 확대한다.
-const stageWidth = 360.0;
+const stageWidth = fieldWidth;
 /// 가로 화면을 채우도록 약 16:9로 잡는다(2026-09-05 세로→가로 전환).
 /// 카메라가 cover라 기기 비율에 따라 잘리는 방향이 다르다 — 넓은 폰은 위아래, 태블릿은 좌우.
 /// 안전 영역은 가운데 269×162. 그 밖은 잘릴 수 있다.
-const stageHeight = 202.0;
+const stageHeight = fieldHeight;
+// 무대 크기는 도메인(field.dart)이 정한다. 여기서 따로 숫자를 두면 둘이 갈라진다 —
+// 2026-09-05 가로 전환 때 실제로 갈라져 캐릭터가 무대 아래로 나갔다.
 
 /// 평소에 얼마나 당겨 두는가. cover 배율의 몇 배인지다.
 ///
