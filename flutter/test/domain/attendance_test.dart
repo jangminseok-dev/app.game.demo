@@ -11,7 +11,7 @@ void main() {
   final initial = GameState.initial(config);
 
   test('하루에 한 번만 받는다', () {
-    final first = engine.claimAttendance(initial, 100)!.\$1;
+    final first = engine.claimAttendance(initial, 100)!.$1;
     expect(first.attendance.claimedDays, 1);
     expect(engine.claimAttendance(first, 100), isNull, reason: '같은 날 두 번은 안 된다');
     expect(engine.claimAttendance(first, 101), isNotNull, reason: '다음 날은 된다');
