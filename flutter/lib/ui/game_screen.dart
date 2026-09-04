@@ -6,6 +6,7 @@ import '../domain/number_format.dart';
 import '../domain/offline_reward.dart';
 import '../domain/upgrade.dart';
 import 'battle_area.dart';
+import 'hud/pixel_ui.dart';
 import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
@@ -118,7 +119,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 }
 
-/// 강화 탭 — 골드·능력치 5종·저장 상태.
+/// 강화 탭 — 골드·능력치 5종·저장 상태. 무대와 같은 픽셀 UI로 맞춘다.
 class _UpgradeTab extends ConsumerWidget {
   const _UpgradeTab();
 
@@ -129,46 +130,64 @@ class _UpgradeTab extends ConsumerWidget {
     final saveStatus = ref.watch(saveStatusProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final stats = state.statsWith(config);
-    final mono = Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace');
-    final pending = state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b);
+    final pending =
+        state.killLog.values.fold(0, (a, b) => a + b) + state.bossKillLog.values.fold(0, (a, b) => a + b);
+
     return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('골드  ${formatNumber(state.gold)}', style: Theme.of(context).textTheme.titleLarge),
-                        const Spacer(),
-                        Text('DPS ${formatNumber(stats.dps(config))}', style: mono),
-                      ],
-                    ),
-                    Text(
-                      '공격 ${formatNumber(stats.attack)}  속도 ${stats.attacksPerSecond.toStringAsFixed(1)}/s  '
-                      '치명 ${(stats.critChance * 100).toStringAsFixed(0)}%  골드 ×${stats.goldMultiplier.toStringAsFixed(2)}',
-                      style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
-                    ),
-                    const SizedBox(height: 8),
-                    for (final type in UpgradeType.values)
-                      _UpgradeRow(
-                        type: type,
-                        level: state.levelOf(type),
-                        cost: type.cost(state.levelOf(type), config),
-                        affordable: state.gold >= type.cost(state.levelOf(type), config),
-                        onBuy: () => controller.buyUpgrade(type),
-                      ),
-                    const SizedBox(height: 16),
-                    Text('총 처치 ${state.totalKills}  ·  미보고 처치 $pending', style: mono),
-                    Text(
-                      _saveLine(context, saveStatus),
-                      style: mono?.copyWith(color: Theme.of(context).colorScheme.outline),
-                    ),
-                    if (saveStatus.lastRejectedRule != null)
-                      Text(
-                        '서버 검증 거부(${saveStatus.lastRejectedRule}) — 서버 상태로 되돌렸습니다',
-                        style: mono?.copyWith(color: Theme.of(context).colorScheme.error),
-                      ),
-                  ],
-                );
+      padding: const EdgeInsets.all(12),
+      children: [
+        PixelPanel(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  PixelText('골드  ${formatNumber(state.gold)}', size: 18, color: PixelPalette.gold),
+                  const Spacer(),
+                  PixelText('DPS ${formatNumber(stats.dps(config))}', size: 12),
+                ],
+              ),
+              const SizedBox(height: 6),
+              PixelText(
+                '공격 ${formatNumber(stats.attack)} · 속도 ${stats.attacksPerSecond.toStringAsFixed(1)}/s',
+                size: 11,
+                color: PixelPalette.textDim,
+              ),
+              const SizedBox(height: 2),
+              PixelText(
+                '치명 ${(stats.critChance * 100).toStringAsFixed(0)}% · 골드 ×${stats.goldMultiplier.toStringAsFixed(2)}',
+                size: 11,
+                color: PixelPalette.textDim,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        for (final type in UpgradeType.values) ...[
+          _UpgradeRow(
+            type: type,
+            level: state.levelOf(type),
+            cost: type.cost(state.levelOf(type), config),
+            affordable: state.gold >= type.cost(state.levelOf(type), config),
+            onBuy: () => controller.buyUpgrade(type),
+          ),
+          const SizedBox(height: 6),
+        ],
+        const SizedBox(height: 10),
+        PixelText('총 처치 ${state.totalKills} · 미보고 처치 $pending', size: 11, color: PixelPalette.textDim),
+        const SizedBox(height: 3),
+        PixelText(_saveLine(context, saveStatus), size: 10, color: PixelPalette.textDim),
+        if (saveStatus.lastRejectedRule != null) ...[
+          const SizedBox(height: 3),
+          PixelText(
+            '서버 검증 거부(${saveStatus.lastRejectedRule}) — 서버 상태로 되돌렸습니다',
+            size: 10,
+            color: PixelPalette.hpLow,
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -196,12 +215,25 @@ class _UpgradeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+    return PixelPanel(
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       child: Row(
         children: [
-          Expanded(child: Text('${type.label}  Lv.$level')),
-          FilledButton(onPressed: affordable ? onBuy : null, child: Text('${formatNumber(cost)} G')),
+          Expanded(child: PixelText(type.label, size: 12)),
+          PixelText('Lv.$level', size: 11, color: PixelPalette.textDim),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: affordable ? onBuy : null,
+            child: PixelPanel(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              color: affordable ? PixelPalette.goldDark : const Color(0xFF3A3342),
+              child: PixelText(
+                '${formatNumber(cost)} G',
+                size: 11,
+                color: affordable ? PixelPalette.text : PixelPalette.textDim,
+              ),
+            ),
+          ),
         ],
       ),
     );

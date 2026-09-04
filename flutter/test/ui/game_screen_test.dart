@@ -25,13 +25,13 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
     expect(find.textContaining('스테이지 1'), findsOneWidget);
-    expect(find.text('골드  0'), findsOneWidget);
+    expect(find.text('골드  0'), findsWidgets, reason: '외곽선 글자라 stroke·fill 2개');
     expect(find.byType(BattleArea), findsOneWidget);
     expect(find.text('펫'), findsWidgets, reason: '펫은 탭으로 옮겼다');
     expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
-    expect(find.textContaining('저장 전'), findsOneWidget);
+    expect(find.textContaining('저장 전'), findsWidgets);
     for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {
-      expect(find.textContaining(label), findsOneWidget);
+      expect(find.textContaining(label), findsWidgets);
     }
 
     // 3초 진행: 스테이지 1 몬스터(HP 11.8)는 공격 10으로 2회면 죽는다.
