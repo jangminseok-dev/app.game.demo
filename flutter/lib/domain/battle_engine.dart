@@ -19,13 +19,13 @@ import 'upgrade.dart';
 ///
 /// 포획은 여기서 굴리지 않는다. 처치를 [GameState.killLog]에 세어 두면 서버가 판정한다(6장).
 class BattleEngine {
-  const BattleEngine(this.config, {this.catalog = MonsterCatalog.empty, this.dropTable = const DropTable()});
+  const BattleEngine(this.config, {this.catalog = MonsterCatalog.empty});
 
   final BalanceConfig config;
   final MonsterCatalog catalog;
 
-  /// 장비 드롭 판정. 확률을 바꾸려면 이것만 갈아 끼운다.
-  final DropTable dropTable;
+  /// 장비 드롭 판정. 확률·티어 폭은 전부 마스터 데이터에서 온다.
+  DropTable get dropTable => DropTable(config);
 
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {

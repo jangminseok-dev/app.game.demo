@@ -32,6 +32,11 @@ class BalanceConfig {
     this.critBase = 0.05,
     this.critPerLevel = 0.01,
     this.goldMultiplierPerLevel = 0.05,
+    this.equipFieldDropChance = 0.08,
+    this.equipBossDropChance = 1.0,
+    this.equipStagesPerTier = 50,
+    this.equipGearCoefficient = 0.02,
+    this.equipEnhancePerLevel = 0.03,
     this.upgradeBaseCosts = const {
       UpgradeType.attack: 10,
       UpgradeType.attackSpeed: 25,
@@ -43,6 +48,23 @@ class BalanceConfig {
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
   final int version;
+
+  // ── 장비. 밸런스는 나중에 한 번에 잡는다. 수치는 전부 여기와 서버 마스터 데이터에만 둔다.
+
+  /// 일반 몬스터 처치 시 장비가 뜰 확률.
+  final double equipFieldDropChance;
+
+  /// 보스 처치 시 장비가 뜰 확률.
+  final double equipBossDropChance;
+
+  /// 몇 층마다 장비 티어가 오르는가.
+  final int equipStagesPerTier;
+
+  /// 착용 장비 합계에 곱하는 계수. 크면 4장의 '벽' 원칙이 깨진다(wall_simulation_test가 지킨다).
+  final double equipGearCoefficient;
+
+  /// 강화 1레벨당 공격력 배수 증가분.
+  final double equipEnhancePerLevel;
 
   final double monsterHpBase;
   final double monsterHpGrowth;

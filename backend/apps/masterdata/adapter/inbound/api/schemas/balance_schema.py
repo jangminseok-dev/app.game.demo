@@ -30,3 +30,8 @@ class BalanceResponseSchema(BaseModel):
     critPerLevel: float
     goldMultiplierPerLevel: float
     upgradeBaseCosts: dict[str, float] = Field(description="업그레이드 종류별 레벨 0 비용")
+    equipFieldDropChance: float
+    equipBossDropChance: float
+    equipStagesPerTier: int = Field(description="이 층수마다 장비 티어가 한 단계 오른다")
+    equipGearCoefficient: float
+    equipEnhancePerLevel: float

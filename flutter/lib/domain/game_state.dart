@@ -78,7 +78,7 @@ class GameState {
   final EquipmentState equipment;
 
   Stats statsWith(BalanceConfig config) =>
-      Stats.fromLevels(levels, config, passives).scaledBy(equipment.power);
+      Stats.fromLevels(levels, config, passives).scaledBy(equipment.powerWith(config));
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 

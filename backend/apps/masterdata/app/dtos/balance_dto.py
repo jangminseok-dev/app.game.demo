@@ -40,3 +40,9 @@ class BalanceResponse:
     gold_multiplier_per_level: float
     # 업그레이드 기본 비용(레벨 0). 비용 = base × upgrade_cost_growth^level
     upgrade_base_costs: dict[str, float]
+    # 장비 — 드롭 확률·티어 폭·전투력 계수. 4장 "벽" 원칙을 지키도록 계수는 작게 잡는다.
+    equip_field_drop_chance: float = 0.08
+    equip_boss_drop_chance: float = 1.0
+    equip_stages_per_tier: int = 50
+    equip_gear_coefficient: float = 0.02
+    equip_enhance_per_level: float = 0.03

@@ -228,7 +228,7 @@ class BattleStageGame extends FlameGame {
     }
     final isBoss = s.isBoss && index == 0;
     final size = isBoss ? _bossSize : _monsterSize;
-    final sheetId = isBoss ? _bossSheetId : _monsterSheet(m, region?.id);
+    final sheetId = isBoss ? _bossSheetId : monsterSheetIdFor(m, region?.id);
     final sheet = await _loader.load(
       isBoss ? 'boss' : 'monster',
       sheetId,
@@ -244,24 +244,11 @@ class BattleStageGame extends FlameGame {
       pixelSize: size,
       facingRight: false,
       at: from,
-      hue: isBoss ? 0 : _monsterHue(m),
+      hue: isBoss ? 0 : monsterHueFor(m),
       walkSpeed: speed,
     )
       ..target.setFrom(slot)
       ..hpRatio = 1;
-  }
-
-  String _monsterSheet(Monster? m, String? regionId) {
-    final region = m?.region ?? regionId ?? 'forest';
-    final count = _sheetsPerRegion[region];
-    if (count == null) return 'forest_${(m?.id ?? 1) % (_sheetsPerRegion['forest'] ?? 1) + 1}'; // 아직 없는 지역은 숲 형태 + 색만
-    return '${region}_${(m?.id ?? 1) % count + 1}';
-  }
-
-  double _monsterHue(Monster? m) {
-    if (m == null) return 0;
-    final base = HSLColor.fromColor(elementColor(m.element)).hue;
-    return (base + (m.id % 5) * 24) % 360;
   }
 
   /// 한 번의 타격 — 주인공 공격 모션, 참격, 피격, 넉백, 숫자.
@@ -306,6 +293,22 @@ class BattleStageGame extends FlameGame {
       particle: scatter(count: crit ? 12 : 7, color: elementColor(element ?? MonsterElement.neutral), speed: 85),
     ));
   }
+}
+
+/// 몬스터 → 시트 id. 지역 안 순번을 기본 형태에 돌려 붙인다.
+/// 아직 시트가 없는 지역은 숲 형태를 쓰고 색만 바꾼다([monsterHueFor]).
+String monsterSheetIdFor(Monster? m, [String? regionId]) {
+  final region = m?.region ?? regionId ?? 'forest';
+  final count = _sheetsPerRegion[region] ?? _sheetsPerRegion['forest']!;
+  final base = _sheetsPerRegion.containsKey(region) ? region : 'forest';
+  return '${base}_${(m?.id ?? 1) % count + 1}';
+}
+
+/// 같은 형태를 색으로 갈라 변종을 만든다. 속성색을 기준으로 순번만큼 돌린다.
+double monsterHueFor(Monster? m) {
+  if (m == null) return 0;
+  final base = HSLColor.fromColor(elementColor(m.element)).hue;
+  return (base + (m.id % 5) * 24) % 360;
 }
 
 /// 히트스톱 대상 — 이 레이어의 시간만 멈춘다.

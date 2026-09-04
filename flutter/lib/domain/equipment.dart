@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'balance_config.dart';
+
 /// 장비 부위. 화면에 보이는 3부위와 스탯 전용 3부위로 나눈다.
 ///
 /// 레퍼런스(99강화 나무몽둥이)가 10부위 중 3부위만 외형에 반영한 구조를 따른다.
@@ -103,18 +105,12 @@ class EquipmentState {
   /// 장비가 주는 공격력 배수. 착용분 합계 + 강화 레벨.
   ///
   /// 계수가 크면 기획서 4장의 "벽" 원칙(보상 성장 1.15 < 요구 성장 1.18)이 깨진다.
-  /// 전 부위 전설이어도 티어 0에서 약 1.8배가 되도록 잡았다 — 골드 업그레이드가 주축이고
-  /// 장비는 보조 축이다. `wall_simulation_test`가 이 균형을 지킨다.
-  double get power {
+  /// 수치는 마스터 데이터([BalanceConfig])에만 두고 여기서는 식만 정한다.
+  /// `wall_simulation_test`가 이 균형을 지킨다.
+  double powerWith(BalanceConfig c) {
     final gear = equipped.values.fold(0.0, (sum, e) => sum + e.power);
-    return 1 + gear * gearCoefficient + enhanceLevel * enhancePerLevel;
+    return 1 + gear * c.equipGearCoefficient + enhanceLevel * c.equipEnhancePerLevel;
   }
-
-  /// 착용 장비 합계에 곱하는 계수.
-  static const gearCoefficient = 0.02;
-
-  /// 강화 1레벨당 배수 증가분.
-  static const enhancePerLevel = 0.03;
 
   /// 다음 강화에 드는 강화석. 레벨에 따라 완만히 오른다.
   int get enhanceCost => 5 + enhanceLevel * 3 + (enhanceLevel * enhanceLevel) ~/ 12;
@@ -187,23 +183,20 @@ class EquipmentState {
 ///
 /// 보스는 부위가 고정이다 — "이 보스를 왜 도는가"가 자명해진다(메이플 키우기 방식, 시장 분석 2.1절).
 class DropTable {
-  const DropTable({this.fieldChance = 0.08, this.bossChance = 1.0});
+  const DropTable(this.config);
 
-  /// 일반 몬스터 처치 시 장비가 뜰 확률.
-  final double fieldChance;
+  final BalanceConfig config;
 
-  /// 보스 처치 시 장비가 뜰 확률.
-  final double bossChance;
+  /// 층 → 티어. 마스터 데이터의 [BalanceConfig.equipStagesPerTier] 층마다 한 단계.
+  int tierOf(int stage) => (stage - 1) ~/ config.equipStagesPerTier;
 
-  /// 층 → 티어. 50층마다 한 단계.
-  static int tierOf(int stage) => (stage - 1) ~/ 50;
-
-  /// 보스가 담당하는 부위 — 지역 순번으로 고정된다.
-  static EquipSlot bossSlotFor(int stage) => EquipSlot.values[tierOf(stage) % EquipSlot.values.length];
+  /// 보스가 담당하는 부위 — 티어마다 고정된다.
+  EquipSlot bossSlotFor(int stage) => EquipSlot.values[tierOf(stage) % EquipSlot.values.length];
 
   /// 처치 한 번의 드롭. 없으면 null.
   Equipment? roll(int stage, {required bool isBoss, required Random rng}) {
-    if (rng.nextDouble() >= (isBoss ? bossChance : fieldChance)) return null;
+    final chance = isBoss ? config.equipBossDropChance : config.equipFieldDropChance;
+    if (rng.nextDouble() >= chance) return null;
     final tier = tierOf(stage);
     return Equipment(
       slot: isBoss ? bossSlotFor(stage) : EquipSlot.values[rng.nextInt(EquipSlot.values.length)],

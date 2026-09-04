@@ -1,8 +1,13 @@
 import 'dart:math' as math;
 
+import 'package:flame/components.dart';
+import 'package:flame/widgets.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/monster.dart';
+import '../stage/battle_stage_game.dart' show monsterHueFor, monsterSheetIdFor;
+import '../stage/sheet_loader.dart';
+import '../stage/stage_actor.dart' show hueRotation;
 
 /// 임시 몬스터 스프라이트 — 코드로 그린다 (7주차 임시 그래픽).
 ///
@@ -25,13 +30,42 @@ class MonsterSprite extends StatelessWidget {
   /// 도감 미등록 표시 — 형태만 보이고 색은 가린다.
   final bool silhouette;
 
+  /// 도감·상세에서 쓰는 시트 로더. 무대와 캐시를 나눠 갖는다.
+  static final _loader = SheetLoader();
+
   @override
   Widget build(BuildContext context) {
+    final m = monster;
+    // 미등록이거나 몬스터가 없으면 형태만 보여 준다(벡터 실루엣).
+    if (m == null || silhouette) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(painter: MonsterPainter(monster: m, isBoss: isBoss, silhouette: silhouette)),
+      );
+    }
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: MonsterPainter(monster: monster, isBoss: isBoss, silhouette: silhouette),
+      child: FutureBuilder<LoadedSheet>(
+        future: _loader.load('monster', monsterSheetIdFor(m), size: 48, color: elementColor(m.element)),
+        builder: (context, snap) {
+          final sheet = snap.data;
+          if (sheet == null) return const SizedBox.shrink();
+          final (start, _) = sheet.spec.animations['idle']!;
+          final f = sheet.spec.frame.toDouble();
+          final sprite = Sprite(sheet.image, srcPosition: Vector2(start * f, 0), srcSize: Vector2(f, f));
+          final hue = monsterHueFor(m);
+          Widget w = SpriteWidget(
+            sprite: sprite,
+            paint: Paint()
+              ..filterQuality = FilterQuality.none
+              ..isAntiAlias = false,
+          );
+          if (hue != 0) w = ColorFiltered(colorFilter: hueRotation(hue), child: w);
+          // 무대에서는 왼쪽을 보지만 도감에서는 정면처럼 보이게 그대로 둔다.
+          return w;
+        },
       ),
     );
   }

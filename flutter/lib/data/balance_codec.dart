@@ -2,6 +2,9 @@ import '../domain/balance_config.dart';
 import '../domain/upgrade.dart';
 
 /// 서버 `GET /masterdata/balance` 응답 ↔ [BalanceConfig]. 로컬 캐시에도 같은 형식으로 둔다.
+double _d(Map<String, dynamic> j, String key, double fallback) => (j[key] as num?)?.toDouble() ?? fallback;
+int _i(Map<String, dynamic> j, String key, int fallback) => (j[key] as num?)?.toInt() ?? fallback;
+
 BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       version: (j['version'] as num).toInt(),
       monsterHpBase: (j['monsterHpBase'] as num).toDouble(),
@@ -29,6 +32,11 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       critBase: (j['critBase'] as num?)?.toDouble() ?? 0.05,
       critPerLevel: (j['critPerLevel'] as num?)?.toDouble() ?? 0.01,
       goldMultiplierPerLevel: (j['goldMultiplierPerLevel'] as num?)?.toDouble() ?? 0.05,
+      equipFieldDropChance: _d(j, 'equipFieldDropChance', 0.08),
+      equipBossDropChance: _d(j, 'equipBossDropChance', 1.0),
+      equipStagesPerTier: _i(j, 'equipStagesPerTier', 50),
+      equipGearCoefficient: _d(j, 'equipGearCoefficient', 0.02),
+      equipEnhancePerLevel: _d(j, 'equipEnhancePerLevel', 0.03),
       upgradeBaseCosts: _costs(j['upgradeBaseCosts'] as Map<String, dynamic>?),
     );
 

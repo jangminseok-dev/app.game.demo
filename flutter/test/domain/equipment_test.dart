@@ -1,9 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/equipment.dart';
 
 void main() {
+  const config = BalanceConfig();
+  const table = DropTable(config);
   const common = Equipment(slot: EquipSlot.weapon, grade: EquipGrade.common, tier: 0);
   const legendary = Equipment(slot: EquipSlot.weapon, grade: EquipGrade.legendary, tier: 0);
 
@@ -64,50 +67,49 @@ void main() {
 
   group('전투력 기여', () {
     test('아무것도 없으면 배수 1', () {
-      expect(EquipmentState.empty.power, 1.0);
+      expect(EquipmentState.empty.powerWith(config), 1.0);
     });
 
     test('장비와 강화가 배수를 올린다', () {
       final geared = EquipmentState.empty.pickUp(legendary);
-      expect(geared.power, greaterThan(1.0));
+      expect(geared.powerWith(config), greaterThan(1.0));
       final enhanced = const EquipmentState(stones: 100).enhance();
-      expect(enhanced.power, closeTo(1 + EquipmentState.enhancePerLevel, 1e-9));
+      expect(enhanced.powerWith(config), closeTo(1 + config.equipEnhancePerLevel, 1e-9));
     });
   });
 
   group('드롭 테이블', () {
-    test('티어는 50층마다 한 단계', () {
-      expect(DropTable.tierOf(1), 0);
-      expect(DropTable.tierOf(50), 0);
-      expect(DropTable.tierOf(51), 1);
-      expect(DropTable.tierOf(120), 2);
+    test('티어는 마스터 데이터의 층 폭마다 한 단계', () {
+      expect(table.tierOf(1), 0);
+      expect(table.tierOf(config.equipStagesPerTier), 0);
+      expect(table.tierOf(config.equipStagesPerTier + 1), 1);
+      expect(table.tierOf(config.equipStagesPerTier * 2 + 20), 2);
     });
 
     test('보스는 층 구간마다 담당 부위가 고정이다', () {
-      expect(DropTable.bossSlotFor(10), DropTable.bossSlotFor(40), reason: '같은 티어면 같은 부위');
-      expect(DropTable.bossSlotFor(10), isNot(DropTable.bossSlotFor(60)), reason: '다음 티어는 다른 부위');
+      expect(table.bossSlotFor(10), table.bossSlotFor(40), reason: '같은 티어면 같은 부위');
+      expect(table.bossSlotFor(10), isNot(table.bossSlotFor(60)), reason: '다음 티어는 다른 부위');
     });
 
     test('보스는 반드시 떨어뜨리고 부위가 고정이다', () {
-      const table = DropTable();
       final rng = Random(1);
       for (var i = 0; i < 30; i++) {
         final item = table.roll(70, isBoss: true, rng: rng);
         expect(item, isNotNull);
-        expect(item!.slot, DropTable.bossSlotFor(70));
+        expect(item!.slot, table.bossSlotFor(70));
         expect(item.tier, 1);
       }
     });
 
     test('필드 드롭은 가끔만 나온다', () {
-      const table = DropTable(fieldChance: 0.1);
+      const table = DropTable(BalanceConfig(equipFieldDropChance: 0.1));
       final rng = Random(7);
       final drops = [for (var i = 0; i < 1000; i++) table.roll(1, isBoss: false, rng: rng)].whereType<Equipment>();
       expect(drops.length, inInclusiveRange(60, 140), reason: '기대값 100 근처');
     });
 
     test('전설이 일반보다 드물다', () {
-      const table = DropTable(fieldChance: 1);
+      const table = DropTable(BalanceConfig(equipFieldDropChance: 1));
       final rng = Random(3);
       final drops = [for (var i = 0; i < 2000; i++) table.roll(1, isBoss: false, rng: rng)!];
       final common = drops.where((e) => e.grade == EquipGrade.common).length;

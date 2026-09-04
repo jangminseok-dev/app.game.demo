@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/game_controller.dart';
+import '../domain/balance_config.dart';
 import '../domain/equipment.dart';
 import '../domain/number_format.dart';
 import 'hud/pixel_ui.dart';
@@ -15,12 +16,13 @@ class EquipmentPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eq = ref.watch(gameControllerProvider).equipment;
+    final config = ref.watch(balanceConfigProvider);
     final controller = ref.read(gameControllerProvider.notifier);
 
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        _EnhanceCard(equipment: eq, onEnhance: controller.enhance),
+        _EnhanceCard(equipment: eq, config: config, onEnhance: controller.enhance),
         const SizedBox(height: 12),
         const _SectionLabel('착용'),
         const SizedBox(height: 6),
@@ -75,9 +77,10 @@ class _SectionLabel extends StatelessWidget {
 
 /// 강화 카드 — 강화 레벨, 강화석, 다음 비용.
 class _EnhanceCard extends StatelessWidget {
-  const _EnhanceCard({required this.equipment, required this.onEnhance});
+  const _EnhanceCard({required this.equipment, required this.config, required this.onEnhance});
 
   final EquipmentState equipment;
+  final BalanceConfig config;
   final VoidCallback onEnhance;
 
   @override
@@ -99,7 +102,7 @@ class _EnhanceCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PixelText('공격력 ×${equipment.power.toStringAsFixed(2)}', size: 12),
+                PixelText('공격력 ×${equipment.powerWith(config).toStringAsFixed(2)}', size: 12),
                 const SizedBox(height: 4),
                 PixelText('강화석 ${equipment.stones} / ${equipment.enhanceCost}', size: 11, color: PixelPalette.textDim),
                 const SizedBox(height: 4),

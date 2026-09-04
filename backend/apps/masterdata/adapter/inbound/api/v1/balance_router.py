@@ -43,4 +43,9 @@ async def fetch_balance(
         critPerLevel=r.crit_per_level,
         goldMultiplierPerLevel=r.gold_multiplier_per_level,
         upgradeBaseCosts=dict(r.upgrade_base_costs),
+        equipFieldDropChance=r.equip_field_drop_chance,
+        equipBossDropChance=r.equip_boss_drop_chance,
+        equipStagesPerTier=r.equip_stages_per_tier,
+        equipGearCoefficient=r.equip_gear_coefficient,
+        equipEnhancePerLevel=r.equip_enhance_per_level,
     )

@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "monster_hp_base": 10,
   "monster_hp_growth": 1.18,
   "boss_hp_multiplier": 10,
@@ -25,6 +25,11 @@
   "crit_base": 0.05,
   "crit_per_level": 0.01,
   "gold_multiplier_per_level": 0.05,
+  "equip_field_drop_chance": 0.08,
+  "equip_boss_drop_chance": 1.0,
+  "equip_stages_per_tier": 50,
+  "equip_gear_coefficient": 0.02,
+  "equip_enhance_per_level": 0.03,
   "upgrade_base_costs": {
     "attack": 10,
     "attackSpeed": 25,

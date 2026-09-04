@@ -82,8 +82,9 @@ def test_마스터데이터는_인증_없이_버전과_계수를_준다(client):
     r = client.get("/masterdata/balance")
     assert r.status_code == 200
     body = r.json()
-    assert body["version"] == 4 and body["monsterHpGrowth"] == 1.18
-    assert client.get("/masterdata/balance", params={"version": 4}).json()["unchanged"] is True
+    assert body["monsterHpGrowth"] == 1.18
+    same = client.get("/masterdata/balance", params={"version": body["version"]})
+    assert same.json()["unchanged"] is True
     monsters = client.get("/masterdata/monsters").json()
     assert len(monsters["monsters"]) == 100 and len(monsters["regions"]) == 10
 

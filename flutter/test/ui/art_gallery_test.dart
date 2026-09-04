@@ -22,7 +22,8 @@ void main() {
     final catalog = loadBundledCatalog();
     final key = GlobalKey();
 
-    await tester.pumpWidget(
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
       MaterialApp(
         home: RepaintBoundary(
           key: key,
@@ -39,10 +40,12 @@ void main() {
           ),
         ),
       ),
-    );
-    await tester.pump();
-
-    await tester.runAsync(() async {
+      );
+      // 도감 스프라이트는 시트를 비동기로 읽는다 — 로드가 끝날 때까지 돌린다.
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await tester.pump();
+      }
       final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 2);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
