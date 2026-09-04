@@ -43,6 +43,19 @@ def load_raw(folder: Path, flip: bool) -> list[Image.Image]:
     return [ImageOps.mirror(im) for im in ims] if flip else ims
 
 
+def normalize_canvas(raw: dict[str, list[Image.Image]]) -> None:
+    """캔버스 크기가 다른 프레임(PixelLab은 애니메이션마다 캔버스를 넓힌다)을 가장 큰 캔버스에 중앙 정렬한다.
+    PixelLab 셀은 피벗 중앙 정렬이므로 중앙에 놓으면 캐릭터 위치가 맞는다."""
+    big = max(max(im.width, im.height) for frames in raw.values() for im in frames)
+    for name, frames in raw.items():
+        for i, im in enumerate(frames):
+            if im.size == (big, big):
+                continue
+            canvas = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+            canvas.paste(im, ((big - im.width) // 2, (big - im.height) // 2), im)
+            frames[i] = canvas
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("root")
@@ -56,6 +69,7 @@ def main() -> None:
     root = Path(a.root)
     names = a.anims.split(",")
     raw = {name: load_raw(root / name, a.flip) for name in names}
+    normalize_canvas(raw)
     window = union_bbox([im for frames in raw.values() for im in frames])
     print(f"내용 창 {window} = {window[2]-window[0]}x{window[3]-window[1]}px → 프레임 {a.size}px")
     all_frames: list[Image.Image] = []
