@@ -22,14 +22,11 @@ const stageHeight = 270.0;
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
 
-/// 아트 세트 전환 — 에셋 팩(한 아티스트) vs AI 생성. 비교용 스위치.
-/// 팩: Zerie "Tiny RPG Character Asset Pack 01" (병사·오크, 상업 이용 가능)
-const _useAssetPack = false;
-const _heroSheetId = _useAssetPack ? 'soldier' : 'warrior_1';
-const _heroSize = _useAssetPack ? 68 : 56;
-const _bossSheetId = _useAssetPack ? 'orc' : 'forest';
-const _bossSize = _useAssetPack ? 108 : 96;
-const _monsterSize = _useAssetPack ? 74 : 48;
+const _heroSheetId = 'warrior_1';
+const _heroSize = 56;
+const _bossSheetId = 'forest';
+const _bossSize = 96;
+const _monsterSize = 48;
 
 /// 배경 에셋이 있는 지역. 나머지는 기존 그라데이션으로 그린다.
 /// (Flame의 Images.load는 실패한 Future를 캐시에 남겨 비동기 예외가 새므로, 없는 파일은 아예 요청하지 않는다.)
@@ -233,7 +230,7 @@ class BattleStageGame extends FlameGame {
     final size = isBoss ? _bossSize : _monsterSize;
     final sheetId = isBoss ? _bossSheetId : _monsterSheet(m, region?.id);
     final sheet = await _loader.load(
-      isBoss && !_useAssetPack ? 'boss' : 'monster',
+      isBoss ? 'boss' : 'monster',
       sheetId,
       size: size,
       color: elementColor(m?.element ?? MonsterElement.neutral),
@@ -255,7 +252,6 @@ class BattleStageGame extends FlameGame {
   }
 
   String _monsterSheet(Monster? m, String? regionId) {
-    if (_useAssetPack) return 'orc'; // 팩에 오크 한 종뿐 — 색만 갈라 변종을 만든다
     final region = m?.region ?? regionId ?? 'forest';
     final count = _sheetsPerRegion[region];
     if (count == null) return 'forest_${(m?.id ?? 1) % (_sheetsPerRegion['forest'] ?? 1) + 1}'; // 아직 없는 지역은 숲 형태 + 색만
@@ -264,8 +260,6 @@ class BattleStageGame extends FlameGame {
 
   double _monsterHue(Monster? m) {
     if (m == null) return 0;
-    // 팩 세트는 오크 한 종뿐이라 크게 돌리면 보라 오크가 된다. 원색을 유지하며 살짝만 흔든다.
-    if (_useAssetPack) return (m.id % 5 - 2) * 9.0;
     final base = HSLColor.fromColor(elementColor(m.element)).hue;
     return (base + (m.id % 5) * 24) % 360;
   }
