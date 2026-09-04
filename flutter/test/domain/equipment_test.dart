@@ -139,4 +139,43 @@ void main() {
       expect(back.enhanceLevel, 0);
     });
   });
+
+  group('자동 장착과 한 칸 조작', () {
+    const weakRing = Equipment(slot: EquipSlot.ring, grade: EquipGrade.common, tier: 0);
+    const strongRing = Equipment(slot: EquipSlot.ring, grade: EquipGrade.epic, tier: 0);
+
+    test('자동 장착은 부위마다 가장 센 것을 입힌다', () {
+      final s = const EquipmentState()
+          .copyWith(inventory: [common, weakRing, strongRing, legendary])
+          .autoEquip();
+      expect(s.equipped[EquipSlot.weapon], legendary);
+      expect(s.equipped[EquipSlot.ring], strongRing);
+      expect(s.inventory, containsAll([common, weakRing]));
+      expect(s.inventory, hasLength(2));
+    });
+
+    test('자동 장착은 입고 있는 것이 더 세면 그대로 둔다', () {
+      final s = EquipmentState.empty.pickUp(legendary).copyWith(inventory: [common]).autoEquip();
+      expect(s.equipped[EquipSlot.weapon], legendary);
+      expect(s.inventory, [common]);
+    });
+
+    test('가방 한 칸을 입으면 입고 있던 것이 가방으로 간다', () {
+      final s = EquipmentState.empty.pickUp(common).copyWith(inventory: [legendary]).equipAt(0);
+      expect(s.equipped[EquipSlot.weapon], legendary);
+      expect(s.inventory, [common]);
+    });
+
+    test('가방 한 칸만 분해한다', () {
+      final s = const EquipmentState().copyWith(inventory: [common, legendary]).scrapAt(0);
+      expect(s.inventory, [legendary]);
+      expect(s.stones, common.scrapValue);
+    });
+
+    test('없는 칸을 건드려도 아무 일도 없다', () {
+      const s = EquipmentState();
+      expect(s.equipAt(3).inventory, isEmpty);
+      expect(s.scrapAt(-1).stones, 0);
+    });
+  });
 }

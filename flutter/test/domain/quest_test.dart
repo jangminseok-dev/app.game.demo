@@ -37,7 +37,7 @@ void main() {
         final targets =
             questTable.skip(20).where((q) => q.goal == goal).map((q) => q.target).toList();
         for (var i = 1; i < targets.length; i++) {
-          expect(targets[i], greaterThanOrEqualTo(targets[i - 1]), reason: '${goal.label}');
+          expect(targets[i], greaterThanOrEqualTo(targets[i - 1]), reason: goal.label);
         }
       }
     });

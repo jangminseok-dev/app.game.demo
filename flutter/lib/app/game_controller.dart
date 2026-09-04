@@ -119,6 +119,18 @@ class GameController extends Notifier<GameState> {
     if (next != null) state = next;
   }
 
+  /// 부위마다 가장 센 것을 자동으로 입는다.
+  void autoEquip() {
+    final next = state.equipment.autoEquip();
+    if (!identical(next, state.equipment)) state = state.copyWith(equipment: next);
+  }
+
+  /// 가방의 한 칸을 입는다.
+  void equipAt(int index) => state = state.copyWith(equipment: state.equipment.equipAt(index));
+
+  /// 가방의 한 칸만 분해한다.
+  void scrapAt(int index) => state = state.copyWith(equipment: state.equipment.scrapAt(index));
+
   /// 인벤토리를 전부 분해해 강화석으로 바꾼다. 착용 중인 장비는 건드리지 않는다.
   void scrapAll() {
     final next = state.equipment.scrapAll();

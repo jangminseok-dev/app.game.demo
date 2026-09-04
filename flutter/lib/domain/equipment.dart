@@ -129,6 +129,48 @@ class EquipmentState {
     return copyWith(inventory: [...inventory, item]);
   }
 
+  /// 가방에서 부위마다 가장 센 것을 골라 입는다. 밀린 것은 가방으로 돌아온다.
+  ///
+  /// 부위가 여섯이라 손으로 갈아입히면 매번 여섯 번을 눌러야 한다.
+  /// 레퍼런스도 인벤토리 아래에 `자동 장착`을 둔다.
+  EquipmentState autoEquip() {
+    final next = {...equipped};
+    final pool = [...inventory];
+    final removed = <Equipment>[];
+    for (final slot in EquipSlot.values) {
+      final candidates = pool.where((e) => e.slot == slot).toList()
+        ..sort((a, b) => b.power.compareTo(a.power));
+      if (candidates.isEmpty) continue;
+      final best = candidates.first;
+      final current = next[slot];
+      if (current != null && current.power >= best.power) continue;
+      next[slot] = best;
+      pool.remove(best);
+      if (current != null) removed.add(current);
+    }
+    if (removed.isEmpty && next.length == equipped.length) return this;
+    return copyWith(equipped: next, inventory: [...pool, ...removed]);
+  }
+
+  /// 가방의 [index]번을 입는다. 입고 있던 것은 가방으로 간다.
+  EquipmentState equipAt(int index) {
+    if (index < 0 || index >= inventory.length) return this;
+    final item = inventory[index];
+    final current = equipped[item.slot];
+    final rest = [...inventory]..removeAt(index);
+    return copyWith(
+      equipped: {...equipped, item.slot: item},
+      inventory: current == null ? rest : [...rest, current],
+    );
+  }
+
+  /// 가방의 [index]번 하나만 분해한다.
+  EquipmentState scrapAt(int index) {
+    if (index < 0 || index >= inventory.length) return this;
+    final item = inventory[index];
+    return copyWith(inventory: [...inventory]..removeAt(index), stones: stones + item.scrapValue);
+  }
+
   /// 인벤토리를 전부 분해해 강화석으로 바꾼다. 착용 중인 것은 건드리지 않는다.
   EquipmentState scrapAll() {
     if (inventory.isEmpty) return this;

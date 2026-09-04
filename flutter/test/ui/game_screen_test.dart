@@ -71,7 +71,7 @@ void main() {
     await tester.pump();
     expect(find.text('오프라인 보상'), findsWidgets);
     expect(find.textContaining('2시간 5분'), findsWidgets);
-    expect(find.textContaining('+1.50K'), findsWidgets);
+    expect(find.textContaining('+1500'), findsWidgets);
 
     await tester.tap(find.widgetWithText(GestureDetector, 'X').first);
     await tester.pumpAndSettle();

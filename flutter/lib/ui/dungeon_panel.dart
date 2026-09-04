@@ -149,6 +149,13 @@ class _DungeonCard extends StatelessWidget {
                   size: 13,
                   color: unlocked ? PixelPalette.text : PixelPalette.textDim,
                 ),
+                const SizedBox(height: 3),
+                // 어느 성장을 여는 던전인지 항상 보여 준다. 잠겨 있을 때도 마찬가지다.
+                PixelText(
+                  '${type.currency.label} → ${type.currency.sink}',
+                  size: 10,
+                  color: unlocked ? PixelPalette.gem : PixelPalette.textDim,
+                ),
                 const SizedBox(height: 4),
                 if (!unlocked)
                   PixelText('퀘스트 ${type.unlockQuest}번을 마치면 열립니다',
@@ -163,11 +170,7 @@ class _DungeonCard extends StatelessWidget {
                     color: PixelPalette.gold,
                   ),
                   const SizedBox(height: 2),
-                  PixelText(
-                    '${type.currency.sink}에 씁니다 · 최고 ${dungeon.clearedFloor(type)}층',
-                    size: 10,
-                    color: PixelPalette.textDim,
-                  ),
+                  PixelText('최고 ${dungeon.clearedFloor(type)}층', size: 10, color: PixelPalette.textDim),
                 ],
               ],
             ),

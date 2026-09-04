@@ -45,10 +45,14 @@ void main() {
       expect(formatNumber(0), '0');
       expect(formatNumber(999.9), '999');
     });
-    test('K / M / B 단위', () {
-      expect(formatNumber(1230), '1.23K');
-      expect(formatNumber(4560000), '4.56M');
-      expect(formatNumber(7890000000), '7.89B');
+    test('한글 단위', () {
+      expect(formatNumber(1230), '1230', reason: '만 미만은 그대로');
+      expect(formatNumber(45600000), '4560만');
+      expect(formatNumber(12340000), '1234만');
+      expect(formatNumber(100000000), '1억');
+      expect(formatNumber(123400000000), '1234억');
+      expect(formatNumber(1000000000000), '1조');
+      expect(formatNumber(20000), '2만');
     });
   });
 }
