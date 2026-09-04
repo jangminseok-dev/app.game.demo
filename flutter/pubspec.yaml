@@ -24,3 +24,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/monsters.json
+    - assets/sprites/hero/
+    - assets/sprites/pet/
+    - assets/sprites/monster/
+    - assets/sprites/boss/
+    - assets/backgrounds/forest/
