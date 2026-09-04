@@ -19,3 +19,6 @@ flutter/tools/frames/
 
 # 구매한 에셋 팩 원본 (재배포 금지)
 pack/
+
+# 브레인스토밍 비주얼 컴패니언 (세션별 목업)
+.superpowers/
