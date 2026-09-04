@@ -48,6 +48,7 @@ class BalanceResponseSchema(BaseModel):
     craftBiasPerLevel: float
     heroHpBase: float
     heroHpPerLevel: float
+    heroHpStageGrowth: float
     heroHpRegenRate: float
     heroReviveSeconds: float
     heroMpBase: float

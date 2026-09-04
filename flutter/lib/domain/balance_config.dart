@@ -25,6 +25,7 @@ class BalanceConfig {
     this.craftBiasPerLevel = 0.015,
     this.heroHpBase = 200,
     this.heroHpPerLevel = 25,
+    this.heroHpStageGrowth = 1.14,
     this.heroHpRegenRate = 0.03,
     this.heroReviveSeconds = 3,
     this.heroMpBase = 100,
@@ -179,9 +180,14 @@ class BalanceConfig {
 
   // ── 주인공의 체력·마력과 이동. 무리에게 둘러싸이면 죽을 수 있어야 무리 전투가 뜻이 생긴다.
 
-  /// 최대 체력 = base + perLevel × 업그레이드 레벨 합.
+  /// 최대 체력 = (base + perLevel × 업그레이드 레벨 합) × growth^최고 층.
+  ///
+  /// 층으로도 자라야 한다. 업그레이드 레벨은 골드가 지수로 비싸져 로그처럼 늘지만
+  /// 몬스터 공격력은 층마다 1.15배로 는다. 층 성장이 없으면 60층쯤에서 한 대에 죽는다.
+  /// 1.15보다 조금 낮게 잡아 뒤로 갈수록 아슬아슬해지되 즉사하지는 않게 한다.
   final double heroHpBase;
   final double heroHpPerLevel;
+  final double heroHpStageGrowth;
 
   /// 초당 회복량(최대 체력 대비 비율).
   final double heroHpRegenRate;

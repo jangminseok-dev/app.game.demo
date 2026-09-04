@@ -61,6 +61,7 @@ class Balance:
     # 주인공의 체력·마력·이동과 몬스터의 반격.
     hero_hp_base: float = 200
     hero_hp_per_level: float = 25
+    hero_hp_stage_growth: float = 1.14
     hero_hp_regen_rate: float = 0.03
     hero_revive_seconds: float = 3
     hero_mp_base: float = 100

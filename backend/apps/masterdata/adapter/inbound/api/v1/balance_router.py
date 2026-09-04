@@ -61,6 +61,7 @@ async def fetch_balance(
         craftBiasPerLevel=r.craft_bias_per_level,
         heroHpBase=r.hero_hp_base,
         heroHpPerLevel=r.hero_hp_per_level,
+        heroHpStageGrowth=r.hero_hp_stage_growth,
         heroHpRegenRate=r.hero_hp_regen_rate,
         heroReviveSeconds=r.hero_revive_seconds,
         heroMpBase=r.hero_mp_base,

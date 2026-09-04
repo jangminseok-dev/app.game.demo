@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "monster_hp_base": 10,
   "monster_hp_growth": 1.18,
   "boss_hp_multiplier": 10,
@@ -18,6 +18,7 @@
   "wave_size_max": 5,
   "hero_hp_base": 200,
   "hero_hp_per_level": 25,
+  "hero_hp_stage_growth": 1.14,
   "hero_hp_regen_rate": 0.03,
   "hero_revive_seconds": 3,
   "hero_mp_base": 100,

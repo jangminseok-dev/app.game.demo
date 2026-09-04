@@ -1,4 +1,6 @@
 import 'attendance.dart';
+import 'dart:math';
+
 import 'balance_config.dart';
 import 'codex.dart';
 import 'daily.dart';
@@ -119,7 +121,9 @@ class GameState {
   /// 업그레이드에 투자한 만큼 몸도 단단해진다.
   int get totalUpgradeLevels => levels.values.fold(0, (a, b) => a + b);
 
-  double maxHeroHp(BalanceConfig c) => c.heroHpBase + c.heroHpPerLevel * totalUpgradeLevels;
+  double maxHeroHp(BalanceConfig c) =>
+      (c.heroHpBase + c.heroHpPerLevel * totalUpgradeLevels) *
+      pow(c.heroHpStageGrowth, highestStage - 1);
 
   double maxHeroMp(BalanceConfig c) => c.heroMpBase + c.heroMpPerLevel * totalUpgradeLevels;
 
