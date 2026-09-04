@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/codex.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
@@ -62,14 +63,24 @@ void main() {
       expect(s.gold, greaterThan(0));
     });
 
-    test('일반 10마리를 잡으면 보스가 나온다', () {
+    test('일반 몬스터를 정해진 수만큼 잡으면 보스가 나온다', () {
       var s = GameState.initial(config);
       s = runUntil(s, (s) => s.isBoss);
-      expect(s.totalKills, config.killsPerStage);
-      expect(s.killsOnStage, config.killsPerStage);
+      // 무리 단위로 잡으므로 마지막 무리에서 기준을 넘어설 수 있다.
+      expect(s.killsOnStage, greaterThanOrEqualTo(config.killsPerStage));
+      expect(s.killsOnStage, lessThan(config.killsPerStage + config.waveSizeMax));
+      expect(s.totalKills, s.killsOnStage);
       expect(s.stage, 1);
       expect(s.bossTimeLeft, config.bossTimeLimit);
+      expect(s.wave, hasLength(1), reason: '보스는 혼자 나온다');
       expect(s.monsterMaxHp, closeTo(11.8 * 10, 1e-9));
+    });
+
+    test('일반 몬스터는 무리로 나온다', () {
+      final s = GameState.initial(config);
+      expect(s.wave.length, greaterThanOrEqualTo(config.waveSizeMin));
+      expect(s.wave.length, lessThanOrEqualTo(config.waveSizeMax));
+      expect(s.wave.map((u) => u.key).toSet(), hasLength(s.wave.length), reason: '번호가 겹치지 않는다');
     });
 
     test('보스를 잡으면 다음 스테이지로 간다', () {
@@ -79,7 +90,7 @@ void main() {
       expect(s.highestStage, 2);
       expect(s.isBoss, false);
       expect(s.killsOnStage, 0);
-      expect(s.totalKills, config.killsPerStage + 1);
+      expect(s.totalKills, greaterThan(config.killsPerStage));
     });
 
     test('보스 30초 안에 못 잡으면 같은 스테이지 일반 몬스터부터 다시', () {
@@ -101,7 +112,7 @@ void main() {
     });
 
     test('치명타는 피해 2배', () {
-      var s = GameState.initial(config).copyWith(monsterHp: 100, monsterMaxHp: 100);
+      var s = GameState.initial(config).copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 100, maxHp: 100)]);
       final alwaysCrit = _FixedRandom(0.0);
       s = engine.tick(s, 1.0, alwaysCrit);
       expect(s.monsterMaxHp - s.monsterHp, closeTo(20, 1e-9));
@@ -145,7 +156,7 @@ void main() {
         t += 0.1;
       }
       expect(s.stage, 2);
-      expect(s.killLog, {1: 10});
+      expect(s.killLog[1], greaterThanOrEqualTo(config.killsPerStage));
       expect(s.bossKillLog, {1: 1});
       expect(s.monsterId, 2, reason: '2스테이지 = 늑대');
     });

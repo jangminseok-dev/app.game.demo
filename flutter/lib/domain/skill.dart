@@ -3,14 +3,14 @@
 /// 고르는 것이 있어야 스킬서 조각이 재화 구실을 한다. 6종을 다 열어도 3칸이라
 /// "무엇을 빼고 무엇을 넣을까"가 남는다(기획: 스킬 풀 6·장착 3).
 enum SkillId {
-  slash('강타', 6, 4.0, 30),
-  pierce('관통', 8, 5.5, 60),
-  whirl('회전베기', 10, 7.0, 90),
-  bolt('번개', 12, 9.0, 140),
-  frost('서리', 14, 11.0, 200),
-  meteor('유성', 20, 18.0, 300);
+  slash('강타', 6, 4.0, 30, 1),
+  pierce('관통', 8, 5.5, 60, 2),
+  whirl('회전베기', 10, 7.0, 90, 5),
+  bolt('번개', 12, 9.0, 140, 2),
+  frost('서리', 14, 11.0, 200, 3),
+  meteor('유성', 20, 18.0, 300, 5);
 
-  const SkillId(this.label, this.cooldown, this.damageMultiplier, this.pageCost);
+  const SkillId(this.label, this.cooldown, this.damageMultiplier, this.pageCost, this.targets);
 
   final String label;
 
@@ -22,6 +22,11 @@ enum SkillId {
 
   /// 해금에 드는 스킬서 조각.
   final int pageCost;
+
+  /// 한 번에 때리는 몬스터 수. 무리 전투에서 광역과 단일을 가른다.
+  final int targets;
+
+  bool get isAreaOfEffect => targets > 1;
 }
 
 /// 해금한 스킬, 장착한 3칸, 각 칸의 남은 대기 시간.

@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "monster_hp_base": 10,
   "monster_hp_growth": 1.18,
   "boss_hp_multiplier": 10,
@@ -9,6 +9,8 @@
   "boss_gold_multiplier": 10,
   "upgrade_cost_growth": 1.09,
   "kills_per_stage": 10,
+  "wave_size_min": 3,
+  "wave_size_max": 5,
   "crit_multiplier": 2.0,
   "offline_cap_seconds": 43200,
   "offline_efficiency": 0.5,

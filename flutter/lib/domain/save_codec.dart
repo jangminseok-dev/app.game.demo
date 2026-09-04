@@ -2,6 +2,7 @@ import 'dungeon.dart';
 import 'equipment.dart';
 import 'game_state.dart';
 import 'hatchery.dart';
+import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
@@ -43,6 +44,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'highestStage': s.highestStage,
       'gold': s.gold,
       'levels': {for (final e in s.levels.entries) e.key.name: e.value},
+      // 서버와 구버전 클라이언트가 읽는 대표값 — 맨 앞 몬스터다.
       'monsterHp': s.monsterHp,
       'monsterMaxHp': s.monsterMaxHp,
       'isBoss': s.isBoss,
@@ -51,6 +53,8 @@ Map<String, dynamic> encodeState(GameState s) => {
       'attackTimer': s.attackTimer,
       'totalKills': s.totalKills,
       'monsterId': s.monsterId,
+      'wave': [for (final u in s.wave) u.toJson()],
+      'waveSeq': s.waveSeq,
       'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
       'codex': _encodeIntMap(s.codex),
       'pity': _encodeIntMap(s.pity),
@@ -78,14 +82,13 @@ GameState? decodeState(Map<String, dynamic> j) {
       highestStage: (j['highestStage'] as num).toInt(),
       gold: (j['gold'] as num).toDouble(),
       levels: levels,
-      monsterHp: (j['monsterHp'] as num).toDouble(),
-      monsterMaxHp: (j['monsterMaxHp'] as num).toDouble(),
+      wave: _decodeWave(j),
+      waveSeq: (j['waveSeq'] as num?)?.toInt() ?? 0,
       isBoss: j['isBoss'] as bool,
       bossTimeLeft: (j['bossTimeLeft'] as num).toDouble(),
       killsOnStage: (j['killsOnStage'] as num).toInt(),
       attackTimer: (j['attackTimer'] as num).toDouble(),
       totalKills: (j['totalKills'] as num).toInt(),
-      monsterId: (j['monsterId'] as num?)?.toInt() ?? 1,
       killLog: _decodeIntMap(killLog['normal']),
       bossKillLog: _decodeIntMap(killLog['boss']),
       codex: _decodeIntMap(j['codex']),
@@ -109,4 +112,17 @@ Map<String, int> _encodeIntMap(Map<int, int> m) => {for (final e in m.entries) '
 Map<int, int> _decodeIntMap(Object? raw) {
   if (raw is! Map) return const {};
   return {for (final e in raw.entries) int.parse('${e.key}'): (e.value as num).toInt()};
+}
+
+/// 무리를 읽는다. 무리 전투 이전 저장에는 대표값 하나뿐이라 한 마리로 되살린다.
+List<MonsterUnit> _decodeWave(Map<String, dynamic> j) {
+  final raw = j['wave'];
+  if (raw is List && raw.isNotEmpty) {
+    final units = [for (final e in raw) ?MonsterUnit.fromJson(e)];
+    if (units.isNotEmpty) return units;
+  }
+  final hp = (j['monsterHp'] as num?)?.toDouble() ?? 0;
+  final maxHp = (j['monsterMaxHp'] as num?)?.toDouble() ?? 0;
+  if (maxHp <= 0) return const [];
+  return [MonsterUnit(key: 0, id: (j['monsterId'] as num?)?.toInt() ?? 1, hp: hp, maxHp: maxHp)];
 }

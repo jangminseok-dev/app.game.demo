@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
@@ -15,13 +16,13 @@ void main() {
       highestStage: 20,
       gold: 12345.678,
       levels: const {UpgradeType.attack: 5, UpgradeType.goldGain: 2},
-      monsterHp: 3.5,
+      wave: const [MonsterUnit(key: 3, id: 7, hp: 3.5, maxHp: 3.5)],
+      waveSeq: 4,
       isBoss: true,
       bossTimeLeft: 12.3,
       killsOnStage: 10,
       attackTimer: 0.42,
       totalKills: 999,
-      monsterId: 7,
       killLog: const {7: 3, 8: 1},
       bossKillLog: const {7: 1},
       codex: const {1: 5, 7: 2},

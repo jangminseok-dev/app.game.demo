@@ -26,9 +26,9 @@ def test_최고_스테이지나_누적_처치가_줄면_거부():
 
 
 def test_경과_시간보다_많은_처치는_거부():
-    # 30초에 속도 1.0이면 상한 30×1.5+1 = 46마리
-    assert _v(state(), state(totalKills=46), 30) is None
-    assert _v(state(), state(totalKills=47), 30).rule == "too_many_kills"
+    # 30초에 공속 1.0 + 광역 스킬 상한 1.2면 30×2.2×1.5+1 = 100마리
+    assert _v(state(), state(totalKills=100), 30) is None
+    assert _v(state(), state(totalKills=101), 30).rule == "too_many_kills"
 
 
 def test_벌_수_없는_골드는_거부():
@@ -60,6 +60,6 @@ def test_처치_보고가_누적_증가분을_넘으면_거부():
 def test_패시브가_처치_상한과_골드_상한을_넓힌다():
     from save.tests.support import Passives
     fast = Passives(attack_speed=100)  # 공속 2배
-    prev, new = parse_snapshot(state()), parse_snapshot(state(totalKills=60))
+    prev, new = parse_snapshot(state()), parse_snapshot(state(totalKills=120))
     assert delta_rules.validate(prev, new, 30, BALANCE).rule == "too_many_kills"
     assert delta_rules.validate(prev, new, 30, BALANCE, fast) is None

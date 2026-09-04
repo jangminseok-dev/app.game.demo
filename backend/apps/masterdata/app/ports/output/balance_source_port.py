@@ -48,6 +48,9 @@ class BalanceRecord:
     expedition_gold_multiplier: float = 300
     expedition_shards: int = 25
     ad_speed_up_seconds: float = 30 * 60
+    # 한 무리에 서는 일반 몬스터 수.
+    wave_size_min: int = 3
+    wave_size_max: int = 5
 
 
 class BalanceSourcePort(ABC):

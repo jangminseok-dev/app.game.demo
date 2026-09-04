@@ -16,6 +16,8 @@ class BalanceConfig {
     this.bossGoldMultiplier = 10,
     this.upgradeCostGrowth = 1.09,
     this.killsPerStage = 10,
+    this.waveSizeMin = 3,
+    this.waveSizeMax = 5,
     this.critMultiplier = 2.0,
     this.offlineCapSeconds = 12 * 3600,
     this.offlineEfficiency = 0.5,
@@ -39,7 +41,7 @@ class BalanceConfig {
     this.equipEnhancePerLevel = 0.03,
     this.dungeonTicketSeconds = 8 * 3600,
     this.dungeonTicketCap = 12,
-    this.dungeonWaves = 5,
+    this.dungeonWaves = 3,
     this.dungeonTimeLimit = 90,
     this.dungeonStagesPerFloor = 5,
     this.dungeonHpMultiplier = 1.4,
@@ -87,7 +89,7 @@ class BalanceConfig {
   /// 쌓아 둘 수 있는 입장권 최대치. 며칠 못 들어와도 손해가 없어야 한다.
   final int dungeonTicketCap;
 
-  /// 한 층에서 잡아야 하는 몬스터 수.
+  /// 한 층에서 잡아야 하는 무리 수. 무리 하나가 여러 마리다.
   final int dungeonWaves;
 
   /// 한 층의 제한 시간(초). 넘기면 실패이고 입장권은 돌려주지 않는다.
@@ -129,6 +131,10 @@ class BalanceConfig {
   final double bossGoldMultiplier;
   final double upgradeCostGrowth;
   final int killsPerStage;
+
+  /// 한 무리에 서는 일반 몬스터 수. 이 범위에서 무작위로 정한다.
+  final int waveSizeMin;
+  final int waveSizeMax;
   final double critMultiplier;
 
   /// 오프라인 보상 (GAME_DESIGN 8장): 상한 12시간, 효율 50%.

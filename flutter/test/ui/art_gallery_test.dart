@@ -84,7 +84,7 @@ void main() {
       for (var i = 0; i < 240; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
-      s = s.copyWith(monsterHp: s.monsterHp * 0.4);
+      s = s.withFrontHp(s.monsterHp * 0.4);
       game.sync(s);
       for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(milliseconds: 16));

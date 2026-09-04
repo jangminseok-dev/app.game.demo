@@ -52,4 +52,6 @@ async def fetch_balance(
         expeditionGoldMultiplier=r.expedition_gold_multiplier,
         expeditionShards=r.expedition_shards,
         adSpeedUpSeconds=r.ad_speed_up_seconds,
+        waveSizeMin=r.wave_size_min,
+        waveSizeMax=r.wave_size_max,
     )

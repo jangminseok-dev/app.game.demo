@@ -5,6 +5,7 @@ import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/dungeon.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
 
 void main() {
@@ -36,19 +37,19 @@ void main() {
     });
 
     test('입장하면 한 장이 줄고 진행 중인 판이 생긴다', () {
-      final s = engine.enterDungeon(ready(tickets: 2), DungeonType.goldCave)!;
+      final s = engine.enterDungeon(ready(tickets: 2), DungeonType.goldCave, rng)!;
       expect(s.dungeon.tickets, 1);
       expect(s.dungeon.run?.type, DungeonType.goldCave);
       expect(s.dungeon.run?.wavesLeft, config.dungeonWaves);
     });
 
     test('입장권이 없으면 못 들어간다', () {
-      expect(engine.enterDungeon(ready(tickets: 0), DungeonType.goldCave), isNull);
+      expect(engine.enterDungeon(ready(tickets: 0), DungeonType.goldCave, rng), isNull);
     });
 
     test('최고 층이 모자라면 잠겨 있다', () {
-      expect(engine.enterDungeon(ready(highestStage: 1), DungeonType.goldCave), isNull);
-      expect(engine.enterDungeon(ready(highestStage: 15), DungeonType.stoneMine), isNull,
+      expect(engine.enterDungeon(ready(highestStage: 1), DungeonType.goldCave, rng), isNull);
+      expect(engine.enterDungeon(ready(highestStage: 15), DungeonType.stoneMine, rng), isNull,
           reason: '강화석 광산은 20층부터');
     });
 
@@ -58,13 +59,13 @@ void main() {
         dungeon: const DungeonState(tickets: 3, cleared: {DungeonType.goldCave: 2}),
       );
       expect(s.dungeon.requiredStage(DungeonType.goldCave, config), 15);
-      expect(engine.enterDungeon(s, DungeonType.goldCave), isNull);
-      expect(engine.enterDungeon(s.copyWith(highestStage: 15), DungeonType.goldCave), isNotNull);
+      expect(engine.enterDungeon(s, DungeonType.goldCave, rng), isNull);
+      expect(engine.enterDungeon(s.copyWith(highestStage: 15), DungeonType.goldCave, rng), isNotNull);
     });
 
     test('이미 들어가 있으면 또 못 들어간다', () {
-      final s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
-      expect(engine.enterDungeon(s, DungeonType.stoneMine), isNull);
+      final s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
+      expect(engine.enterDungeon(s, DungeonType.stoneMine, rng), isNull);
     });
   });
 
@@ -79,7 +80,7 @@ void main() {
     }
 
     test('정해진 수만큼 잡으면 클리어하고 층이 오른다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
+      var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       final before = s.gold;
       s = run(s);
       expect(s.dungeon.run, isNull, reason: '판이 끝났다');
@@ -88,17 +89,17 @@ void main() {
     });
 
     test('클리어하면 다음에는 그 다음 층에 도전한다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
+      var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       s = run(s);
       expect(s.dungeon.nextFloor(DungeonType.goldCave), 2);
-      s = engine.enterDungeon(s, DungeonType.goldCave)!;
+      s = engine.enterDungeon(s, DungeonType.goldCave, rng)!;
       expect(s.dungeon.run?.floor, 2);
     });
 
     test('시간이 다 되면 실패하고 층은 그대로다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
+      var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       // 몬스터가 안 죽을 만큼 체력을 키운다.
-      s = s.copyWith(monsterHp: 1e18, monsterMaxHp: 1e18);
+      s = s.copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 1e18, maxHp: 1e18)]);
       s = run(s, seconds: config.dungeonTimeLimit + 5);
       expect(s.dungeon.run, isNull);
       expect(s.dungeon.clearedFloor(DungeonType.goldCave), 0, reason: '실패는 보상이 없다');
@@ -106,15 +107,15 @@ void main() {
     });
 
     test('던전에서 나오면 필드 몬스터로 돌아온다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
-      s = engine.leaveDungeon(s, cleared: false);
+      var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
+      s = engine.leaveDungeon(s, cleared: false, rng: rng);
       expect(s.dungeon.run, isNull);
       expect(s.monsterHp, s.monsterMaxHp, reason: '새 필드 몬스터가 나온다');
       expect(s.isBoss, isFalse);
     });
 
     test('던전 처치는 도감 처치 기록에 들어가지 않는다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
+      var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       s = run(s);
       expect(s.killLog, isEmpty, reason: '포획은 필드에서만');
     });
@@ -133,13 +134,13 @@ void main() {
     });
 
     test('강화석 광산은 강화석을, 용의 둥지는 알 조각을 준다', () {
-      var s = engine.enterDungeon(ready(), DungeonType.stoneMine)!;
+      var s = engine.enterDungeon(ready(), DungeonType.stoneMine, rng)!;
       for (var i = 0; i < 600 && s.dungeon.run != null; i++) {
         s = engine.tick(s, 0.1, rng);
       }
       expect(s.equipment.stones, greaterThan(0));
 
-      var t = engine.enterDungeon(ready(), DungeonType.dragonNest)!;
+      var t = engine.enterDungeon(ready(), DungeonType.dragonNest, rng)!;
       for (var i = 0; i < 600 && t.dungeon.run != null; i++) {
         t = engine.tick(t, 0.1, rng);
       }
@@ -160,7 +161,7 @@ void main() {
 
   group('저장', () {
     test('진행 중인 판까지 JSON 왕복으로 살아남는다', () {
-      final s = engine.enterDungeon(ready(), DungeonType.goldCave)!;
+      final s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       final back = decodeState(encodeState(s))!;
       expect(back.dungeon.run?.type, s.dungeon.run?.type);
       expect(back.dungeon.run?.wavesLeft, s.dungeon.run?.wavesLeft);

@@ -39,3 +39,5 @@ class BalanceResponseSchema(BaseModel):
     expeditionGoldMultiplier: float
     expeditionShards: int
     adSpeedUpSeconds: float
+    waveSizeMin: int
+    waveSizeMax: int

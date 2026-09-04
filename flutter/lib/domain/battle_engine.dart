@@ -8,6 +8,7 @@ import 'equipment.dart';
 import 'game_state.dart';
 import 'hatchery.dart';
 import 'monster.dart';
+import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
@@ -43,12 +44,12 @@ class BattleEngine {
     if (run != null) {
       final left = run.timeLeft - dt;
       // 시간 초과 — 실패다. 입장권은 돌려주지 않는다.
-      if (left <= 0) return leaveDungeon(s, cleared: false);
+      if (left <= 0) return leaveDungeon(s, cleared: false, rng: rng);
       s = s.copyWith(dungeon: s.dungeon.copyWith(run: run.copyWith(timeLeft: left)));
     } else if (s.isBoss) {
       final left = s.bossTimeLeft - dt;
       if (left <= 0) {
-        return _spawnNormal(s.copyWith(killsOnStage: 0));
+        return _spawnNormal(s.copyWith(killsOnStage: 0), rng);
       }
       s = s.copyWith(bossTimeLeft: left);
     }
@@ -71,16 +72,149 @@ class BattleEngine {
     return s.copyWith(attackTimer: timer);
   }
 
-  /// 공격 1회. 몬스터가 죽으면 보상과 다음 몬스터까지 처리한다.
+  /// 공격 1회. 맨 앞을 때린다.
   GameState _hit(GameState s, Stats stats, Random rng) {
     final isCrit = rng.nextDouble() < stats.critChance;
-    return _damage(s, stats, stats.attack * (isCrit ? config.critMultiplier : 1), rng);
+    return _strike(s, stats, stats.attack * (isCrit ? config.critMultiplier : 1), 1, rng);
   }
 
-  GameState _damage(GameState s, Stats stats, double damage, Random rng) {
-    final hp = s.monsterHp - damage;
-    if (hp > 0) return s.copyWith(monsterHp: hp);
-    return _onKill(s, stats, rng);
+  /// 앞에서부터 [targets]마리를 때린다. 죽은 것은 보상을 주고 무리에서 뺀다.
+  ///
+  /// 무리가 비면 다음 무리를 부른다. 광역 스킬이 무리를 한 번에 쓸어도 같은 길을 지난다.
+  GameState _strike(GameState s, Stats stats, double damage, int targets, Random rng) {
+    if (s.wave.isEmpty) return _refill(s, rng);
+
+    final alive = <MonsterUnit>[];
+    final dead = <MonsterUnit>[];
+    for (var i = 0; i < s.wave.length; i++) {
+      final unit = i < targets ? s.wave[i].damaged(damage) : s.wave[i];
+      (unit.isDead ? dead : alive).add(unit);
+    }
+    s = s.copyWith(wave: alive);
+    for (final unit in dead) {
+      s = _onKill(s, unit, stats, rng);
+    }
+    return s.wave.isEmpty ? _refill(s, rng) : s;
+  }
+
+  /// 한 마리를 잡았을 때의 보상과 기록. 다음 몬스터를 부르지는 않는다.
+  GameState _onKill(GameState s, MonsterUnit unit, Stats stats, Random rng) {
+    // 던전에서는 골드도 도감 기록도 없다. 층 보상만 있다.
+    if (s.dungeon.run != null) return s.copyWith(totalKills: s.totalKills + 1);
+
+    final reward =
+        (s.isBoss ? bossGoldReward(s.stage, config) : goldReward(s.stage, config)) * stats.goldMultiplier;
+    // 장비 드롭 — 보스는 반드시, 필드는 가끔. 더 센 것이면 자동 착용되고 밀린 것은 인벤토리로 간다.
+    final drop = dropTable.roll(s.stage, isBoss: s.isBoss, rng: rng);
+    return s.copyWith(
+      gold: s.gold + reward,
+      totalKills: s.totalKills + 1,
+      killsOnStage: s.isBoss ? null : s.killsOnStage + 1,
+      killLog: s.isBoss ? null : _increment(s.killLog, unit.id),
+      bossKillLog: s.isBoss ? _increment(s.bossKillLog, unit.id) : null,
+      equipment: drop == null ? null : s.equipment.pickUp(drop),
+    );
+  }
+
+  /// 무리를 다 잡았다. 다음에 무엇이 오는지 정한다.
+  GameState _refill(GameState s, Random rng) {
+    if (s.dungeon.run != null) return _onDungeonWaveCleared(s, rng);
+    if (s.isBoss) {
+      final next = s.stage + 1;
+      return _spawnNormal(
+        s.copyWith(stage: next, highestStage: max(s.highestStage, next), killsOnStage: 0),
+        rng,
+      );
+    }
+    if (s.killsOnStage >= config.killsPerStage) return _spawnBoss(s);
+    return _spawnNormal(s, rng);
+  }
+
+  // ── 던전. 필드와 같은 전투 루프를 쓰고 몬스터 체력과 보상만 다르다.
+
+  /// 입장권을 쓰고 다음 층에 들어간다. 조건이 안 되면 null.
+  GameState? enterDungeon(GameState s, DungeonType type, Random rng) {
+    if (!s.dungeon.canEnter(type, s.highestStage, config)) return null;
+    final dungeon = s.dungeon.enter(type, s.highestStage, config);
+    return _spawnDungeonWave(s.copyWith(dungeon: dungeon), dungeon.run!, rng);
+  }
+
+  /// 던전을 끝내고 필드로 돌아온다. 클리어면 층이 오르고, 포기·시간 초과면 그대로다.
+  GameState leaveDungeon(GameState s, {required bool cleared, required Random rng}) {
+    final run = s.dungeon.run;
+    if (run == null) return s;
+    var next = s.copyWith(dungeon: s.dungeon.finish(cleared: cleared));
+    if (cleared) next = _grantDungeonReward(next, run);
+    // 필드로 복귀 — 보스 직전이었으면 보스부터 다시 만난다.
+    return next.killsOnStage >= config.killsPerStage ? _spawnBoss(next) : _spawnNormal(next, rng);
+  }
+
+  GameState _onDungeonWaveCleared(GameState s, Random rng) {
+    final run = s.dungeon.run!;
+    final waves = run.wavesLeft - 1;
+    if (waves <= 0) return leaveDungeon(s, cleared: true, rng: rng);
+    final next = run.copyWith(wavesLeft: waves);
+    return _spawnDungeonWave(s.copyWith(dungeon: s.dungeon.copyWith(run: next)), next, rng);
+  }
+
+  GameState _spawnDungeonWave(GameState s, DungeonRun run, Random rng) {
+    final stage = dungeonEquivalentStage(run.floor, config);
+    return _spawnWave(
+      s,
+      hp: dungeonMonsterHp(run.floor, config),
+      id: catalog.forStage(stage)?.id ?? s.monsterId,
+      count: _waveSize(rng),
+      isBoss: false,
+    );
+  }
+
+  /// 층 보상을 재화별 자리에 넣는다. 골드와 강화석은 이미 있는 지갑으로 간다.
+  GameState _grantDungeonReward(GameState s, DungeonRun run) {
+    final amount = dungeonReward(run.type, run.floor, config);
+    return switch (run.type.currency) {
+      DungeonCurrency.gold => s.copyWith(gold: s.gold + amount),
+      DungeonCurrency.stone =>
+        s.copyWith(equipment: s.equipment.copyWith(stones: s.equipment.stones + amount.round())),
+      final c => s.copyWith(dungeon: s.dungeon.addCurrency(c, amount.round())),
+    };
+  }
+
+  // ── 무리 소환.
+
+  int _waveSize(Random rng) =>
+      config.waveSizeMin + rng.nextInt(max(1, config.waveSizeMax - config.waveSizeMin + 1));
+
+  GameState _spawnNormal(GameState s, Random rng) => _spawnWave(
+        s,
+        hp: monsterHp(s.stage, config),
+        id: catalog.forStage(s.stage)?.id ?? s.monsterId,
+        count: _waveSize(rng),
+        isBoss: false,
+      );
+
+  GameState _spawnBoss(GameState s) => _spawnWave(
+        s,
+        hp: bossHp(s.stage, config),
+        id: catalog.forStage(s.stage)?.id ?? s.monsterId,
+        count: 1,
+        isBoss: true,
+      );
+
+  GameState _spawnWave(
+    GameState s, {
+    required double hp,
+    required int id,
+    required int count,
+    required bool isBoss,
+  }) {
+    return s.copyWith(
+      wave: [
+        for (var i = 0; i < count; i++) MonsterUnit(key: s.waveSeq + i, id: id, hp: hp, maxHp: hp),
+      ],
+      waveSeq: s.waveSeq + count,
+      isBoss: isBoss,
+      bossTimeLeft: isBoss ? config.bossTimeLimit : 0,
+    );
   }
 
   // ── 스킬. 자동으로 나가고 탭하면 즉시 나간다.
@@ -113,111 +247,12 @@ class BattleEngine {
   GameState _castSkill(GameState s, Stats stats, int slot, Random rng) {
     final id = s.skills.at(slot);
     if (id == null) return s;
-    return _damage(s.copyWith(skills: s.skills.fire(slot)), stats, stats.attack * id.damageMultiplier, rng);
-  }
-
-  GameState _onKill(GameState s, Stats stats, Random rng) {
-    if (s.dungeon.run != null) return _onDungeonKill(s);
-
-    final reward = (s.isBoss
-            ? bossGoldReward(s.stage, config)
-            : goldReward(s.stage, config)) *
-        stats.goldMultiplier;
-    // 장비 드롭 — 보스는 반드시, 필드는 가끔. 더 센 것이면 자동 착용되고 밀린 것은 인벤토리로 간다.
-    final drop = dropTable.roll(s.stage, isBoss: s.isBoss, rng: rng);
-    s = s.copyWith(
-      gold: s.gold + reward,
-      totalKills: s.totalKills + 1,
-      killLog: s.isBoss ? null : _increment(s.killLog, s.monsterId),
-      bossKillLog: s.isBoss ? _increment(s.bossKillLog, s.monsterId) : null,
-      equipment: drop == null ? null : s.equipment.pickUp(drop),
-    );
-
-    if (s.isBoss) {
-      final next = s.stage + 1;
-      return _spawnNormal(s.copyWith(
-        stage: next,
-        highestStage: max(s.highestStage, next),
-        killsOnStage: 0,
-      ));
-    }
-
-    final kills = s.killsOnStage + 1;
-    if (kills >= config.killsPerStage) {
-      return _spawnBoss(s.copyWith(killsOnStage: kills));
-    }
-    return _spawnNormal(s.copyWith(killsOnStage: kills));
-  }
-
-  // ── 던전. 필드와 같은 전투 루프를 쓰고 몬스터 체력과 보상만 다르다.
-
-  /// 입장권을 쓰고 다음 층에 들어간다. 조건이 안 되면 null.
-  GameState? enterDungeon(GameState s, DungeonType type) {
-    if (!s.dungeon.canEnter(type, s.highestStage, config)) return null;
-    final dungeon = s.dungeon.enter(type, s.highestStage, config);
-    return _spawnDungeonWave(s.copyWith(dungeon: dungeon), dungeon.run!);
-  }
-
-  /// 던전을 끝내고 필드로 돌아온다. 클리어면 층이 오르고, 포기·시간 초과면 그대로다.
-  GameState leaveDungeon(GameState s, {required bool cleared}) {
-    final run = s.dungeon.run;
-    if (run == null) return s;
-    var next = s.copyWith(dungeon: s.dungeon.finish(cleared: cleared));
-    if (cleared) next = _grantDungeonReward(next, run);
-    // 필드로 복귀 — 보스 직전이었으면 보스부터 다시 만난다.
-    return next.killsOnStage >= config.killsPerStage ? _spawnBoss(next) : _spawnNormal(next);
-  }
-
-  GameState _onDungeonKill(GameState s) {
-    final run = s.dungeon.run!;
-    s = s.copyWith(totalKills: s.totalKills + 1);
-    final waves = run.wavesLeft - 1;
-    if (waves <= 0) return leaveDungeon(s, cleared: true);
-    final next = run.copyWith(wavesLeft: waves);
-    return _spawnDungeonWave(s.copyWith(dungeon: s.dungeon.copyWith(run: next)), next);
-  }
-
-  GameState _spawnDungeonWave(GameState s, DungeonRun run) {
-    final hp = dungeonMonsterHp(run.floor, config);
-    return s.copyWith(
-      monsterHp: hp,
-      monsterMaxHp: hp,
-      isBoss: false,
-      bossTimeLeft: 0,
-      monsterId: catalog.forStage(dungeonEquivalentStage(run.floor, config))?.id ?? s.monsterId,
-    );
-  }
-
-  /// 층 보상을 재화별 자리에 넣는다. 골드와 강화석은 이미 있는 지갑으로 간다.
-  GameState _grantDungeonReward(GameState s, DungeonRun run) {
-    final amount = dungeonReward(run.type, run.floor, config);
-    return switch (run.type.currency) {
-      DungeonCurrency.gold => s.copyWith(gold: s.gold + amount),
-      DungeonCurrency.stone =>
-        s.copyWith(equipment: s.equipment.copyWith(stones: s.equipment.stones + amount.round())),
-      final c => s.copyWith(dungeon: s.dungeon.addCurrency(c, amount.round())),
-    };
-  }
-
-  GameState _spawnNormal(GameState s) {
-    final hp = monsterHp(s.stage, config);
-    return s.copyWith(
-      monsterHp: hp,
-      monsterMaxHp: hp,
-      isBoss: false,
-      bossTimeLeft: 0,
-      monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
-    );
-  }
-
-  GameState _spawnBoss(GameState s) {
-    final hp = bossHp(s.stage, config);
-    return s.copyWith(
-      monsterHp: hp,
-      monsterMaxHp: hp,
-      isBoss: true,
-      bossTimeLeft: config.bossTimeLimit,
-      monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
+    return _strike(
+      s.copyWith(skills: s.skills.fire(slot)),
+      stats,
+      stats.attack * id.damageMultiplier,
+      id.targets,
+      rng,
     );
   }
 

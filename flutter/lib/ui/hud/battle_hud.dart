@@ -91,6 +91,10 @@ class BattleHud extends StatelessWidget {
                 monster == null ? '몬스터' : '${monster!.name} [${monster!.element.label}]',
                 size: 12,
               ),
+              if (state.wave.length > 1) ...[
+                const SizedBox(width: 6),
+                PixelText('남은 ${state.wave.length}마리', size: 11, color: PixelPalette.gold),
+              ],
               const Spacer(),
               Flexible(child: PixelText(captureLine, size: 10, color: PixelPalette.textDim)),
             ],

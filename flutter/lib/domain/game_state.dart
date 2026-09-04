@@ -4,6 +4,7 @@ import 'dungeon.dart';
 import 'equipment.dart';
 import 'formulas.dart' as formulas;
 import 'hatchery.dart';
+import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
@@ -16,14 +17,13 @@ class GameState {
     required this.highestStage,
     required this.gold,
     required this.levels,
-    required this.monsterHp,
-    required this.monsterMaxHp,
+    required this.wave,
     required this.isBoss,
     required this.bossTimeLeft,
     required this.killsOnStage,
     required this.attackTimer,
     required this.totalKills,
-    this.monsterId = 1,
+    this.waveSeq = 0,
     this.killLog = const {},
     this.bossKillLog = const {},
     this.codex = const {},
@@ -44,8 +44,10 @@ class GameState {
       highestStage: 1,
       gold: 0,
       levels: const {},
-      monsterHp: hp,
-      monsterMaxHp: hp,
+      wave: [
+        for (var i = 0; i < config.waveSizeMin; i++) MonsterUnit(key: i, id: 1, hp: hp, maxHp: hp),
+      ],
+      waveSeq: config.waveSizeMin,
       isBoss: false,
       bossTimeLeft: 0,
       killsOnStage: 0,
@@ -58,18 +60,36 @@ class GameState {
   final int highestStage;
   final double gold;
   final Map<UpgradeType, int> levels;
-  final double monsterHp;
-  final double monsterMaxHp;
+
+  /// 지금 서 있는 몬스터들. 앞에서부터 때린다. 비어 있으면 다음 무리를 부른다.
+  final List<MonsterUnit> wave;
+
+  /// 다음 몬스터에게 매길 번호. 무대가 같은 몬스터를 알아보는 데 쓴다.
+  final int waveSeq;
+
   final bool isBoss;
+
+  /// 맨 앞 몬스터. 평타와 화면 표시가 이것을 본다.
+  MonsterUnit? get front => wave.isEmpty ? null : wave.first;
+
+  /// 맨 앞 몬스터의 체력만 바꾼 상태.
+  GameState withFrontHp(double hp) => wave.isEmpty
+      ? this
+      : copyWith(wave: [
+          MonsterUnit(key: wave.first.key, id: wave.first.id, hp: hp, maxHp: wave.first.maxHp),
+          ...wave.skip(1),
+        ]);
+
+  /// 화면·저장·서버가 쓰는 대표값. 무리 전투 이전과 같은 이름으로 남겨 둔다.
+  double get monsterHp => front?.hp ?? 0;
+  double get monsterMaxHp => front?.maxHp ?? 0;
+  int get monsterId => front?.id ?? 1;
   final double bossTimeLeft;
   final int killsOnStage;
 
   /// 다음 공격까지 누적된 시간(초). 공격속도가 프레임보다 빠를 때를 위해 둔다.
   final double attackTimer;
   final int totalKills;
-
-  /// 지금 싸우는 몬스터(마스터 데이터 id).
-  final int monsterId;
 
   /// 마지막 서버 동기화 이후 몬스터별 처치 수. 서버가 포획을 굴리는 근거이며, 수락되면 비운다.
   final Map<int, int> killLog;
@@ -115,14 +135,13 @@ class GameState {
     int? highestStage,
     double? gold,
     Map<UpgradeType, int>? levels,
-    double? monsterHp,
-    double? monsterMaxHp,
+    List<MonsterUnit>? wave,
+    int? waveSeq,
     bool? isBoss,
     double? bossTimeLeft,
     int? killsOnStage,
     double? attackTimer,
     int? totalKills,
-    int? monsterId,
     Map<int, int>? killLog,
     Map<int, int>? bossKillLog,
     Map<int, int>? codex,
@@ -140,14 +159,13 @@ class GameState {
       highestStage: highestStage ?? this.highestStage,
       gold: gold ?? this.gold,
       levels: levels ?? this.levels,
-      monsterHp: monsterHp ?? this.monsterHp,
-      monsterMaxHp: monsterMaxHp ?? this.monsterMaxHp,
+      wave: wave ?? this.wave,
+      waveSeq: waveSeq ?? this.waveSeq,
       isBoss: isBoss ?? this.isBoss,
       bossTimeLeft: bossTimeLeft ?? this.bossTimeLeft,
       killsOnStage: killsOnStage ?? this.killsOnStage,
       attackTimer: attackTimer ?? this.attackTimer,
       totalKills: totalKills ?? this.totalKills,
-      monsterId: monsterId ?? this.monsterId,
       killLog: killLog ?? this.killLog,
       bossKillLog: bossKillLog ?? this.bossKillLog,
       codex: codex ?? this.codex,

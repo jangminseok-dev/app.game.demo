@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/balance_config.dart';
 import '../../domain/game_state.dart';
+import '../../domain/monster_unit.dart';
 import '../../domain/monster.dart';
 import '../../domain/number_format.dart';
 import '../sprites/monster_sprite.dart' show elementColor, regionColors;
@@ -54,8 +55,11 @@ class BattleStageGame extends FlameGame {
   final _bg = _Background();
   final _rng = math.Random();
 
-  /// 몬스터 줄. 0번이 지금 싸우는 상대.
+  /// 몬스터 줄. 0번이 지금 싸우는 상대. [_keys]와 자리 번호가 같다.
   final _queue = <StageActor>[];
+
+  /// 줄에 선 몬스터의 상태 번호. 상태의 무리와 맞추는 데 쓴다.
+  final _keys = <int>[];
   StageActor? _hero;
   StageActor? _pet;
 
@@ -145,6 +149,9 @@ class BattleStageGame extends FlameGame {
   }
 
   /// 새 상태를 받아 변화에 맞는 연출을 트리거한다. 매 틱 호출해도 싸다.
+  ///
+  /// 무리를 번호로 맞춘다. 사라진 번호는 죽는 연출을 하고 새 번호는 걸어 들어온다.
+  /// 광역 스킬이 가운데 몬스터만 죽여도 그 자리의 액터만 사라진다.
   void sync(GameState next) {
     if (_hero == null || _busy) return; // onLoad 완료 전에는 무시
     final prev = _last;
@@ -155,78 +162,86 @@ class BattleStageGame extends FlameGame {
 
     if (prev == null) {
       _busy = true;
-      _fillQueue(next).whenComplete(() => _busy = false);
+      _rebuild(next).whenComplete(() => _busy = false);
       return;
     }
 
-    final spawned = next.totalKills > prev.totalKills || next.monsterId != prev.monsterId || next.isBoss != prev.isBoss;
-    final damage = prev.monsterHp - next.monsterHp;
-    final dealt = spawned && next.totalKills > prev.totalKills ? prev.monsterHp : damage;
-
+    final dealt = _damageDealt(prev, next);
     if (dealt > 0) {
       _strike(dealt, crit: dealt > prev.statsWith(config).attack * 1.5, element: catalog.byId(prev.monsterId)?.element);
     }
-    if (!spawned) {
-      if (_queue.isNotEmpty && next.monsterMaxHp > 0) {
-        _queue.first.hpRatio = (next.monsterHp / next.monsterMaxHp).clamp(0.0, 1.0);
+
+    // 번호 구성이 그대로면 체력만 갱신하면 된다.
+    final keys = [for (final u in next.wave) u.key];
+    if (_listEquals(keys, _keys)) {
+      for (var i = 0; i < _queue.length && i < next.wave.length; i++) {
+        _queue[i].hpRatio = next.wave[i].hpRatio;
       }
       return;
     }
 
     _busy = true;
-    _advance(next).whenComplete(() => _busy = false);
+    _rebuild(next).whenComplete(() => _busy = false);
   }
 
-  /// 맨 앞을 죽이고 줄을 당긴 뒤 새 몬스터를 뒤에 붙인다.
-  Future<void> _advance(GameState s) async {
-    if (_queue.isNotEmpty) {
-      final dead = _queue.removeAt(0);
+  /// 이번 틱에 들어간 피해. 살아남은 것의 감소분 + 사라진 것의 남은 체력.
+  double _damageDealt(GameState prev, GameState next) {
+    final alive = {for (final u in next.wave) u.key: u.hp};
+    var total = 0.0;
+    for (final u in prev.wave) {
+      final now = alive[u.key];
+      total += now == null ? u.hp : (u.hp - now);
+    }
+    return total;
+  }
+
+  /// 무대의 줄을 상태의 무리에 맞춘다. 사라진 것은 죽이고 새것은 걸어 들어온다.
+  Future<void> _rebuild(GameState s) async {
+    final wanted = [for (final u in s.wave) u.key];
+
+    // 1. 사라진 번호를 죽인다.
+    for (var i = _keys.length - 1; i >= 0; i--) {
+      if (wanted.contains(_keys[i])) continue;
+      final dead = _queue.removeAt(i);
+      _keys.removeAt(i);
       dead.showHpBar = false;
       dead.die();
       _fx.add(Burst(
         position: dead.pos + Vector2(0, -dead.sizePx * 0.4),
-        particle: scatter(count: 16, color: elementColor(catalog.byId(_last?.monsterId ?? 0)?.element ?? MonsterElement.neutral), speed: 110, lifespan: 0.6),
+        particle: scatter(
+          count: 16,
+          color: elementColor(catalog.byId(s.monsterId)?.element ?? MonsterElement.neutral),
+          speed: 110,
+          lifespan: 0.6,
+        ),
       ));
     }
-    // 보스가 뜨면 줄을 비우고 보스 혼자 세운다
-    if (s.isBoss) {
-      for (final a in _queue) {
-        a.die();
-      }
-      _queue.clear();
-    }
-    for (var i = 0; i < _queue.length; i++) {
-      _queue[i].target.setFrom(_slots[i]);
-      _queue[i].showHpBar = i == 0;
-    }
-    await _fillQueue(s);
-  }
 
-  /// 줄을 목표 인원까지 채운다. 보스전은 1마리.
-  Future<void> _fillQueue(GameState s) async {
-    final want = s.isBoss ? 1 : _slots.length;
-    while (_queue.length < want) {
-      final index = _queue.length;
-      final a = await _spawn(s, index);
-      if (a == null) break;
-      _queue.add(a);
-      await _actors.add(a);
+    // 2. 새 번호를 뒤에 붙인다.
+    for (var i = 0; i < s.wave.length; i++) {
+      final unit = s.wave[i];
+      if (_keys.contains(unit.key)) continue;
+      final actor = await _spawn(s, _queue.length, unit);
+      if (actor == null) break;
+      _keys.add(unit.key);
+      _queue.add(actor);
+      await _actors.add(actor);
     }
+
+    // 3. 자리를 다시 잡고 체력을 맞춘다. 무리라 모두 체력 바를 보여 준다.
+    final byKey = {for (final u in s.wave) u.key: u};
     for (var i = 0; i < _queue.length; i++) {
-      _queue[i].showHpBar = i == 0;
-      if (i == 0 && s.monsterMaxHp > 0) _queue[i].hpRatio = (s.monsterHp / s.monsterMaxHp).clamp(0.0, 1.0);
+      _queue[i].target.setFrom(_slots[math.min(i, _slots.length - 1)]);
+      _queue[i].showHpBar = true;
+      _queue[i].hpRatio = byKey[_keys[i]]?.hpRatio ?? 1;
     }
   }
 
-  /// 줄 뒤쪽 몬스터는 다음 스테이지 몬스터가 아니라 같은 지역에서 아무거나 뽑는다(눈속임).
-  Future<StageActor?> _spawn(GameState s, int index) async {
+  /// 무리의 몬스터 하나를 만든다. 보스는 혼자 크게 선다.
+  Future<StageActor?> _spawn(GameState s, int index, MonsterUnit unit) async {
     final region = catalog.regionFor(s.stage);
-    Monster? m = index == 0 ? catalog.byId(s.monsterId) : null;
-    if (m == null && region != null) {
-      final pool = catalog.monstersIn(region.id);
-      if (pool.isNotEmpty) m = pool[_rng.nextInt(pool.length)];
-    }
-    final isBoss = s.isBoss && index == 0;
+    final m = catalog.byId(unit.id);
+    final isBoss = s.isBoss;
     final size = isBoss ? _bossSize : _monsterSize;
     final sheetId = isBoss ? _bossSheetId : monsterSheetIdFor(m, region?.id);
     final sheet = await _loader.load(
@@ -248,7 +263,15 @@ class BattleStageGame extends FlameGame {
       walkSpeed: speed,
     )
       ..target.setFrom(slot)
-      ..hpRatio = 1;
+      ..hpRatio = unit.hpRatio;
+  }
+
+  static bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// 한 번의 타격 — 주인공 공격 모션, 참격, 피격, 넉백, 숫자.

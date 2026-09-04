@@ -127,12 +127,12 @@ class GameController extends Notifier<GameState> {
 
   /// 입장권을 쓰고 던전 다음 층에 들어간다. 조건이 안 되면 아무 일도 안 일어난다.
   void enterDungeon(DungeonType type) {
-    final next = _engine.enterDungeon(state, type);
+    final next = _engine.enterDungeon(state, type, _rng);
     if (next != null) state = next;
   }
 
   /// 던전을 포기하고 필드로 돌아온다. 입장권은 돌려주지 않는다.
-  void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false);
+  void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false, rng: _rng);
 
   /// 스킬서 조각을 내고 스킬을 연다. 조각이 모자라면 아무 일도 안 일어난다.
   void unlockSkill(SkillId id) {
