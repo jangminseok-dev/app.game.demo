@@ -5,6 +5,7 @@ import 'codex.dart';
 import 'dungeon.dart';
 import 'formulas.dart';
 import 'equipment.dart';
+import 'field.dart';
 import 'game_state.dart';
 import 'hatchery.dart';
 import 'monster.dart';
@@ -54,15 +55,29 @@ class BattleEngine {
       s = s.copyWith(bossTimeLeft: left);
     }
 
+    // 쓰러져 있으면 일어설 때까지 아무 일도 없다.
+    if (s.isDown) return _reviveTick(s, dt);
+    s = _regenerate(s, dt);
+
     final stats = s.statsWith(config);
-    // 자동 스킬이 먼저 나간다. 대기 시간이 돌아온 칸만 쏜다.
+
+    // 주인공은 가장 가까운 몬스터에게, 몬스터들은 한꺼번에 주인공에게 다가간다.
+    s = _move(s, dt);
+
+    // 몬스터가 먼저 때린다. 여기서 쓰러지면 이번 틱은 끝이다.
+    s = _monstersAttack(s, dt, rng);
+    if (s.isDown) return s;
+
+    // 자동 스킬 — 대기 시간이 돌아오고 마력이 있는 칸만 나간다.
     s = s.copyWith(skills: s.skills.advance(dt));
     for (final slot in s.skills.autoReadySlots.toList()) {
       s = _castSkill(s, stats, slot, rng);
     }
 
+    // 평타는 사거리 안에 있을 때만 나간다.
     final interval = 1 / stats.attacksPerSecond;
     var timer = s.attackTimer + dt;
+    if (!_heroInRange(s)) return s.copyWith(attackTimer: min(timer, interval));
     var hits = 0;
     while (timer >= interval && hits < _maxHitsPerTick) {
       timer -= interval;
@@ -72,22 +87,174 @@ class BattleEngine {
     return s.copyWith(attackTimer: timer);
   }
 
+  // ── 이동과 교전.
+
+  bool _heroInRange(GameState s) {
+    final target = s.nearestMonster;
+    return target != null &&
+        distanceBetween(s.heroX, s.heroY, target.x, target.y) <= config.heroAttackRange;
+  }
+
+  /// 주인공은 가장 가까운 몬스터 앞까지, 몬스터는 저마다 주인공 앞까지 간다.
+  ///
+  /// 몬스터가 줄을 서서 한 마리씩 오는 것이 아니라 전부 동시에 달려든다.
+  /// 겹치지 않게 서로 밀어내므로 주인공을 둘러싸는 모양이 된다.
+  GameState _move(GameState s, double dt) {
+    var hx = s.heroX;
+    var hy = s.heroY;
+    final target = s.nearestMonster;
+    if (target == null) {
+      // 아무도 없으면 제자리로 돌아간다.
+      (hx, hy) = moveToward(hx, hy, heroHomeX, heroHomeY, config.heroMoveSpeed * dt);
+    } else {
+      final gap = distanceBetween(hx, hy, target.x, target.y) - config.heroAttackRange * 0.8;
+      if (gap > 0) {
+        (hx, hy) = moveToward(hx, hy, target.x, target.y, min(config.heroMoveSpeed * dt, gap));
+      }
+    }
+
+    // 전부 한 점으로 몰리면 겹쳐 보인다. 주인공 둘레에 자리를 나눠 에워싼다.
+    final ring = config.monsterAttackRange * 0.8;
+    final moved = <MonsterUnit>[];
+    for (var i = 0; i < s.wave.length; i++) {
+      final m = s.wave[i];
+      final angle = _ringAngle(i, s.wave.length);
+      final tx = hx + cos(angle) * ring;
+      final ty = hy + sin(angle) * ring;
+      final gap = distanceBetween(m.x, m.y, tx, ty);
+      if (gap < 0.5) {
+        moved.add(m);
+        continue;
+      }
+      final (mx, my) = moveToward(m.x, m.y, tx, ty, min(config.monsterMoveSpeed * dt, gap));
+      final (cx, cy) = clampToField(mx, my);
+      moved.add(m.copyWith(x: cx, y: cy));
+    }
+    return s.copyWith(heroX: hx, heroY: hy, wave: _separate(moved));
+  }
+
+  /// 무리가 설 각도. 몬스터는 오른쪽에서 오므로 오른쪽 반원에 부채꼴로 선다.
+  double _ringAngle(int index, int count) {
+    if (count <= 1) return 0;
+    const spread = pi * 0.8;
+    return -spread / 2 + spread * index / (count - 1);
+  }
+
+  /// 겹친 몬스터를 서로 밀어낸다. 한 무리가 최대 5마리라 전부 비교해도 싸다.
+  List<MonsterUnit> _separate(List<MonsterUnit> units) {
+    final out = [...units];
+    for (var i = 0; i < out.length; i++) {
+      for (var j = i + 1; j < out.length; j++) {
+        final a = out[i];
+        final b = out[j];
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var d = sqrt(dx * dx + dy * dy);
+        if (d >= separationRadius) continue;
+        if (d < 0.001) {
+          dx = 0;
+          dy = 1;
+          d = 1;
+        }
+        final push = (separationRadius - d) / 2;
+        final nx = dx / d * push;
+        final ny = dy / d * push;
+        final (ax, ay) = clampToField(a.x - nx, a.y - ny);
+        final (bx, by) = clampToField(b.x + nx, b.y + ny);
+        out[i] = a.copyWith(x: ax, y: ay);
+        out[j] = b.copyWith(x: bx, y: by);
+      }
+    }
+    return out;
+  }
+
+  /// 사거리 안에 붙은 몬스터가 주인공을 때린다.
+  GameState _monstersAttack(GameState s, double dt, Random rng) {
+    final interval = 1 / config.monsterAttacksPerSecond;
+    final damage =
+        monsterAttack(s.stage, config) * (s.isBoss ? config.bossAttackMultiplier : 1);
+    var hp = s.heroHpOr(config);
+
+    final next = <MonsterUnit>[];
+    for (final m in s.wave) {
+      var timer = m.attackTimer + dt;
+      if (distanceBetween(m.x, m.y, s.heroX, s.heroY) > config.monsterAttackRange) {
+        // 아직 못 닿았다. 붙자마자 몰아치지 않게 타이머를 한 번치로 묶어 둔다.
+        next.add(m.copyWith(attackTimer: min(timer, interval)));
+        continue;
+      }
+      var hits = 0;
+      while (timer >= interval && hits < _maxHitsPerTick) {
+        timer -= interval;
+        hits++;
+      }
+      hp -= damage * hits;
+      next.add(m.copyWith(attackTimer: timer));
+    }
+
+    s = s.copyWith(wave: next, heroHp: hp);
+    return hp <= 0 ? _knockDown(s, rng) : s;
+  }
+
+  /// 주인공이 쓰러졌다. 무리는 흩어지고 같은 층 일반 몬스터부터 다시 시작한다.
+  GameState _knockDown(GameState s, Random rng) {
+    // 던전 중이었다면 그 판은 실패다.
+    var next = s.dungeon.run == null ? s : s.copyWith(dungeon: s.dungeon.finish(cleared: false));
+    next = next.copyWith(
+      heroHp: 0,
+      heroX: heroHomeX,
+      heroY: heroHomeY,
+      reviveLeft: config.heroReviveSeconds,
+      killsOnStage: 0,
+      attackTimer: 0,
+      isBoss: false,
+      bossTimeLeft: 0,
+    );
+    return _spawnNormal(next, rng);
+  }
+
+  GameState _reviveTick(GameState s, double dt) {
+    final left = s.reviveLeft - dt;
+    if (left > 0) return s.copyWith(reviveLeft: left);
+    return s.copyWith(
+      reviveLeft: 0,
+      heroHp: s.maxHeroHp(config),
+      heroMp: s.maxHeroMp(config),
+    );
+  }
+
+  /// 체력과 마력이 시간에 따라 찬다.
+  GameState _regenerate(GameState s, double dt) {
+    final maxHp = s.maxHeroHp(config);
+    final maxMp = s.maxHeroMp(config);
+    return s.copyWith(
+      heroHp: min(maxHp, s.heroHpOr(config) + maxHp * config.heroHpRegenRate * dt),
+      heroMp: min(maxMp, s.heroMpOr(config) + config.heroMpRegenPerSecond * dt),
+    );
+  }
+
   /// 공격 1회. 맨 앞을 때린다.
   GameState _hit(GameState s, Stats stats, Random rng) {
     final isCrit = rng.nextDouble() < stats.critChance;
     return _strike(s, stats, stats.attack * (isCrit ? config.critMultiplier : 1), 1, rng);
   }
 
-  /// 앞에서부터 [targets]마리를 때린다. 죽은 것은 보상을 주고 무리에서 뺀다.
+  /// 가까운 쪽부터 [targets]마리를 때린다. 죽은 것은 보상을 주고 무리에서 뺀다.
   ///
   /// 무리가 비면 다음 무리를 부른다. 광역 스킬이 무리를 한 번에 쓸어도 같은 길을 지난다.
   GameState _strike(GameState s, Stats stats, double damage, int targets, Random rng) {
     if (s.wave.isEmpty) return _refill(s, rng);
 
+    // 주인공에게 가까운 순으로 맞는다. 줄 순서가 아니라 거리 순이다.
+    final order = [for (var i = 0; i < s.wave.length; i++) i]
+      ..sort((a, b) => distanceBetween(s.heroX, s.heroY, s.wave[a].x, s.wave[a].y)
+          .compareTo(distanceBetween(s.heroX, s.heroY, s.wave[b].x, s.wave[b].y)));
+    final hit = order.take(targets).toSet();
+
     final alive = <MonsterUnit>[];
     final dead = <MonsterUnit>[];
     for (var i = 0; i < s.wave.length; i++) {
-      final unit = i < targets ? s.wave[i].damaged(damage) : s.wave[i];
+      final unit = hit.contains(i) ? s.wave[i].damaged(damage) : s.wave[i];
       (unit.isDead ? dead : alive).add(unit);
     }
     s = s.copyWith(wave: alive);
@@ -207,9 +374,19 @@ class BattleEngine {
     required int count,
     required bool isBoss,
   }) {
+    // 화면 밖 오른쪽에서 세로로 퍼져 들어온다. 한 줄로 서지 않게 x도 조금씩 어긋낸다.
+    final span = fieldBottomY - fieldTopY;
     return s.copyWith(
       wave: [
-        for (var i = 0; i < count; i++) MonsterUnit(key: s.waveSeq + i, id: id, hp: hp, maxHp: hp),
+        for (var i = 0; i < count; i++)
+          MonsterUnit(
+            key: s.waveSeq + i,
+            id: id,
+            hp: hp,
+            maxHp: hp,
+            x: monsterSpawnX + (i % 3) * 26,
+            y: count == 1 ? heroHomeY : fieldTopY + span * i / (count - 1),
+          ),
       ],
       waveSeq: s.waveSeq + count,
       isBoss: isBoss,
@@ -238,15 +415,22 @@ class BattleEngine {
 
   GameState toggleSkillAuto(GameState s, int slot) => s.copyWith(skills: s.skills.toggleAuto(slot));
 
-  /// 탭으로 즉시 발동. 대기 중이면 null.
+  /// 지금 이 칸을 쓸 수 있는가. 대기 시간과 마력을 함께 본다.
+  bool canCast(GameState s, int slot) {
+    final id = s.skills.at(slot);
+    return id != null && s.skills.isReady(slot) && !s.isDown && s.heroMpOr(config) >= id.mpCost;
+  }
+
+  /// 탭으로 즉시 발동. 대기 중이거나 마력이 모자라면 null.
   GameState? useSkill(GameState s, int slot, Random rng) {
-    if (!s.skills.isReady(slot)) return null;
+    if (!canCast(s, slot)) return null;
     return _castSkill(s, s.statsWith(config), slot, rng);
   }
 
   GameState _castSkill(GameState s, Stats stats, int slot, Random rng) {
     final id = s.skills.at(slot);
-    if (id == null) return s;
+    if (id == null || s.heroMpOr(config) < id.mpCost) return s;
+    s = s.copyWith(heroMp: s.heroMpOr(config) - id.mpCost);
     return _strike(
       s.copyWith(skills: s.skills.fire(slot)),
       stats,

@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/balance_config.dart';
+import '../../domain/field.dart';
 import '../../domain/game_state.dart';
 import '../../domain/monster_unit.dart';
 import '../../domain/monster.dart';
@@ -82,18 +83,7 @@ class BattleStageGame extends FlameGame {
   double _juiceCool = 0;
   static const _juiceGap = 0.55;
 
-  /// 몬스터가 서는 자리. 0번이 전투 지점.
-  /// 몬스터가 서는 자리. 0번이 전투 지점. 레퍼런스처럼 화면 전체에 퍼뜨린다.
-  static final _slots = [
-    Vector2(150, 200),
-    Vector2(196, 172),
-    Vector2(212, 232),
-    Vector2(254, 196),
-    Vector2(292, 168),
-    Vector2(308, 226),
-  ];
-  static final _heroHome = Vector2(58, 204);
-  static const _spawnX = 400.0;
+  static final _heroHome = Vector2(heroHomeX, heroHomeY);
 
   @override
   Color backgroundColor() => const Color(0xFF12161A);
@@ -109,7 +99,7 @@ class BattleStageGame extends FlameGame {
       pixelSize: _heroSize,
       facingRight: true,
       at: _heroHome.clone(),
-      walkSpeed: 90,
+      walkSpeed: config.heroMoveSpeed * 1.6,
     );
     _pet = StageActor(
       sheet: await _loader.load('pet', 'fire_baby', size: 32, color: Colors.deepOrange.shade300),
@@ -130,16 +120,9 @@ class BattleStageGame extends FlameGame {
     }
     if (_juiceCool > 0) _juiceCool -= dt;
     if (_floaterCool > 0) _floaterCool -= dt;
-    // 주인공은 맨 앞 몬스터 앞까지 걸어간다. 펫은 주인공을 따라간다.
-    final front = _queue.isEmpty ? null : _queue.first;
+    // 펫은 주인공을 따라간다. 주인공과 몬스터의 목표는 도메인이 정한다.
     final hero = _hero;
-    if (hero != null) {
-      hero.target.setValues(
-        front == null ? _heroHome.x : math.min(front.pos.x - 34, stageWidth * 0.5),
-        front == null ? _heroHome.y : front.pos.y + 4,
-      );
-      _pet?.target.setValues(hero.pos.x - 26, hero.pos.y + 12);
-    }
+    if (hero != null) _pet?.target.setValues(hero.pos.x - 26, hero.pos.y + 12);
     for (final c in _fx.children.whereType<Expiring>().toList()) {
       if (c.expired) _fx.remove(c as Component);
     }
@@ -174,9 +157,7 @@ class BattleStageGame extends FlameGame {
     // 번호 구성이 그대로면 체력만 갱신하면 된다.
     final keys = [for (final u in next.wave) u.key];
     if (_listEquals(keys, _keys)) {
-      for (var i = 0; i < _queue.length && i < next.wave.length; i++) {
-        _queue[i].hpRatio = next.wave[i].hpRatio;
-      }
+      _follow(next);
       return;
     }
 
@@ -228,13 +209,23 @@ class BattleStageGame extends FlameGame {
       await _actors.add(actor);
     }
 
-    // 3. 자리를 다시 잡고 체력을 맞춘다. 무리라 모두 체력 바를 보여 준다.
+    // 3. 좌표와 체력을 맞춘다. 무리라 모두 체력 바를 보여 준다.
+    _follow(s);
+  }
+
+  /// 상태의 좌표를 무대 액터의 목표로 밀어 넣는다.
+  ///
+  /// 누가 어디로 가는지는 전투 규칙(도메인)이 정한다. 무대는 그 자리를 따라갈 뿐이다.
+  void _follow(GameState s) {
     final byKey = {for (final u in s.wave) u.key: u};
     for (var i = 0; i < _queue.length; i++) {
-      _queue[i].target.setFrom(_slots[math.min(i, _slots.length - 1)]);
+      final unit = byKey[_keys[i]];
+      if (unit == null) continue;
+      _queue[i].target.setValues(unit.x, unit.y);
       _queue[i].showHpBar = true;
-      _queue[i].hpRatio = byKey[_keys[i]]?.hpRatio ?? 1;
+      _queue[i].hpRatio = unit.hpRatio;
     }
+    _hero?.target.setValues(s.heroX, s.heroY);
   }
 
   /// 무리의 몬스터 하나를 만든다. 보스는 혼자 크게 선다.
@@ -250,19 +241,17 @@ class BattleStageGame extends FlameGame {
       size: size,
       color: elementColor(m?.element ?? MonsterElement.neutral),
     );
-    final slot = _slots[math.min(index, _slots.length - 1)];
-    final from = Vector2(_spawnX + index * 22, slot.y);
-    // 고레벨에서는 몬스터가 3초 안에 죽는다. 거리와 무관하게 약 0.9초에 자리에 닿게 속도를 맞춘다.
-    final speed = (from - slot).length / (0.85 + _rng.nextDouble() * 0.25);
+    // 상태가 정한 자리에서 시작해 상태가 정한 자리로 간다.
+    // 따라가는 속도는 도메인 이동 속도보다 넉넉히 잡아 화면이 뒤처지지 않게 한다.
     return StageActor(
       sheet: sheet,
       pixelSize: size,
       facingRight: false,
-      at: from,
+      at: Vector2(unit.x, unit.y),
       hue: isBoss ? 0 : monsterHueFor(m),
-      walkSpeed: speed,
+      walkSpeed: config.monsterMoveSpeed * 1.6,
     )
-      ..target.setFrom(slot)
+      ..target.setValues(unit.x, unit.y)
       ..hpRatio = unit.hpRatio;
   }
 

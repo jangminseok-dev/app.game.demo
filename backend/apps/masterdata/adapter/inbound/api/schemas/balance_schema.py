@@ -41,3 +41,18 @@ class BalanceResponseSchema(BaseModel):
     adSpeedUpSeconds: float
     waveSizeMin: int
     waveSizeMax: int
+    heroHpBase: float
+    heroHpPerLevel: float
+    heroHpRegenRate: float
+    heroReviveSeconds: float
+    heroMpBase: float
+    heroMpPerLevel: float
+    heroMpRegenPerSecond: float
+    heroMoveSpeed: float
+    heroAttackRange: float
+    monsterMoveSpeed: float
+    monsterAttackRange: float
+    monsterAttackBase: float
+    monsterAttackGrowth: float
+    monsterAttacksPerSecond: float
+    bossAttackMultiplier: float

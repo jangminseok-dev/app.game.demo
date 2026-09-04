@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
+import 'package:idle_fantasy/domain/field.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/codex.dart';
@@ -27,6 +28,10 @@ void main() {
     return s;
   }
 
+  /// 몬스터를 주인공 옆에 붙여 둔다. 다가오는 시간을 빼고 전투만 볼 때 쓴다.
+  GameState engaged(GameState s) =>
+      s.copyWith(wave: [for (final m in s.wave) m.copyWith(x: s.heroX + 20, y: s.heroY)]);
+
   /// 조건이 참이 될 때까지 진행. maxSeconds 안에 못 만나면 실패.
   GameState runUntil(GameState s, bool Function(GameState) done,
       {double maxSeconds = 120}) {
@@ -49,7 +54,7 @@ void main() {
     });
 
     test('공격속도 1.0이면 1초에 1회 때린다', () {
-      var s = GameState.initial(config);
+      var s = engaged(GameState.initial(config));
       s = engine.tick(s, 0.5, noCrit);
       expect(s.monsterHp, s.monsterMaxHp, reason: '0.5초에는 안 때린다');
       s = engine.tick(s, 0.5, noCrit);
@@ -58,7 +63,7 @@ void main() {
 
     test('몬스터를 죽이면 골드가 오르고 처치 수가 는다', () {
       var s = GameState.initial(config);
-      s = run(s, 3); // 공격 10 × 2회 > HP 11.8
+      s = run(s, 6); // 다가오는 시간 + 공격 10 × 2회 > HP 11.8
       expect(s.totalKills, greaterThanOrEqualTo(1));
       expect(s.gold, greaterThan(0));
     });
@@ -112,7 +117,7 @@ void main() {
     });
 
     test('치명타는 피해 2배', () {
-      var s = GameState.initial(config).copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 100, maxHp: 100)]);
+      var s = GameState.initial(config).copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 100, maxHp: 100, x: heroHomeX + 20, y: heroHomeY)]);
       final alwaysCrit = _FixedRandom(0.0);
       s = engine.tick(s, 1.0, alwaysCrit);
       expect(s.monsterMaxHp - s.monsterHp, closeTo(20, 1e-9));
@@ -138,7 +143,7 @@ void main() {
       var s = GameState.initial(config).copyWith(
         levels: const {UpgradeType.goldGain: 10}, // ×1.5
       );
-      s = run(s, 2.5); // 1마리
+      s = runUntil(s, (s) => s.totalKills >= 1);
       final base = config.goldBase * pow(config.goldGrowth, 1);
       expect(s.gold, closeTo(base * 1.5, 1e-9));
     });

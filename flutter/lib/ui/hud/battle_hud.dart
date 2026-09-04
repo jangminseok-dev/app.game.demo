@@ -84,6 +84,36 @@ class BattleHud extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          // ── 주인공 체력·마력
+          Row(
+            children: [
+              const PixelText('HP', size: 10, color: PixelPalette.textDim),
+              const SizedBox(width: 4),
+              Expanded(
+                child: PixelGauge(
+                  value: state.heroHpRatio(config),
+                  color: state.heroHpRatio(config) > 0.3 ? PixelPalette.hp : PixelPalette.hpLow,
+                  height: 9,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const PixelText('MP', size: 10, color: PixelPalette.textDim),
+              const SizedBox(width: 4),
+              Expanded(
+                child: PixelGauge(value: state.heroMpRatio(config), color: PixelPalette.gem, height: 9),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          PixelText(
+            state.isDown
+                ? '쓰러졌습니다 · ${state.reviveLeft.ceil()}초 뒤 일어섭니다'
+                : '${formatNumber(state.heroHpOr(config))} / ${formatNumber(state.maxHeroHp(config))}'
+                    ' · 마력 ${formatNumber(state.heroMpOr(config))}',
+            size: 10,
+            color: state.isDown ? PixelPalette.hpLow : PixelPalette.textDim,
+          ),
+          const SizedBox(height: 4),
           // ── 하단: 몬스터 정보
           Row(
             children: [

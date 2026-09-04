@@ -14,3 +14,8 @@ double goldReward(int stage, BalanceConfig c) =>
 
 double bossGoldReward(int stage, BalanceConfig c) =>
     goldReward(stage, c) * c.bossGoldMultiplier;
+
+/// 몬스터 한 대의 피해. 체력 성장(1.18)보다 느리게 올려 뒤로 갈수록
+/// 맞아 죽는 것이 아니라 못 잡아서 막히게 한다.
+double monsterAttack(int stage, BalanceConfig c) =>
+    c.monsterAttackBase * pow(c.monsterAttackGrowth, stage);

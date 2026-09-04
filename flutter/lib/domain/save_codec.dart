@@ -1,5 +1,6 @@
 import 'dungeon.dart';
 import 'equipment.dart';
+import 'field.dart';
 import 'game_state.dart';
 import 'hatchery.dart';
 import 'monster_unit.dart';
@@ -55,6 +56,8 @@ Map<String, dynamic> encodeState(GameState s) => {
       'monsterId': s.monsterId,
       'wave': [for (final u in s.wave) u.toJson()],
       'waveSeq': s.waveSeq,
+      'heroHp': s.heroHp,
+      'heroMp': s.heroMp,
       'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
       'codex': _encodeIntMap(s.codex),
       'pity': _encodeIntMap(s.pity),
@@ -84,6 +87,9 @@ GameState? decodeState(Map<String, dynamic> j) {
       levels: levels,
       wave: _decodeWave(j),
       waveSeq: (j['waveSeq'] as num?)?.toInt() ?? 0,
+      // 없으면 -1 — 다음 틱에 최대치로 채워진다.
+      heroHp: (j['heroHp'] as num?)?.toDouble() ?? -1,
+      heroMp: (j['heroMp'] as num?)?.toDouble() ?? -1,
       isBoss: j['isBoss'] as bool,
       bossTimeLeft: (j['bossTimeLeft'] as num).toDouble(),
       killsOnStage: (j['killsOnStage'] as num).toInt(),
@@ -124,5 +130,14 @@ List<MonsterUnit> _decodeWave(Map<String, dynamic> j) {
   final hp = (j['monsterHp'] as num?)?.toDouble() ?? 0;
   final maxHp = (j['monsterMaxHp'] as num?)?.toDouble() ?? 0;
   if (maxHp <= 0) return const [];
-  return [MonsterUnit(key: 0, id: (j['monsterId'] as num?)?.toInt() ?? 1, hp: hp, maxHp: maxHp)];
+  return [
+    MonsterUnit(
+      key: 0,
+      id: (j['monsterId'] as num?)?.toInt() ?? 1,
+      hp: hp,
+      maxHp: maxHp,
+      x: monsterSpawnX,
+      y: heroHomeY,
+    ),
+  ];
 }

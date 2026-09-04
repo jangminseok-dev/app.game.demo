@@ -3,6 +3,7 @@ import 'codex.dart';
 import 'dungeon.dart';
 import 'equipment.dart';
 import 'formulas.dart' as formulas;
+import 'field.dart';
 import 'hatchery.dart';
 import 'monster_unit.dart';
 import 'pet.dart';
@@ -24,6 +25,11 @@ class GameState {
     required this.attackTimer,
     required this.totalKills,
     this.waveSeq = 0,
+    this.heroHp = -1,
+    this.heroMp = -1,
+    this.heroX = heroHomeX,
+    this.heroY = heroHomeY,
+    this.reviveLeft = 0,
     this.killLog = const {},
     this.bossKillLog = const {},
     this.codex = const {},
@@ -45,7 +51,15 @@ class GameState {
       gold: 0,
       levels: const {},
       wave: [
-        for (var i = 0; i < config.waveSizeMin; i++) MonsterUnit(key: i, id: 1, hp: hp, maxHp: hp),
+        for (var i = 0; i < config.waveSizeMin; i++)
+          MonsterUnit(
+            key: i,
+            id: 1,
+            hp: hp,
+            maxHp: hp,
+            x: monsterSpawnX + i * 22,
+            y: fieldTopY + (fieldBottomY - fieldTopY) * i / config.waveSizeMin,
+          ),
       ],
       waveSeq: config.waveSizeMin,
       isBoss: false,
@@ -69,16 +83,56 @@ class GameState {
 
   final bool isBoss;
 
-  /// 맨 앞 몬스터. 평타와 화면 표시가 이것을 본다.
-  MonsterUnit? get front => wave.isEmpty ? null : wave.first;
+  // ── 주인공. 체력·마력과 서 있는 자리.
+
+  /// 남은 체력. -1은 "아직 채운 적 없음"이며 [maxHeroHp]로 채워진다.
+  final double heroHp;
+
+  /// 남은 마력. -1은 "아직 채운 적 없음".
+  final double heroMp;
+
+  final double heroX;
+  final double heroY;
+
+  /// 쓰러진 뒤 다시 일어서기까지 남은 시간(초). 0보다 크면 싸울 수 없다.
+  final double reviveLeft;
+
+  bool get isDown => reviveLeft > 0;
+
+  /// 업그레이드에 투자한 만큼 몸도 단단해진다.
+  int get totalUpgradeLevels => levels.values.fold(0, (a, b) => a + b);
+
+  double maxHeroHp(BalanceConfig c) => c.heroHpBase + c.heroHpPerLevel * totalUpgradeLevels;
+
+  double maxHeroMp(BalanceConfig c) => c.heroMpBase + c.heroMpPerLevel * totalUpgradeLevels;
+
+  /// 저장에 없던 값(-1)은 가득 찬 것으로 본다.
+  double heroHpOr(BalanceConfig c) => heroHp < 0 ? maxHeroHp(c) : heroHp;
+  double heroMpOr(BalanceConfig c) => heroMp < 0 ? maxHeroMp(c) : heroMp;
+
+  double heroHpRatio(BalanceConfig c) => (heroHpOr(c) / maxHeroHp(c)).clamp(0.0, 1.0);
+  double heroMpRatio(BalanceConfig c) => (heroMpOr(c) / maxHeroMp(c)).clamp(0.0, 1.0);
+
+  /// 주인공에게 가장 가까운 살아 있는 몬스터. 없으면 null.
+  MonsterUnit? get nearestMonster {
+    MonsterUnit? best;
+    var bestDistance = double.infinity;
+    for (final m in wave) {
+      final d = distanceBetween(heroX, heroY, m.x, m.y);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = m;
+      }
+    }
+    return best;
+  }
+
+  /// 평타와 화면 표시가 보는 몬스터 — 가장 가까운 것이다.
+  MonsterUnit? get front => nearestMonster;
 
   /// 맨 앞 몬스터의 체력만 바꾼 상태.
-  GameState withFrontHp(double hp) => wave.isEmpty
-      ? this
-      : copyWith(wave: [
-          MonsterUnit(key: wave.first.key, id: wave.first.id, hp: hp, maxHp: wave.first.maxHp),
-          ...wave.skip(1),
-        ]);
+  GameState withFrontHp(double hp) =>
+      wave.isEmpty ? this : copyWith(wave: [wave.first.copyWith(hp: hp), ...wave.skip(1)]);
 
   /// 화면·저장·서버가 쓰는 대표값. 무리 전투 이전과 같은 이름으로 남겨 둔다.
   double get monsterHp => front?.hp ?? 0;
@@ -137,6 +191,11 @@ class GameState {
     Map<UpgradeType, int>? levels,
     List<MonsterUnit>? wave,
     int? waveSeq,
+    double? heroHp,
+    double? heroMp,
+    double? heroX,
+    double? heroY,
+    double? reviveLeft,
     bool? isBoss,
     double? bossTimeLeft,
     int? killsOnStage,
@@ -161,6 +220,11 @@ class GameState {
       levels: levels ?? this.levels,
       wave: wave ?? this.wave,
       waveSeq: waveSeq ?? this.waveSeq,
+      heroHp: heroHp ?? this.heroHp,
+      heroMp: heroMp ?? this.heroMp,
+      heroX: heroX ?? this.heroX,
+      heroY: heroY ?? this.heroY,
+      reviveLeft: reviveLeft ?? this.reviveLeft,
       isBoss: isBoss ?? this.isBoss,
       bossTimeLeft: bossTimeLeft ?? this.bossTimeLeft,
       killsOnStage: killsOnStage ?? this.killsOnStage,

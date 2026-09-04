@@ -18,6 +18,7 @@ class SkillBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(gameControllerProvider);
+    final config = ref.watch(balanceConfigProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final open = skillSlotsOpen(state.highestStage);
 
@@ -34,6 +35,7 @@ class SkillBar extends ConsumerWidget {
                 locked: i >= open,
                 cooldown: state.skills.cooldownAt(i),
                 auto: state.skills.isAuto(i),
+                lacksMp: state.heroMpOr(config) < (state.skills.at(i)?.mpCost ?? 0),
                 onTap: () {
                   if (i >= open) return _openSheet(context);
                   if (state.skills.isReady(i)) return controller.useSkill(i);
@@ -164,7 +166,8 @@ class _SkillRow extends StatelessWidget {
                 PixelText(id.label, size: 12, color: unlocked ? PixelPalette.text : PixelPalette.textDim),
                 const SizedBox(height: 3),
                 PixelText(
-                  '피해 ×${id.damageMultiplier.toStringAsFixed(1)} · 대기 ${id.cooldown.toStringAsFixed(0)}초',
+                  '피해 ×${id.damageMultiplier.toStringAsFixed(1)} · ${id.targets}마리'
+                  ' · 대기 ${id.cooldown.toStringAsFixed(0)}초 · 마력 ${id.mpCost.toStringAsFixed(0)}',
                   size: 10,
                   color: PixelPalette.textDim,
                 ),
@@ -198,6 +201,7 @@ class _SkillSlot extends StatelessWidget {
     required this.locked,
     required this.cooldown,
     required this.auto,
+    required this.lacksMp,
     required this.onTap,
     required this.onLongPress,
   });
@@ -206,12 +210,15 @@ class _SkillSlot extends StatelessWidget {
   final bool locked;
   final double cooldown;
   final bool auto;
+
+  /// 대기 시간은 돌아왔는데 마력이 모자란 상태.
+  final bool lacksMp;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    final ready = skill != null && cooldown <= 0;
+    final ready = skill != null && cooldown <= 0 && !lacksMp;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -235,8 +242,10 @@ class _SkillSlot extends StatelessWidget {
                             size: 10,
                             color: ready ? PixelPalette.gold : PixelPalette.textDim,
                           ),
-                          if (!ready)
+                          if (cooldown > 0)
                             PixelText('${cooldown.ceil()}', size: 10, color: PixelPalette.textDim)
+                          else if (lacksMp)
+                            const PixelText('마력', size: 9, color: PixelPalette.gem)
                           else if (!auto)
                             const PixelText('탭', size: 9, color: PixelPalette.gem),
                         ],

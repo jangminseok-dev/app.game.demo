@@ -51,6 +51,22 @@ class BalanceRecord:
     # 한 무리에 서는 일반 몬스터 수.
     wave_size_min: int = 3
     wave_size_max: int = 5
+    # 주인공의 체력·마력·이동과 몬스터의 반격.
+    hero_hp_base: float = 200
+    hero_hp_per_level: float = 25
+    hero_hp_regen_rate: float = 0.03
+    hero_revive_seconds: float = 3
+    hero_mp_base: float = 100
+    hero_mp_per_level: float = 4
+    hero_mp_regen_per_second: float = 5
+    hero_move_speed: float = 100
+    hero_attack_range: float = 34
+    monster_move_speed: float = 160
+    monster_attack_range: float = 28
+    monster_attack_base: float = 2
+    monster_attack_growth: float = 1.15
+    monster_attacks_per_second: float = 0.6
+    boss_attack_multiplier: float = 3.0
 
 
 class BalanceSourcePort(ABC):

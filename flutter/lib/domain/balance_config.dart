@@ -18,6 +18,21 @@ class BalanceConfig {
     this.killsPerStage = 10,
     this.waveSizeMin = 3,
     this.waveSizeMax = 5,
+    this.heroHpBase = 200,
+    this.heroHpPerLevel = 25,
+    this.heroHpRegenRate = 0.03,
+    this.heroReviveSeconds = 3,
+    this.heroMpBase = 100,
+    this.heroMpPerLevel = 4,
+    this.heroMpRegenPerSecond = 5,
+    this.heroMoveSpeed = 100,
+    this.heroAttackRange = 34,
+    this.monsterMoveSpeed = 160,
+    this.monsterAttackRange = 28,
+    this.monsterAttackBase = 2,
+    this.monsterAttackGrowth = 1.15,
+    this.monsterAttacksPerSecond = 0.6,
+    this.bossAttackMultiplier = 3.0,
     this.critMultiplier = 2.0,
     this.offlineCapSeconds = 12 * 3600,
     this.offlineEfficiency = 0.5,
@@ -135,6 +150,40 @@ class BalanceConfig {
   /// 한 무리에 서는 일반 몬스터 수. 이 범위에서 무작위로 정한다.
   final int waveSizeMin;
   final int waveSizeMax;
+
+  // ── 주인공의 체력·마력과 이동. 무리에게 둘러싸이면 죽을 수 있어야 무리 전투가 뜻이 생긴다.
+
+  /// 최대 체력 = base + perLevel × 업그레이드 레벨 합.
+  final double heroHpBase;
+  final double heroHpPerLevel;
+
+  /// 초당 회복량(최대 체력 대비 비율).
+  final double heroHpRegenRate;
+
+  /// 쓰러진 뒤 다시 일어서기까지 걸리는 시간(초).
+  final double heroReviveSeconds;
+
+  /// 최대 마력 = base + perLevel × 업그레이드 레벨 합. 스킬을 쓰면 준다.
+  final double heroMpBase;
+  final double heroMpPerLevel;
+
+  /// 초당 마력 회복량(고정값).
+  final double heroMpRegenPerSecond;
+
+  /// 이동 속도(초당 픽셀)와 때릴 수 있는 거리.
+  final double heroMoveSpeed;
+  final double heroAttackRange;
+  final double monsterMoveSpeed;
+  final double monsterAttackRange;
+
+  /// 몬스터 공격력 = base × growth^층. 체력 성장(1.18)보다 느리게 잡아 뒤로 갈수록
+  /// 맞아 죽는 것이 아니라 못 잡아서 막히게 한다.
+  final double monsterAttackBase;
+  final double monsterAttackGrowth;
+  final double monsterAttacksPerSecond;
+
+  /// 보스는 이만큼 더 아프다.
+  final double bossAttackMultiplier;
   final double critMultiplier;
 
   /// 오프라인 보상 (GAME_DESIGN 8장): 상한 12시간, 효율 50%.
