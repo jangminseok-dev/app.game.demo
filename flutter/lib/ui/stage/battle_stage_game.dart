@@ -1,305 +1,342 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/balance_config.dart';
 import '../../domain/game_state.dart';
 import '../../domain/monster.dart';
 import '../../domain/number_format.dart';
-import '../sprites/dragon_painter.dart';
-import '../sprites/hero_painter.dart';
-import '../sprites/monster_sprite.dart';
+import '../sprites/monster_sprite.dart' show elementColor, regionColors;
+import 'effects.dart';
+import 'sheet_loader.dart';
+import 'stage_actor.dart';
 
-/// 전투 무대 — Flame 캔버스. 주인공(왼쪽)과 몬스터(오른쪽), 데미지 숫자, 처치 파티클, 보스 등장 흔들림.
+/// 무대 가상 해상도. 기기 폭에 맞춰 통째로 확대한다.
+const stageWidth = 360.0;
+const stageHeight = 270.0;
+
+/// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
+const _sheetsPerRegion = <String, int>{'forest': 2};
+
+/// 배경 에셋이 있는 지역. 나머지는 기존 그라데이션으로 그린다.
+/// (Flame의 Images.load는 실패한 Future를 캐시에 남겨 비동기 예외가 새므로, 없는 파일은 아예 요청하지 않는다.)
+const _regionsWithBackground = <String>{'forest'};
+
+/// 전투 무대 — Flame 캔버스.
 ///
-/// 게임 로직은 없다. 화면 계층이 [sync]로 상태를 밀어 넣으면 변화를 보고 연출만 한다.
-/// UI(HP 바·칩·포획 문구)는 Flutter 위젯이 위에 겹쳐 그린다.
+/// 게임 로직은 없다. 화면 계층이 [sync]로 상태를 밀어 넣으면 연출만 한다.
+/// 몬스터는 오른쪽 밖에서 걸어 들어와 줄을 서고, 주인공은 맨 앞 몬스터를 향해 걸어간다.
+/// 처치되면 줄이 한 칸씩 당겨지고 새 몬스터가 걸어 들어온다.
 class BattleStageGame extends FlameGame {
-  BattleStageGame({required this.catalog, required this.config});
+  BattleStageGame({required this.catalog, required this.config, SheetLoader? loader, Images? bgImages})
+      : _loader = loader ?? SheetLoader(),
+        _bgImages = bgImages ?? Images(prefix: 'assets/backgrounds/'),
+        super(camera: CameraComponent.withFixedResolution(width: stageWidth, height: stageHeight));
 
   MonsterCatalog catalog;
   BalanceConfig config;
 
-  late final _StageRoot _root = _StageRoot();
-  late final _Background _bg = _Background();
-  late final HeroActor hero = HeroActor();
-  late final MonsterActor monster = MonsterActor();
-  GameState? _last;
+  final SheetLoader _loader;
+  final Images _bgImages;
+  final _root = _ShakeRoot();
+  final _actors = _ActorLayer();
+  final _fx = PositionComponent(priority: 9000);
+  final _bg = _Background();
   final _rng = math.Random();
 
+  /// 몬스터 줄. 0번이 지금 싸우는 상대.
+  final _queue = <StageActor>[];
+  StageActor? _hero;
+  StageActor? _pet;
+  GameState? _last;
+  double _hitStop = 0;
+  bool _busy = false;
+
+  /// 몬스터가 서는 자리. 0번이 전투 지점.
+  static final _slots = [Vector2(214, 196), Vector2(258, 176), Vector2(292, 212), Vector2(324, 184)];
+  static final _heroHome = Vector2(76, 198);
+  static const _spawnX = 400.0;
+
   @override
-  Color backgroundColor() => const Color(0xFF263238);
+  Color backgroundColor() => const Color(0xFF12161A);
 
   @override
   Future<void> onLoad() async {
-    await add(_root);
-    await _root.add(_bg);
-    await _root.add(hero);
-    await _root.add(monster);
-    _layout();
-  }
+    camera.viewfinder.anchor = Anchor.topLeft;
+    await world.add(_root);
+    await _root.addAll([_bg, _actors, _fx]);
 
-  @override
-  void onGameResize(Vector2 size) {
-    super.onGameResize(size);
-    if (isLoaded) _layout();
+    _hero = StageActor(
+      sheet: await _loader.load('hero', 'warrior_1', size: 56, color: Colors.blue.shade300),
+      pixelSize: 56,
+      facingRight: true,
+      at: _heroHome.clone(),
+      walkSpeed: 42,
+    );
+    _pet = StageActor(
+      sheet: await _loader.load('pet', 'fire_baby', size: 32, color: Colors.deepOrange.shade300),
+      pixelSize: 32,
+      facingRight: true,
+      at: _heroHome + Vector2(-24, 12),
+      walkSpeed: 46,
+    );
+    await _actors.addAll([_hero!, _pet!]);
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    // 만료된 연출은 여기서 치운다 — 컴포넌트가 update 도중 스스로를 지우면 자식 집합 순회와 충돌한다.
-    final expired = _root.children.where((c) => c is _Expiring && (c as _Expiring).expired).toList();
-    for (final c in expired) {
-      _root.remove(c);
+    if (_hitStop > 0) {
+      _hitStop -= dt;
+      if (_hitStop <= 0) _actors.timeScale = 1;
+    }
+    // 주인공은 맨 앞 몬스터 앞까지 걸어간다. 펫은 주인공을 따라간다.
+    final front = _queue.isEmpty ? null : _queue.first;
+    final hero = _hero;
+    if (hero != null) {
+      hero.target.setValues(
+        front == null ? _heroHome.x : math.min(front.pos.x - 46, stageWidth * 0.62),
+        front == null ? _heroHome.y : front.pos.y + 4,
+      );
+      _pet?.target.setValues(hero.pos.x - 26, hero.pos.y + 12);
+    }
+    for (final c in _fx.children.whereType<Expiring>().toList()) {
+      if (c.expired) _fx.remove(c as Component);
+    }
+    for (final a in _actors.children.whereType<StageActor>().toList()) {
+      if (a.expired) _actors.remove(a);
     }
   }
 
-  void _layout() {
-    _bg.size = size;
-    hero.position = Vector2(size.x * 0.24, size.y * 0.62);
-    monster.position = Vector2(size.x * 0.70, size.y * 0.56);
-  }
-
-  /// 새 상태를 받아 변화에 맞는 연출을 트리거한다. 매 틱 호출해도 싸다(변화 없으면 아무것도 안 한다).
+  /// 새 상태를 받아 변화에 맞는 연출을 트리거한다. 매 틱 호출해도 싸다.
   void sync(GameState next) {
+    if (_hero == null || _busy) return; // onLoad 완료 전에는 무시
     final prev = _last;
     _last = next;
-    final m = catalog.byId(next.monsterId);
-    _bg.region = catalog.regionFor(next.stage)?.id;
-    monster.monster = m;
-    monster.isBoss = next.isBoss;
-    monster.baseSize = next.isBoss ? 132 : 100;
+
+    final region = catalog.regionFor(next.stage)?.id;
+    if (region != _bg.region) _bg.setRegion(region, _bgImages);
+
     if (prev == null) {
-      monster.appear();
+      _busy = true;
+      _fillQueue(next).whenComplete(() => _busy = false);
       return;
     }
+
     final spawned = next.totalKills > prev.totalKills || next.monsterId != prev.monsterId || next.isBoss != prev.isBoss;
     final damage = prev.monsterHp - next.monsterHp;
-    if (damage > 0 || spawned) {
-      final dealt = spawned && next.totalKills > prev.totalKills ? prev.monsterHp : damage;
-      if (dealt > 0) {
-        hero.swing();
-        final crit = dealt > prev.statsWith(config).attack * 1.5;
-        final floaters = _root.children.whereType<FloatingDamage>().toList();
-        if (floaters.length >= 6) _root.remove(floaters.first); // 공격속도가 높으면 겹쳐 쌓인다 — 오래된 것부터 치운다
-        _root.add(FloatingDamage(
-          text: formatNumber(dealt),
-          crit: crit,
-          start: monster.position + Vector2(_rng.nextDouble() * 120 - 60, _rng.nextDouble() * 50 - monster.baseSize * 0.45),
-        ));
-      }
+    final dealt = spawned && next.totalKills > prev.totalKills ? prev.monsterHp : damage;
+
+    if (dealt > 0) {
+      _strike(dealt, crit: dealt > prev.statsWith(config).attack * 1.5, element: catalog.byId(prev.monsterId)?.element);
     }
-    if (spawned) {
-      if (next.totalKills > prev.totalKills) _burst(monster.position, m);
-      monster.appear();
-      if (next.isBoss && !prev.isBoss) _root.shake();
-    } else if (damage > 0) {
-      monster.hit();
+    if (!spawned) {
+      if (_queue.isNotEmpty && next.monsterMaxHp > 0) {
+        _queue.first.hpRatio = (next.monsterHp / next.monsterMaxHp).clamp(0.0, 1.0);
+      }
+      return;
+    }
+
+    _busy = true;
+    _advance(next).whenComplete(() => _busy = false);
+  }
+
+  /// 맨 앞을 죽이고 줄을 당긴 뒤 새 몬스터를 뒤에 붙인다.
+  Future<void> _advance(GameState s) async {
+    if (_queue.isNotEmpty) {
+      final dead = _queue.removeAt(0);
+      dead.showHpBar = false;
+      dead.die();
+      _fx.add(Burst(
+        position: dead.pos + Vector2(0, -dead.sizePx * 0.4),
+        particle: scatter(count: 16, color: elementColor(catalog.byId(_last?.monsterId ?? 0)?.element ?? MonsterElement.neutral), speed: 110, lifespan: 0.6),
+      ));
+    }
+    // 보스가 뜨면 줄을 비우고 보스 혼자 세운다
+    if (s.isBoss) {
+      for (final a in _queue) {
+        a.die();
+      }
+      _queue.clear();
+      _root.shake(8);
+    }
+    for (var i = 0; i < _queue.length; i++) {
+      _queue[i].target.setFrom(_slots[i]);
+      _queue[i].showHpBar = i == 0;
+    }
+    await _fillQueue(s);
+  }
+
+  /// 줄을 목표 인원까지 채운다. 보스전은 1마리.
+  Future<void> _fillQueue(GameState s) async {
+    final want = s.isBoss ? 1 : _slots.length;
+    while (_queue.length < want) {
+      final index = _queue.length;
+      final a = await _spawn(s, index);
+      if (a == null) break;
+      _queue.add(a);
+      await _actors.add(a);
+    }
+    for (var i = 0; i < _queue.length; i++) {
+      _queue[i].showHpBar = i == 0;
+      if (i == 0 && s.monsterMaxHp > 0) _queue[i].hpRatio = (s.monsterHp / s.monsterMaxHp).clamp(0.0, 1.0);
     }
   }
 
-  void _burst(Vector2 at, Monster? m) {
-    final color = m == null ? Colors.white : elementColor(m.element);
-    _root.add(_Burst(
-      position: at,
-      particle: Particle.generate(
-        count: 14,
-        lifespan: 0.6,
-        generator: (i) {
-          final a = _rng.nextDouble() * math.pi * 2;
-          final speed = 80 + _rng.nextDouble() * 120;
-          return AcceleratedParticle(
-            speed: Vector2(math.cos(a), math.sin(a)) * speed,
-            acceleration: Vector2(0, 260),
-            child: CircleParticle(radius: 2.5 + _rng.nextDouble() * 3, paint: Paint()..color = color),
-          );
-        },
-      ),
+  /// 줄 뒤쪽 몬스터는 다음 스테이지 몬스터가 아니라 같은 지역에서 아무거나 뽑는다(눈속임).
+  Future<StageActor?> _spawn(GameState s, int index) async {
+    final region = catalog.regionFor(s.stage);
+    Monster? m = index == 0 ? catalog.byId(s.monsterId) : null;
+    if (m == null && region != null) {
+      final pool = catalog.monstersIn(region.id);
+      if (pool.isNotEmpty) m = pool[_rng.nextInt(pool.length)];
+    }
+    final isBoss = s.isBoss && index == 0;
+    final size = isBoss ? 96 : 48;
+    final sheetId = isBoss ? 'forest' : _monsterSheet(m, region?.id);
+    final sheet = await _loader.load(
+      isBoss ? 'boss' : 'monster',
+      sheetId,
+      size: size,
+      color: elementColor(m?.element ?? MonsterElement.neutral),
+    );
+    final slot = _slots[math.min(index, _slots.length - 1)];
+    return StageActor(
+      sheet: sheet,
+      pixelSize: size,
+      facingRight: false,
+      at: Vector2(_spawnX + index * 26, slot.y),
+      hue: isBoss ? 0 : _monsterHue(m),
+      walkSpeed: 30 + _rng.nextDouble() * 8,
+    )
+      ..target.setFrom(slot)
+      ..hpRatio = 1;
+  }
+
+  String _monsterSheet(Monster? m, String? regionId) {
+    final region = m?.region ?? regionId ?? 'forest';
+    final count = _sheetsPerRegion[region];
+    if (count == null) return 'forest_${(m?.id ?? 1) % (_sheetsPerRegion['forest'] ?? 1) + 1}'; // 아직 없는 지역은 숲 형태 + 색만
+    return '${region}_${(m?.id ?? 1) % count + 1}';
+  }
+
+  double _monsterHue(Monster? m) {
+    if (m == null) return 0;
+    // 같은 형태를 색으로 갈라 변종을 만든다. 속성색을 기준으로 순번만큼 돌린다.
+    final base = HSLColor.fromColor(elementColor(m.element)).hue;
+    return (base + (m.id % 5) * 24) % 360;
+  }
+
+  /// 한 번의 타격 — 주인공 공격 모션, 참격, 피격, 넉백, 숫자.
+  void _strike(double amount, {required bool crit, MonsterElement? element}) {
+    final target = _queue.isEmpty ? null : _queue.first;
+    _hero?.play('attack');
+    if (target == null) return;
+
+    final center = target.pos + Vector2(0, -target.sizePx * 0.45);
+    _fx.add(SlashArc(center: center, radius: crit ? 58 : 44, color: const Color(0xFFB388FF), thickness: crit ? 13 : 9, life: 0.32, spin: -0.5));
+    _fx.add(SlashArc(center: center + Vector2(-6, 6), radius: crit ? 40 : 30, color: Colors.white, thickness: 7, life: 0.26, spin: 0.6));
+
+    target.play('hit');
+    target.flash();
+    target.knockback(crit ? 12 : 6);
+
+    _hitStop = crit ? 0.08 : 0.045;
+    _actors.timeScale = 0;
+    _root.shake(crit ? 6.5 : 3);
+
+    final floaters = _fx.children.whereType<DamageText>().toList();
+    if (floaters.length >= 6) _fx.remove(floaters.first);
+    _fx.add(DamageText(
+      text: formatNumber(amount),
+      crit: crit,
+      start: target.pos + Vector2(_rng.nextDouble() * 24 - 12, -target.sizePx * 0.8 - _rng.nextDouble() * 12),
+      sizeScale: 0.9 + _rng.nextDouble() * 0.35,
+    ));
+    _fx.add(ImpactStar(position: center, radius: crit ? 17 : 11));
+    _fx.add(Burst(
+      position: center,
+      particle: scatter(count: crit ? 12 : 7, color: elementColor(element ?? MonsterElement.neutral), speed: 85),
     ));
   }
 }
 
-/// 수명이 끝나면 [BattleStageGame.update]가 치우는 연출 컴포넌트.
-abstract class _Expiring {
-  bool get expired;
-}
+/// 히트스톱 대상 — 이 레이어의 시간만 멈춘다.
+class _ActorLayer extends PositionComponent with HasTimeScale {}
 
-/// 처치 파티클. 스스로 제거하지 않고 [expired]만 올린다.
-class _Burst extends ParticleSystemComponent implements _Expiring {
-  _Burst({super.position, super.particle});
+/// 모든 레이어의 부모. 흔들림은 이 컴포넌트의 position을 흔든다.
+class _ShakeRoot extends PositionComponent {
+  double _left = 0, _amp = 0;
+  static const _time = 0.32;
 
-  @override
-  bool get expired => particle?.shouldRemove ?? true;
-
-  @override
-  void update(double dt) => particle?.update(dt);
-}
-
-/// 모든 액터의 부모. 흔들림은 이 컴포넌트의 position을 흔든다.
-class _StageRoot extends PositionComponent {
-  double _shakeLeft = 0;
-  static const _shakeTime = 0.45;
-
-  void shake() => _shakeLeft = _shakeTime;
+  void shake(double amp) {
+    _left = _time;
+    _amp = amp;
+  }
 
   @override
   void update(double dt) {
     super.update(dt);
-    if (_shakeLeft <= 0) {
-      if (position != Vector2.zero()) position = Vector2.zero();
+    if (_left <= 0) {
+      if (position != Vector2.zero()) position.setZero();
       return;
     }
-    _shakeLeft -= dt;
-    final t = 1 - _shakeLeft / _shakeTime;
-    final amp = (1 - t) * 10;
-    position = Vector2(math.sin(t * math.pi * 8) * amp, math.cos(t * math.pi * 6) * amp * 0.5);
+    _left -= dt;
+    if (_left <= 0) {
+      position.setZero();
+      return;
+    }
+    final t = 1 - _left / _time;
+    position.setValues(math.sin(t * math.pi * 8) * (1 - t) * _amp, math.cos(t * math.pi * 6) * (1 - t) * _amp * 0.5);
   }
 }
 
+/// 배경 원경 + 지면. 에셋이 없는 지역은 기존 그라데이션으로.
 class _Background extends PositionComponent {
+  _Background() : super(priority: -1000);
+
+  static const horizon = 110.0;
+
+  final _pixel = Paint()
+    ..filterQuality = FilterQuality.none
+    ..isAntiAlias = false;
   String? region;
+  ui.Image? _far, _ground;
 
-  @override
-  void render(Canvas canvas) {
-    final colors = regionColors(region);
-    final rect = size.toRect();
-    canvas.drawRect(
-      rect,
-      Paint()..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, colors),
-    );
-    // 바닥 띠 — 액터가 서 있는 지면
-    final ground = Rect.fromLTWH(0, size.y * 0.72, size.x, size.y * 0.28);
-    canvas.drawRect(ground, Paint()..color = Colors.black.withValues(alpha: 0.18));
-  }
-}
-
-/// 주인공. 둥실거림 + 검 휘두르기 + 깜빡임.
-class HeroActor extends PositionComponent {
-  HeroActor() : super(size: Vector2.all(100), anchor: Anchor.center);
-
-  double _t = 0;
-  double _swing = 0;
-  double _blinkClock = 0;
-
-  void swing() => _swing = 1;
-
-  double get blink {
-    final phase = _blinkClock % 3.4;
-    return phase > 3.25 ? 1 - ((phase - 3.25) / 0.15 - 0.5).abs() * 2 : 0;
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _t += dt;
-    _blinkClock += dt;
-    if (_swing > 0) _swing = math.max(0, _swing - dt * 6);
-  }
-
-  @override
-  void render(Canvas canvas) {
-    canvas.save();
-    canvas.translate(0, math.sin(_t * 2.2) * 3);
-    HeroPainter(swing: _swing > 0 ? math.sin((1 - _swing) * math.pi) : 0, blink: blink.clamp(0, 1)).paint(canvas, size.toSize());
-    canvas.restore();
-  }
-}
-
-/// 몬스터. 둥실거림 + 피격 움찔 + 등장 팝 + 깜빡임(용).
-class MonsterActor extends PositionComponent {
-  MonsterActor() : super(size: Vector2.all(100), anchor: Anchor.center);
-
-  Monster? monster;
-  bool isBoss = false;
-  double baseSize = 100;
-  double _t = 0;
-  double _hit = 0;
-  double _appear = 1;
-  double _blinkClock = 0;
-
-  void hit() => _hit = 1;
-  void appear() => _appear = 0;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _t += dt;
-    _blinkClock += dt;
-    if (_hit > 0) _hit = math.max(0, _hit - dt * 7);
-    if (_appear < 1) _appear = math.min(1, _appear + dt * 3.2);
-    size = Vector2.all(baseSize);
-  }
-
-  @override
-  void render(Canvas canvas) {
-    final hitT = 1 - _hit;
-    final hitScale = 1 - 0.12 * math.sin(hitT * math.pi);
-    final appearScale = Curves.easeOutBack.transform(_appear.clamp(0.0, 1.0));
-    final shakeX = _hit > 0 ? math.sin(_hit * math.pi * 3) * 6 : 0.0;
-    final phase = _blinkClock % 4.1;
-    final blink = phase > 3.95 ? 1 - ((phase - 3.95) / 0.15 - 0.5).abs() * 2 : 0.0;
-
-    canvas.save();
-    canvas.translate(size.x / 2 + shakeX, size.y / 2 + math.sin(_t * 2.6) * 4);
-    canvas.scale(hitScale * appearScale);
-    canvas.translate(-size.x / 2, -size.y / 2);
-    final flashing = _hit > 0.5;
-    // 백플래시는 별도 레이어에 그려야 스프라이트 픽셀에만 칠해진다(배경까지 네모로 하얘지지 않게).
-    if (flashing) canvas.saveLayer(size.toRect().inflate(20), Paint());
-    if (isDragon(monster)) {
-      DragonPainter(monster: monster, isBoss: isBoss, blink: blink.clamp(0, 1)).paint(canvas, size.toSize());
-    } else {
-      MonsterPainter(monster: monster, isBoss: isBoss, silhouette: false).paint(canvas, size.toSize());
+  Future<void> setRegion(String? regionId, Images images) async {
+    region = regionId;
+    _far = null;
+    _ground = null;
+    if (regionId == null || !_regionsWithBackground.contains(regionId)) return;
+    try {
+      final far = await images.load('$regionId/far.png');
+      final ground = await images.load('$regionId/ground.png');
+      if (region == regionId) {
+        _far = far;
+        _ground = ground;
+      }
+    } on Object {
+      // 아직 배경이 없는 지역 — 그라데이션으로 둔다.
     }
-    if (flashing) {
-      canvas.drawRect(size.toRect().inflate(20), Paint()..color = Colors.white.withValues(alpha: (_hit - 0.5) * 0.6)..blendMode = BlendMode.srcATop);
-      canvas.restore();
-    }
-    canvas.restore();
-  }
-}
-
-/// 떠오르는 데미지 숫자.
-class FloatingDamage extends PositionComponent implements _Expiring {
-  FloatingDamage({required this.text, required this.crit, required Vector2 start})
-      : super(position: start.clone(), anchor: Anchor.center);
-
-  final String text;
-  final bool crit;
-  double _life = 0;
-  static const _span = 0.6;
-
-  @override
-  bool get expired => _life >= _span;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _life += dt;
-    position.y -= dt * 90;
   }
 
   @override
   void render(Canvas canvas) {
-    final t = (_life / _span).clamp(0.0, 1.0);
-    final alpha = t < 0.7 ? 1.0 : (1 - t) / 0.3;
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          color: (crit ? Colors.amber : Colors.white).withValues(alpha: alpha),
-          fontSize: crit ? 26 : 16,
-          fontWeight: FontWeight.w800,
-          shadows: [Shadow(color: Colors.black.withValues(alpha: alpha * 0.8), blurRadius: 4)],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+    final far = _far, ground = _ground;
+    if (far == null || ground == null) {
+      final rect = Rect.fromLTWH(0, 0, stageWidth, stageHeight);
+      canvas.drawRect(rect, Paint()..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, regionColors(region)));
+      canvas.drawRect(
+        Rect.fromLTWH(0, horizon, stageWidth, stageHeight - horizon),
+        Paint()..color = Colors.black.withValues(alpha: 0.18),
+      );
+      return;
+    }
+    canvas.drawImage(far, Offset.zero, _pixel);
+    canvas.drawImage(ground, const Offset(0, horizon), _pixel);
   }
 }
