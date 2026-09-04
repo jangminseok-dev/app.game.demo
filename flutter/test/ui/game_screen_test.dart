@@ -22,7 +22,7 @@ void main() {
 
   testWidgets('화면이 뜨고 시간이 흐르면 골드가 생긴다', (tester) async {
     // 전투 무대 아래 목록까지 한 화면에 보이도록 세로로 길게 (실기기 세로 화면 비율)
-    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
@@ -79,7 +79,7 @@ void main() {
   });
 
   testWidgets('보스가 나오면 경고 띠가 뜬다', (tester) async {
-    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
@@ -95,7 +95,7 @@ void main() {
   });
 
   testWidgets('퀘스트 보상을 받으면 획득 창이 뜬다', (tester) async {
-    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     const config = BalanceConfig();

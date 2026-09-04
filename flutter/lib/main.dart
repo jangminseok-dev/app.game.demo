@@ -22,8 +22,10 @@ const _apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http:/
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 세로 고정 (GAME_DESIGN 1장)
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // 가로 고정 (GAME_DESIGN 1장, 2026-09-05 변경).
+  // 레퍼런스 화면 구조가 전부 가로 폭에 기댄다 — 좌측 세로 탭 + 우측 그리드, 왼쪽 대상 + 오른쪽 목록.
+  await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
   final prefs = await SharedPreferences.getInstance();
   final local = SharedPrefsSaveRepository(prefs);

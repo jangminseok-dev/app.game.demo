@@ -12,7 +12,7 @@ import '../support/in_memory_save_repository.dart';
 
 void main() {
   testWidgets('지역별 그리드에 전 몬스터가 나오고 미등록은 ???, 등록은 이름과 별', (tester) async {
-    tester.view.physicalSize = const Size(600, 2400);
+    tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 

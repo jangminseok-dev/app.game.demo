@@ -98,7 +98,7 @@ void main() {
   });
 
   testWidgets('앱 화면 전체를 PNG로 내보낸다 — 무리 전투와 탭', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
+    tester.view.physicalSize = const Size(844, 390);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final key = GlobalKey();
