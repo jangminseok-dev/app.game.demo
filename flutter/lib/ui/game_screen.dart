@@ -8,7 +8,6 @@ import '../domain/offline_reward.dart';
 import '../domain/daily.dart';
 import '../domain/dungeon.dart';
 import '../domain/attendance.dart';
-import '../domain/quest.dart';
 import '../domain/upgrade.dart';
 import 'attendance_panel.dart';
 import 'battle_area.dart';
@@ -153,7 +152,6 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
     });
 
     final state = ref.watch(gameControllerProvider);
-    final registered = state.codex.values.where((s) => s > 0).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFF12161A),
@@ -162,125 +160,146 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
       // 그 폭 기준으로 계산되고, 무대가 화면보다 좁게 그려져 옆에 띠가 남는다(백로그 D4-1).
       body: SafeArea(
         child: Stack(
-            children: [
-              // ── 전투가 화면을 다 채운다. 위에 얹히는 것은 전부 겹침이다.
-              const Positioned.fill(child: BattleArea()),
+          children: [
+            // ── 전투가 화면을 다 채운다. 위에 얹히는 것은 전부 겹침이다.
+            const Positioned.fill(child: BattleArea()),
 
-              // ── 보스 경고 띠
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 150,
-                child: BossWarningBanner(animation: _bossWarning),
-              ),
+            // ── 보스 경고 띠
+            Positioned(left: 0, right: 0, top: 60, child: BossWarningBanner(animation: _bossWarning)),
 
-              // ── 왼쪽: 지금 할 일
-              const Positioned(left: 6, top: 84, child: QuestStrip()),
+            // ── 좌측 · 지금 할 일
+            const Positioned(left: 6, top: 64, child: QuestStrip()),
 
-              // ── 오른쪽: 콘텐츠 · 도감
-              Positioned(
-                right: 6,
-                top: 84,
-                child: Column(
-                  children: [
-                    HudButton(
-                      label: '던전',
-                      icon: PixelIcon.gate,
-                      badge: '${state.dungeon.tickets}',
-                      alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
-                      onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
-                    ),
-                    const SizedBox(height: 10),
-                    HudButton(
-                      label: '오늘',
-                      icon: PixelIcon.calendar,
-                      alert: anyDailyReady(state),
-                      onTap: () => showGamePopup(context, title: '오늘 과제',
-                          heightFactor: 0.5, child: const DailyPanel()),
-                    ),
-                    const SizedBox(height: 10),
-                    HudButton(
-                      label: '출석',
-                      icon: PixelIcon.check,
-                      alert: state.attendance.canClaim(epochDayOf(DateTime.now())),
-                      onTap: () => showGamePopup(context, title: '출석부',
-                          heightFactor: 0.55, child: const AttendancePanel()),
-                    ),
-                    const SizedBox(height: 10),
-                    HudButton(
-                      label: '이동',
-                      icon: PixelIcon.pin,
-                      alert: state.stageFailCount > 0 && state.stage == state.highestStage,
-                      onTap: () => showGamePopup(context, title: '층 이동', child: const StageSelectPanel()),
-                    ),
-                    const SizedBox(height: 10),
-                    HudButton(
-                      label: '도감 $registered',
-                      icon: PixelIcon.book,
-                      onTap: () => showGamePopup(context, title: '도감', child: const CodexTab()),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── 아래: 스킬 칸과 기능 단추
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 66,
-                child: SafeArea(top: false, child: const SkillBar()),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 4,
-                child: SafeArea(
-                  top: false,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      HudButton(
-                        label: '성장',
-                        icon: PixelIcon.growth,
-                        alert: _canBuyAnything(state),
-                        onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
-                      ),
-                      HudButton(
-                        label: '장비',
-                        icon: PixelIcon.shield,
-                        alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
-                        onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
-                      ),
-                      HudButton(
-                        label: '대장간',
-                        icon: PixelIcon.hammer,
-                        alert: state.equipment.canCraft(ref.read(balanceConfigProvider)),
-                        onTap: () => showGamePopup(context, title: '대장간', child: const ForgePanel()),
-                      ),
-                      HudButton(
-                        label: '펫',
-                        icon: PixelIcon.egg,
-                        alert: state.hatchery.hasReady,
-                        onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
-                      ),
-                      HudButton(
-                        label: '퀘스트',
-                        icon: PixelIcon.flag,
-                        alert: questReady(state),
-                        onTap: () => showGamePopup(
-                          context,
-                          title: '퀘스트',
-                          heightFactor: 0.4,
-                          child: const Padding(padding: EdgeInsets.all(10), child: QuestStrip()),
-                        ),
-                      ),
-                    ],
+            // ── 좌측 아래 · 시간이 차는 것
+            Positioned(
+              left: 6,
+              bottom: 72,
+              child: Row(
+                children: [
+                  HudButton(
+                    label: '출석',
+                    icon: PixelIcon.check,
+                    alert: state.attendance.canClaim(epochDayOf(DateTime.now())),
+                    onTap: () => showGamePopup(context, title: '출석부', heightFactor: 0.55, child: const AttendancePanel()),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  HudButton(
+                    label: '오늘',
+                    icon: PixelIcon.calendar,
+                    alert: anyDailyReady(state),
+                    onTap: () => showGamePopup(context, title: '오늘 과제', heightFactor: 0.5, child: const DailyPanel()),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // ── 좌하단 · 바깥 소리 (광고 자리. SDK는 백로그 C3)
+            Positioned(
+              left: 6,
+              bottom: 6,
+              child: HudButton(
+                label: '광고',
+                icon: PixelIcon.spark,
+                locked: true,
+                onTap: () => _showComingSoon(context, '리워드 광고'),
+              ),
+            ),
+
+            // ── 우상단 · 바깥으로 나가는 곳
+            Positioned(
+              right: 6,
+              top: 6,
+              child: Row(
+                children: [
+                  HudButton(
+                    label: '콘텐츠',
+                    icon: PixelIcon.gate,
+                    badge: '${state.dungeon.tickets}',
+                    alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
+                    // Task 5가 던전/도전 2탭 팝업으로 바꾼다. 지금은 던전만.
+                    onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                  ),
+                  const SizedBox(width: 8),
+                  HudButton(label: '소환', icon: PixelIcon.spark, locked: true, onTap: () => _showComingSoon(context, '소환')),
+                  const SizedBox(width: 8),
+                  HudButton(label: '상점', icon: PixelIcon.shop, locked: true, onTap: () => _showComingSoon(context, '상점')),
+                  const SizedBox(width: 8),
+                  // Task 5가 메뉴 그리드로 바꾼다.
+                  HudButton(label: '메뉴', icon: PixelIcon.menu, onTap: () => _showComingSoon(context, '메뉴')),
+                ],
+              ),
+            ),
+
+            // ── 하단 중앙 · 내가 키우는 것. 레퍼런스 5칸과 같은 순서, 가운데만 크게.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 6,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  HudButton(
+                    label: '장비',
+                    icon: PixelIcon.shield,
+                    alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
+                    onTap: () => showGamePopup(context, title: '장비', child: const EquipmentPanel()),
+                  ),
+                  const SizedBox(width: 10),
+                  HudButton(
+                    label: '스킬',
+                    icon: PixelIcon.spark,
+                    onTap: () => showModalBottomSheet<void>(
+                      context: context,
+                      backgroundColor: PixelPalette.panel,
+                      builder: (_) => const SkillSheet(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  HudButton(
+                    label: '대장간',
+                    icon: PixelIcon.hammer,
+                    big: true,
+                    alert: state.equipment.canCraft(ref.read(balanceConfigProvider)),
+                    onTap: () => showGamePopup(context, title: '대장간', child: const ForgePanel()),
+                  ),
+                  const SizedBox(width: 10),
+                  HudButton(label: '무기', icon: PixelIcon.weapon, locked: true, onTap: () => _showComingSoon(context, '전용무기')),
+                  const SizedBox(width: 10),
+                  HudButton(
+                    label: '성장',
+                    icon: PixelIcon.growth,
+                    alert: _canBuyAnything(state),
+                    onTap: () => showGamePopup(context, title: '성장', child: const _UpgradeTab()),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── 우하단 · 같이 싸우는 것. Task 4가 초상 줄을 채운다.
+            Positioned(
+              right: 6,
+              bottom: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  _PartySlotPlaceholder(),
+                  SizedBox(height: 6),
+                  SkillBar(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// 아직 없는 기능을 눌렀을 때. 한 줄만 띄우고 끝낸다.
+  void _showComingSoon(BuildContext context, String what) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: PixelText('$what — 준비 중', size: 12), duration: const Duration(seconds: 1)),
     );
   }
 
@@ -409,4 +428,12 @@ class _UpgradeRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 우하단 초상 줄 자리. Task 4가 채운다.
+class _PartySlotPlaceholder extends StatelessWidget {
+  const _PartySlotPlaceholder();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 150, height: 44);
 }

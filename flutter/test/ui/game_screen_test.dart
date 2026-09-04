@@ -29,8 +29,8 @@ void main() {
     expect(find.textContaining('스테이지 1'), findsWidgets);
     expect(find.byType(BattleArea), findsOneWidget);
     expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
-    // 기능은 전부 전투 위 단추다.
-    for (final label in ['성장', '장비', '펫', '퀘스트', '던전']) {
+    // 하단 5칸 + 우상단 4칸 + 좌측 아래 2칸. 잠긴 것도 자리는 있다.
+    for (final label in ['장비', '스킬', '대장간', '무기', '성장', '콘텐츠', '소환', '상점', '메뉴', '출석', '오늘']) {
       expect(find.text(label), findsWidgets, reason: '$label 단추');
     }
 

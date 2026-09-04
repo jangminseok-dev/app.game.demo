@@ -85,6 +85,8 @@ class HudButton extends StatelessWidget {
     required this.onTap,
     this.alert = false,
     this.badge,
+    this.locked = false,
+    this.big = false,
   });
 
   final String label;
@@ -97,6 +99,12 @@ class HudButton extends StatelessWidget {
   /// 숫자 뱃지.
   final String? badge;
 
+  /// 아직 없는 기능. 흐리게 그리고 자물쇠를 얹는다. 누르면 onTap이 '준비 중'을 띄운다.
+  final bool locked;
+
+  /// 하단 가운데 하나만 크게. 레퍼런스가 대장간을 그렇게 둔다.
+  final bool big;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -107,11 +115,24 @@ class HudButton extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              PixelPanel(
-                padding: const EdgeInsets.all(7),
-                color: PixelPalette.panelLight,
-                child: PixelIconView(icon, size: 20),
+              Opacity(
+                opacity: locked ? 0.45 : 1,
+                child: PixelPanel(
+                  padding: EdgeInsets.all(big ? 11 : 7),
+                  color: big ? PixelPalette.goldDark : PixelPalette.panelLight,
+                  child: PixelIconView(icon, size: big ? 28 : 20),
+                ),
               ),
+              if (locked)
+                Positioned(
+                  right: -3,
+                  bottom: -3,
+                  child: PixelPanel(
+                    padding: const EdgeInsets.all(2),
+                    color: PixelPalette.panelDark,
+                    child: const PixelText('L', size: 8),
+                  ),
+                ),
               if (alert)
                 Positioned(
                   right: -2,
