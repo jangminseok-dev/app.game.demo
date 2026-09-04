@@ -22,12 +22,13 @@ void main() {
     expect(r.elapsed, const Duration(hours: 1));
   });
 
-  test('8시간 상한', () {
+  test('상한을 넘긴 시간은 상한까지만 인정한다', () {
     final s = GameState.initial(c);
-    final r8 = OfflineReward.calculate(s, base, base.add(const Duration(hours: 8)), c);
-    final r30 = OfflineReward.calculate(s, base, base.add(const Duration(hours: 30)), c);
-    expect(r30.gold, r8.gold);
-    expect(r30.elapsed, const Duration(hours: 8));
+    final cap = Duration(seconds: c.offlineCapSeconds.round());
+    final atCap = OfflineReward.calculate(s, base, base.add(cap), c);
+    final beyond = OfflineReward.calculate(s, base, base.add(cap * 3), c);
+    expect(beyond.gold, atCap.gold);
+    expect(beyond.elapsed, cap);
   });
 
   test('1분 미만은 보상 없음', () {

@@ -48,4 +48,8 @@ async def fetch_balance(
         equipStagesPerTier=r.equip_stages_per_tier,
         equipGearCoefficient=r.equip_gear_coefficient,
         equipEnhancePerLevel=r.equip_enhance_per_level,
+        expeditionSeconds=r.expedition_seconds,
+        expeditionGoldMultiplier=r.expedition_gold_multiplier,
+        expeditionShards=r.expedition_shards,
+        adSpeedUpSeconds=r.ad_speed_up_seconds,
     )

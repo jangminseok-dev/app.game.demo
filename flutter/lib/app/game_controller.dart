@@ -11,6 +11,7 @@ import '../domain/battle_engine.dart';
 import '../domain/codex.dart';
 import '../domain/dungeon.dart';
 import '../domain/game_state.dart';
+import '../domain/hatchery.dart';
 import '../domain/monster.dart';
 import '../domain/offline_reward.dart';
 import '../domain/save_codec.dart';
@@ -131,6 +132,34 @@ class GameController extends Notifier<GameState> {
 
   /// 던전을 포기하고 필드로 돌아온다. 입장권은 돌려주지 않는다.
   void leaveDungeon() => state = _engine.leaveDungeon(state, cleared: false);
+
+  /// 알 조각을 내고 알을 올린다. 조각이 모자라면 아무 일도 안 일어난다.
+  void startHatch(int index, EggKind kind) {
+    final next = _engine.startHatch(state, index, kind);
+    if (next != null) state = next;
+  }
+
+  /// 광고 보상으로 부화 시간을 줄인다.
+  void speedUpHatch(int index) => state = _engine.speedUpHatch(state, index);
+
+  /// 다 된 알을 꺼내 펫으로 만든다.
+  void collectEgg(int index) {
+    final next = _engine.collectEgg(state, index, _rng);
+    if (next != null) state = next;
+  }
+
+  void sendExpedition(int index) {
+    final next = _engine.sendExpedition(state, index);
+    if (next != null) state = next;
+  }
+
+  void collectExpedition(int index) {
+    final next = _engine.collectExpedition(state, index);
+    if (next != null) state = next;
+  }
+
+  /// 데리고 다닐 펫을 바꾼다.
+  void activatePet(int index) => state = state.copyWith(pets: state.pets.activate(index));
 
   /// 조건을 채운 퀘스트 보상을 받는다. 아직이면 아무 일도 안 일어난다.
   void claimQuest() {

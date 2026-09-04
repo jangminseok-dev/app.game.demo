@@ -53,6 +53,7 @@ class Bootstrap {
       state: restored.copyWith(
         gold: restored.gold + reward.gold,
         dungeon: restored.dungeon.regenerate(away > 0 ? away : 0, config),
+        hatchery: restored.hatchery.advance(away > 0 ? away : 0),
       ),
       offlineReward: reward.gold > 0 ? reward : null,
       fromCloud: false,

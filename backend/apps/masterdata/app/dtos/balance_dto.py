@@ -46,3 +46,8 @@ class BalanceResponse:
     equip_stages_per_tier: int = 50
     equip_gear_coefficient: float = 0.02
     equip_enhance_per_level: float = 0.03
+    # 부화·탐험 — 시간이 재화인 자리.
+    expedition_seconds: float = 4 * 3600
+    expedition_gold_multiplier: float = 300
+    expedition_shards: int = 25
+    ad_speed_up_seconds: float = 30 * 60

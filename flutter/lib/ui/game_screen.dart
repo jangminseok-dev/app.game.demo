@@ -10,7 +10,7 @@ import 'hud/skill_bar.dart';
 import 'codex_screen.dart';
 import 'dungeon_panel.dart';
 import 'equipment_panel.dart';
-import 'party_row.dart';
+import 'pet_panel.dart';
 import 'quest_strip.dart';
 
 /// 메인 화면(세로): 전투 무대 → 편성 → 골드·업그레이드 → 저장 상태.
@@ -75,7 +75,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               Expanded(
                 child: IndexedStack(
                   index: _tab,
-                  children: const [_UpgradeTab(), EquipmentPanel(), DungeonPanel(), _PartyTab(), CodexTab()],
+                  children: const [_UpgradeTab(), EquipmentPanel(), DungeonPanel(), PetPanel(), CodexTab()],
                 ),
               ),
             ],
@@ -104,7 +104,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             ),
             label: '던전',
           ),
-          const NavigationDestination(icon: Icon(Icons.groups), label: '편성'),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: state.hatchery.hasReady,
+              child: const Icon(Icons.egg_outlined),
+            ),
+            label: '펫',
+          ),
           NavigationDestination(icon: const Icon(Icons.menu_book), label: '도감 $registered'),
         ],
       ),
@@ -164,14 +170,6 @@ class _UpgradeTab extends ConsumerWidget {
                   ],
                 );
   }
-}
-
-/// 편성 탭 — 동료 3칸 + 펫 1칸. 알·펫 서브프로젝트에서 채운다.
-class _PartyTab extends StatelessWidget {
-  const _PartyTab();
-
-  @override
-  Widget build(BuildContext context) => const SingleChildScrollView(child: PartyRow());
 }
 
 String _saveLine(BuildContext context, SaveStatus s) {

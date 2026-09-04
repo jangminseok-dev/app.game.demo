@@ -3,6 +3,8 @@ import 'codex.dart';
 import 'dungeon.dart';
 import 'equipment.dart';
 import 'formulas.dart' as formulas;
+import 'hatchery.dart';
+import 'pet.dart';
 import 'quest.dart';
 import 'upgrade.dart';
 
@@ -29,6 +31,8 @@ class GameState {
     this.equipment = EquipmentState.empty,
     this.dungeon = DungeonState.empty,
     this.quests = QuestState.empty,
+    this.pets = PetState.empty,
+    this.hatchery = HatcheryState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -87,8 +91,15 @@ class GameState {
   /// 받은 퀘스트 수. 진행도는 저장하지 않고 이 상태에서 그때그때 계산한다.
   final QuestState quests;
 
-  Stats statsWith(BalanceConfig config) =>
-      Stats.fromLevels(levels, config, passives).scaledBy(equipment.powerWith(config));
+  /// 가진 펫과 데리고 다니는 펫. 능력치에 곱해진다.
+  final PetState pets;
+
+  /// 부화 3칸과 탐험 3칸. 시간이 지나야 끝난다.
+  final HatcheryState hatchery;
+
+  Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
+      .scaledBy(equipment.powerWith(config))
+      .withPet(pets);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 
@@ -115,6 +126,8 @@ class GameState {
     EquipmentState? equipment,
     DungeonState? dungeon,
     QuestState? quests,
+    PetState? pets,
+    HatcheryState? hatchery,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -137,6 +150,8 @@ class GameState {
       equipment: equipment ?? this.equipment,
       dungeon: dungeon ?? this.dungeon,
       quests: quests ?? this.quests,
+      pets: pets ?? this.pets,
+      hatchery: hatchery ?? this.hatchery,
     );
   }
 }

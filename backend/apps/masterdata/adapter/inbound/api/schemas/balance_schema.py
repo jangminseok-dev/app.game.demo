@@ -35,3 +35,7 @@ class BalanceResponseSchema(BaseModel):
     equipStagesPerTier: int = Field(description="이 층수마다 장비 티어가 한 단계 오른다")
     equipGearCoefficient: float
     equipEnhancePerLevel: float
+    expeditionSeconds: float
+    expeditionGoldMultiplier: float
+    expeditionShards: int
+    adSpeedUpSeconds: float

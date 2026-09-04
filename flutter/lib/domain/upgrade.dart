@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'balance_config.dart';
 import 'codex.dart';
+import 'pet.dart';
 
 /// 골드로 사는 능력치 업그레이드 5종. GAME_DESIGN.md 3장·17장.
 ///
@@ -55,6 +56,17 @@ class Stats {
           critChance: critChance,
           goldMultiplier: goldMultiplier,
         );
+
+  /// 데리고 다니는 펫의 능력을 얹는다. 펫이 없으면 그대로다.
+  Stats withPet(PetState pets) {
+    if (pets.active == null) return this;
+    return Stats(
+      attack: attack * (1 + pets.bonusOf(PetBonus.attack)),
+      attacksPerSecond: attacksPerSecond,
+      critChance: min(1.0, critChance + pets.bonusOf(PetBonus.crit)),
+      goldMultiplier: goldMultiplier * (1 + pets.bonusOf(PetBonus.gold)),
+    );
+  }
 
   /// 치명타 기대값을 반영한 초당 피해량. 화면 표시와 오프라인 보상 계산에 쓴다.
   double dps(BalanceConfig config) =>

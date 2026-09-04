@@ -27,7 +27,7 @@ void main() {
     expect(find.textContaining('스테이지 1'), findsOneWidget);
     expect(find.text('골드  0'), findsOneWidget);
     expect(find.byType(BattleArea), findsOneWidget);
-    expect(find.text('편성'), findsWidgets, reason: '편성은 탭으로 옮겼다');
+    expect(find.text('펫'), findsWidgets, reason: '펫은 탭으로 옮겼다');
     expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
     expect(find.textContaining('저장 전'), findsOneWidget);
     for (final label in ['공격력', '공격속도', '치명타', '골드획득', '포획률']) {

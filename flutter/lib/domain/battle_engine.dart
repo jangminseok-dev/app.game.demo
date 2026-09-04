@@ -6,7 +6,9 @@ import 'dungeon.dart';
 import 'formulas.dart';
 import 'equipment.dart';
 import 'game_state.dart';
+import 'hatchery.dart';
 import 'monster.dart';
+import 'pet.dart';
 import 'quest.dart';
 import 'upgrade.dart';
 
@@ -31,7 +33,10 @@ class BattleEngine {
 
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {
-    s = s.copyWith(dungeon: s.dungeon.regenerate(dt, config));
+    s = s.copyWith(
+      dungeon: s.dungeon.regenerate(dt, config),
+      hatchery: s.hatchery.advance(dt),
+    );
 
     final run = s.dungeon.run;
     if (run != null) {
@@ -172,6 +177,48 @@ class BattleEngine {
       isBoss: true,
       bossTimeLeft: config.bossTimeLimit,
       monsterId: catalog.forStage(s.stage)?.id ?? s.monsterId,
+    );
+  }
+
+  // ── 부화와 탐험. 진행은 [tick]이 하고 여기서는 넣고 꺼내는 것만 한다.
+
+  /// 알 조각을 내고 빈 칸에 알을 올린다. 조각이 모자라거나 칸이 차 있으면 null.
+  GameState? startHatch(GameState s, int index, EggKind kind) {
+    if (s.hatchery.eggAt(index) != null || s.dungeon.eggShards < kind.cost) return null;
+    return s.copyWith(
+      dungeon: s.dungeon.copyWith(eggShards: s.dungeon.eggShards - kind.cost),
+      hatchery: s.hatchery.putEgg(index, kind),
+    );
+  }
+
+  /// 광고 보상 등으로 부화 시간을 줄인다.
+  GameState speedUpHatch(GameState s, int index) =>
+      s.copyWith(hatchery: s.hatchery.speedUp(index, config.adSpeedUpSeconds));
+
+  /// 다 된 알을 꺼내 펫으로 만든다. 아직이면 null.
+  GameState? collectEgg(GameState s, int index, Random rng) {
+    final egg = s.hatchery.eggAt(index);
+    if (egg == null || !egg.ready) return null;
+    return s.copyWith(
+      pets: s.pets.add(rollPet(rng, gradeBias: egg.kind.gradeBias)),
+      hatchery: s.hatchery.takeEgg(index),
+    );
+  }
+
+  /// 빈 칸에서 탐험을 보낸다. 이미 나가 있으면 null.
+  GameState? sendExpedition(GameState s, int index) {
+    if (s.hatchery.expeditionAt(index) != null) return null;
+    return s.copyWith(hatchery: s.hatchery.sendExpedition(index, s.highestStage, config));
+  }
+
+  /// 돌아온 탐험의 보상을 받는다. 아직이면 null.
+  GameState? collectExpedition(GameState s, int index) {
+    final slot = s.hatchery.expeditionAt(index);
+    if (slot == null || !slot.ready) return null;
+    return s.copyWith(
+      gold: s.gold + expeditionGold(slot.stage, config),
+      dungeon: s.dungeon.copyWith(eggShards: s.dungeon.eggShards + expeditionShards(config)),
+      hatchery: s.hatchery.takeExpedition(index),
     );
   }
 

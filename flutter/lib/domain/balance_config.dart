@@ -17,7 +17,7 @@ class BalanceConfig {
     this.upgradeCostGrowth = 1.09,
     this.killsPerStage = 10,
     this.critMultiplier = 2.0,
-    this.offlineCapSeconds = 8 * 3600,
+    this.offlineCapSeconds = 12 * 3600,
     this.offlineEfficiency = 0.5,
     this.offlineMinSeconds = 60,
     this.bossCaptureMultiplier = 4.0,
@@ -46,6 +46,10 @@ class BalanceConfig {
     this.dungeonGoldMultiplier = 40,
     this.dungeonMaterialBase = 5,
     this.dungeonMaterialPerFloor = 3,
+    this.expeditionSeconds = 4 * 3600,
+    this.expeditionGoldMultiplier = 300,
+    this.expeditionShards = 25,
+    this.adSpeedUpSeconds = 30 * 60,
     this.upgradeBaseCosts = const {
       UpgradeType.attack: 10,
       UpgradeType.attackSpeed: 25,
@@ -102,6 +106,20 @@ class BalanceConfig {
   final double dungeonMaterialBase;
   final double dungeonMaterialPerFloor;
 
+  // ── 부화와 탐험. 시간이 재화인 자리다.
+
+  /// 탐험 한 번에 걸리는 시간(초).
+  final double expeditionSeconds;
+
+  /// 탐험 보상 = 보낸 시점 최고 층의 필드 골드 × 이 배수.
+  final double expeditionGoldMultiplier;
+
+  /// 탐험 한 번이 주는 알 조각.
+  final int expeditionShards;
+
+  /// 광고 한 편이 줄여 주는 부화 시간(초).
+  final double adSpeedUpSeconds;
+
   final double monsterHpBase;
   final double monsterHpGrowth;
   final double bossHpMultiplier;
@@ -113,7 +131,7 @@ class BalanceConfig {
   final int killsPerStage;
   final double critMultiplier;
 
-  /// 오프라인 보상 (GAME_DESIGN 8장): 상한 8시간, 효율 50%.
+  /// 오프라인 보상 (GAME_DESIGN 8장): 상한 12시간, 효율 50%.
   final double offlineCapSeconds;
   final double offlineEfficiency;
 
