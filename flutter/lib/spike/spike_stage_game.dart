@@ -15,8 +15,9 @@ import '../ui/stage/battle_stage_game.dart' show FloatingDamage;
 ///
 /// 판정용: 픽셀 확대 품질, 화풍 일관성, 타격감(히트스톱·백플래시·흔들림·파티클·데미지 숫자), 팔레트 스왑.
 class SpikeStageGame extends FlameGame {
+  SpikeStageGame() : super(camera: CameraComponent.withFixedResolution(width: 360, height: 270));
+
   final _images = Images(prefix: 'assets/');
-  final _world = World();
   final _root = _ShakeRoot();
   final _actors = _ActorLayer();
   final _rng = math.Random();
@@ -33,9 +34,8 @@ class SpikeStageGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    final cam = CameraComponent.withFixedResolution(width: 360, height: 270, world: _world);
-    await addAll([_world, cam]);
-    await _world.add(_root);
+    camera.viewfinder.anchor = Anchor.topLeft; // 무대 원점(0,0)을 좌상단에
+    await world.add(_root);
 
     _root.add(SpriteComponent(sprite: await _sprite('backgrounds/forest/far.png'), position: Vector2.zero(), paint: _pixel));
     _root.add(SpriteComponent(sprite: await _sprite('backgrounds/forest/ground.png'), position: Vector2(0, 110), paint: _pixel));
@@ -88,8 +88,11 @@ class SpikeStageGame extends FlameGame {
     }
   }
 
-  void _strike(_Actor target) {
-    final crit = _rng.nextDouble() < 0.3;
+  /// 캡처용: 보스를 즉시 때린다.
+  void debugStrike({bool crit = true}) => _strike(_enemies.last, forceCrit: crit);
+
+  void _strike(_Actor target, {bool? forceCrit}) {
+    final crit = forceCrit ?? _rng.nextDouble() < 0.3;
     target.play('hit');
     target.flash();
     _hitStop = crit ? 0.08 : 0.05;
@@ -150,6 +153,7 @@ class _ActorLayer extends PositionComponent with HasTimeScale {}
 class _Actor extends PositionComponent {
   _Actor({required this.image, required this.spec, required this.pos, required bool facingRight, required double hue})
       : sizePx = ((spec['frame'] as List)[0] as num).toDouble(),
+        _hue = hue == 0 ? null : _hueFilter(hue),
         _paint = Paint()
           ..filterQuality = FilterQuality.none
           ..isAntiAlias = false
@@ -163,6 +167,7 @@ class _Actor extends PositionComponent {
   final Map<String, dynamic> spec;
   final double sizePx;
   final Vector2 pos;
+  final ColorFilter? _hue;
   final Paint _paint;
   late final Map<String, SpriteAnimation> _anims;
   late final SpriteAnimationComponent _sprite;
@@ -211,7 +216,13 @@ class _Actor extends PositionComponent {
     super.update(dt);
     position.setValues(pos.x.roundToDouble(), pos.y.roundToDouble());
     priority = pos.y.round();
-    if (_flash > 0) _flash -= dt;
+    if (_flash > 0) {
+      _flash -= dt;
+      // 백플래시: 스프라이트의 불투명 픽셀만 흰색으로. saveLayer보다 싸고 좌표계 문제도 없다.
+      _paint.colorFilter = _flash > 0
+          ? ColorFilter.mode(Colors.white.withValues(alpha: 0.75 * (_flash / 0.12)), BlendMode.srcATop)
+          : _hue;
+    }
   }
 
   @override
@@ -223,18 +234,6 @@ class _Actor extends PositionComponent {
     );
   }
 
-  @override
-  void renderTree(Canvas canvas) {
-    if (_flash <= 0) {
-      super.renderTree(canvas);
-      return;
-    }
-    final rect = Rect.fromLTWH(0, 0, sizePx, sizePx).inflate(4);
-    canvas.saveLayer(rect, Paint());
-    super.renderTree(canvas);
-    canvas.drawRect(rect, Paint()..color = Colors.white.withValues(alpha: 0.7)..blendMode = BlendMode.srcATop);
-    canvas.restore();
-  }
 }
 
 ColorFilter _hueFilter(double degrees) {
