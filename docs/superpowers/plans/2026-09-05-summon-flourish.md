@@ -65,14 +65,15 @@
 
 ```dart
     test('결과가 승급 전후를 싣는다', () {
-      // 뿔 ★3을 가진 상태에서 한 번 뽑아 뿔이 나오면 before 3, after 4 이상이다.
-      final start = const SummonState(stones: 10000, relics: {RelicSlot.horn: 3});
+      // 네 칸을 다 ★3으로 두면 어느 부위가 나오든 승급이다.
+      // 한 칸만 씨앗으로 두면 그 부위가 10연차에 안 나올 확률이 5.6%라 씨앗에 기댄 테스트가 된다.
+      const start = SummonState(stones: 10000, relics: {
+        RelicSlot.horn: 3, RelicSlot.tail: 3, RelicSlot.wing: 3, RelicSlot.scale: 3,
+      });
       final (_, results) = summonRelics(start, Random(1), config, count: 10);
-      final horn = results.where((r) => r.slot == RelicSlot.horn).toList();
-      expect(horn, isNotEmpty, reason: '10연차면 뿔이 한 번은 나온다');
-      expect(horn.first.before, 3);
-      expect(horn.first.after, greaterThan(3));
-      expect(horn.first.upgraded, isTrue);
+      expect(results.first.before, greaterThanOrEqualTo(3));
+      expect(results.first.after, greaterThan(results.first.before));
+      expect(results.first.upgraded, isTrue);
     });
 
     test('처음 나온 부위는 승급이 아니다', () {
@@ -339,7 +340,8 @@ void main() {
         const SummonResult(slot: RelicSlot.tail, stars: 5, byPity: false, before: 0, after: 5),
       ];
       await open(tester, results);
-      await tester.pump(const Duration(milliseconds: 600));
+      // 기둥 구간은 t=0.45부터다. 1600ms × 0.45 = 720ms — 600ms에는 아직 위젯이 없다.
+      await tester.pump(const Duration(milliseconds: 800));
       final pillar = tester.widget<SummonPillar>(find.byType(SummonPillar));
       expect(pillar.color, PixelPalette.gold);
     });
@@ -656,11 +658,18 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 탭 한 번이 건너뛰기, 그 뒤 탭이 닫기다. **설정의 "연출 생략"은 아직 없다** — 설정 화면이 3등급 1번이라 그때 붙인다.
 ```
 
+6절(화면) 끝에도 한 줄 — 승급 표시는 연출이 아니라 화면의 약속이다:
+
+```markdown
+**2026-09-05**: 결과 줄은 굴린 성급이 아니라 **승급 결과**를 보여 준다 — `뿔 ★4 → ★5`.
+굴린 값을 보여 주면 "헛도는 소환이 없다"(1절·10절)는 약속이 화면에서 한 번도 안 보인다.
+```
+
 11절(구현 순서) 끝에도 한 줄:
 
 ```markdown
 **계획 2 완료 시점(2026-09-05)**: 소환 연출과 승급 표시까지. 남은 것은 정령 축(계획 3)과
-주인공 용화 스프라이트(백로그 D7)다.
+주인공 용화 스프라이트(백로그 D7), 설정의 연출 생략(백로그 D8)이다.
 ```
 
 - [ ] **Step 2: 백로그에 남긴다**
