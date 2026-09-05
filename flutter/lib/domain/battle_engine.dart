@@ -36,6 +36,23 @@ class BattleEngine {
   /// 장비 드롭 판정. 확률·티어 폭은 전부 마스터 데이터에서 온다.
   DropTable get dropTable => DropTable(config);
 
+  /// 지역을 처음 밟을 때마다 소환석을 준다.
+  ///
+  /// `regionsRewarded` 를 세는 방식이라 여러 번 불려도 안전하다.
+  /// 저장을 지웠다 복구해도 이미 준 것을 또 주지 않는다.
+  GameState grantRegionStones(GameState s) {
+    if (catalog.regions.isEmpty) return s;
+    final reached = catalog.regions.where((r) => s.highestStage >= r.stageFrom).length;
+    final owed = reached - s.summon.regionsRewarded;
+    if (owed <= 0) return s;
+    return s.copyWith(
+      summon: s.summon.copyWith(
+        stones: s.summon.stones + config.summonStonePerRegion * owed,
+        regionsRewarded: reached,
+      ),
+    );
+  }
+
   /// 한 틱 만큼 시간을 진행시킨 새 상태를 돌려준다.
   GameState tick(GameState s, double dt, Random rng) {
     s = s.copyWith(
@@ -338,12 +355,12 @@ class BattleEngine {
       final next = s.stage + 1;
       // 새 층이 시작되면 시간도 새로 준다.
       return _spawnNormal(
-        s.copyWith(
+        grantRegionStones(s.copyWith(
           stage: next,
           highestStage: max(s.highestStage, next),
           killsOnStage: 0,
           stageTimeLeft: config.stageTimeLimit,
-        ),
+        )),
         rng,
       );
     }

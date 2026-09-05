@@ -52,6 +52,18 @@ void main() {
         expect(q.rewardAmount, greaterThan(0), reason: '${q.number}번');
       }
     });
+
+    test('소환석도 퀘스트 보상으로 나온다', () {
+      final kinds = {for (final q in questTable) q.reward};
+      expect(kinds, contains(RewardKind.summonStone));
+    });
+
+    test('소환석 퀘스트를 받으면 소환석이 는다', () {
+      final quest = questTable.firstWhere((q) => q.reward == RewardKind.summonStone);
+      final before = GameState.initial(const BalanceConfig());
+      final after = grantQuestReward(before, quest, const BalanceConfig());
+      expect(after.summon.stones, quest.rewardAmount);
+    });
   });
 
   group('진행과 수령', () {

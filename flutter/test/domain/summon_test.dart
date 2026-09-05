@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
+import 'package:idle_fantasy/domain/monster.dart';
 import 'package:idle_fantasy/domain/summon.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
@@ -186,4 +188,58 @@ void main() {
       expect(horned.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
     });
   });
+
+  group('지역 첫 진입', () {
+    BattleEngine engineWith(MonsterCatalog catalog) => BattleEngine(config, catalog: catalog);
+
+    test('지역을 처음 밟을 때마다 소환석을 준다', () {
+      final after = engineWith(_twoRegionCatalog()).grantRegionStones(GameState.initial(config));
+      expect(after.summon.stones, config.summonStonePerRegion, reason: '첫 지역 하나');
+      expect(after.summon.regionsRewarded, 1);
+    });
+
+    test('같은 지역에서 또 부르면 안 준다 — 여러 번 불려도 안전해야 한다', () {
+      final engine = engineWith(_twoRegionCatalog());
+      final once = engine.grantRegionStones(GameState.initial(config));
+      final twice = engine.grantRegionStones(once);
+      expect(twice.summon.stones, once.summon.stones);
+    });
+
+    test('여러 지역을 건너뛰어도 밀린 만큼 다 준다', () {
+      final after = engineWith(_twoRegionCatalog())
+          .grantRegionStones(GameState.initial(config).copyWith(highestStage: 500));
+      expect(after.summon.stones, config.summonStonePerRegion * 2);
+      expect(after.summon.regionsRewarded, 2);
+    });
+
+    test('카탈로그가 비면 아무 일도 없다', () {
+      final after = engineWith(MonsterCatalog.empty)
+          .grantRegionStones(GameState.initial(config).copyWith(highestStage: 500));
+      expect(after.summon.stones, 0);
+    });
+  });
 }
+
+/// 지역 둘 — 1~99, 100~(끝). 지역 첫 진입 지급 테스트에만 쓴다.
+MonsterCatalog _twoRegionCatalog() => const MonsterCatalog(
+      version: 1,
+      regions: [
+        Region(
+          id: 'r1',
+          name: '첫 지역',
+          stageFrom: 1,
+          stageTo: 99,
+          completionKind: PassiveKind.attack,
+          completionValue: 1,
+        ),
+        Region(
+          id: 'r2',
+          name: '둘째 지역',
+          stageFrom: 100,
+          stageTo: null,
+          completionKind: PassiveKind.attack,
+          completionValue: 1,
+        ),
+      ],
+      monsters: [],
+    );

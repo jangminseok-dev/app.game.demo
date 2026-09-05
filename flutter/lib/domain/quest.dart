@@ -25,7 +25,8 @@ enum RewardKind {
   stone('강화석'),
   ticket('입장권'),
   eggShard('용의 알 조각'),
-  skillPage('스킬서 조각');
+  skillPage('스킬서 조각'),
+  summonStone('소환석');
 
   const RewardKind(this.label);
 
@@ -124,6 +125,9 @@ Quest _questAt(int number) {
     RewardKind.ticket => 1,
     RewardKind.eggShard => 10 * step,
     RewardKind.skillPage => 10 * step,
+    // _questAt은 BalanceConfig를 받지 않는다. 기본값을 그대로 읽는다 —
+    // summonStonePerQuest는 balance_config.dart의 것과 항상 같다.
+    RewardKind.summonStone => const BalanceConfig().summonStonePerQuest,
   };
   return Quest(number: number, goal: goal, target: target, reward: reward, rewardAmount: amount);
 }
@@ -207,5 +211,7 @@ GameState grantQuestReward(GameState s, Quest quest, BalanceConfig c) {
     RewardKind.eggShard => s.copyWith(dungeon: s.dungeon.copyWith(eggShards: s.dungeon.eggShards + amount)),
     RewardKind.skillPage =>
       s.copyWith(dungeon: s.dungeon.copyWith(skillPages: s.dungeon.skillPages + amount)),
+    RewardKind.summonStone =>
+      s.copyWith(summon: s.summon.copyWith(stones: s.summon.stones + amount)),
   };
 }
