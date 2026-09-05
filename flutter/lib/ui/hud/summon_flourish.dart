@@ -10,13 +10,13 @@ import 'pixel_ui.dart';
 ///
 /// 심장은 결과가 아니라 **빛기둥**이다. 결과를 보기 전에 색으로 먼저 안다(스펙 7.1).
 /// 금색 기둥이 올라오는 1초가 이 시스템에서 제일 좋은 1초다.
-Future<void> showSummonFlourish(BuildContext context, List<SummonResult> results) {
-  if (results.isEmpty) return Future<void>.value();
+Future<void> showSummonFlourish(BuildContext context, List<SummonLine> lines, {required int topStars}) {
+  if (lines.isEmpty) return Future<void>.value();
   return showDialog<void>(
     context: context,
     barrierColor: Colors.transparent, // 어둡게는 연출이 직접 한다 — 막이 먼저 깔리면 소환진이 안 보인다
     useSafeArea: false, // 어둡게를 연출 자식이 그리므로 노치·홈바 자리까지 덮어야 한다
-    builder: (_) => _SummonFlourish(results: results),
+    builder: (_) => _SummonFlourish(lines: lines, topStars: topStars),
   );
 }
 
@@ -186,17 +186,17 @@ class _SparkPainter extends CustomPainter {
 
 /// 결과 한 줄. 테스트가 개수를 세므로 공개 위젯이다.
 class SummonResultLine extends StatelessWidget {
-  const SummonResultLine({super.key, required this.result});
+  const SummonResultLine({super.key, required this.line});
 
-  final SummonResult result;
+  final SummonLine line;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: PixelText(
-          summonResultLine(result),
+          line.text,
           size: 12,
-          color: result.upgraded && result.after > result.before ? PixelPalette.gold : PixelPalette.text,
+          color: line.upgraded && line.after > line.before ? PixelPalette.gold : PixelPalette.text,
         ),
       );
 }
@@ -205,9 +205,9 @@ class SummonResultLine extends StatelessWidget {
 /// `결과` 라벨 → 아이콘 패널(금테) → 결과 줄(금테 패널) → '빈 곳을 터치하세요'.
 /// 카드가 바탕을 가지므로 뒤에서 아직 켜져 있는 기둥·소환진과도 안 겹친다.
 class _SummonResultCard extends StatelessWidget {
-  const _SummonResultCard({required this.results});
+  const _SummonResultCard({required this.lines});
 
-  final List<SummonResult> results;
+  final List<SummonLine> lines;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -226,7 +226,7 @@ class _SummonResultCard extends StatelessWidget {
             border: PixelPalette.gold,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [for (final r in results) SummonResultLine(result: r)],
+              children: [for (final l in lines) SummonResultLine(line: l)],
             ),
           ),
           const SizedBox(height: 20),
@@ -239,9 +239,10 @@ class _SummonResultCard extends StatelessWidget {
 double _phase(double t, double from, double to) => ((t - from) / (to - from)).clamp(0.0, 1.0);
 
 class _SummonFlourish extends StatefulWidget {
-  const _SummonFlourish({required this.results});
+  const _SummonFlourish({required this.lines, required this.topStars});
 
-  final List<SummonResult> results;
+  final List<SummonLine> lines;
+  final int topStars;
 
   @override
   State<_SummonFlourish> createState() => _SummonFlourishState();
@@ -269,9 +270,9 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
   @override
   Widget build(BuildContext context) {
     // 기둥 색은 **굴린 값** 중 최고를 따른다(스펙 7.2 — 10연차도 기둥은 하나다).
-    final top = widget.results.map((r) => r.stars).reduce(math.max);
-    final color = pillarColorFor(top);
-    final force = flourishForce(top);
+    // 그 값은 SummonLine에 없어서 호출부가 topStars로 넘긴다.
+    final color = pillarColorFor(widget.topStars);
+    final force = flourishForce(widget.topStars);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -314,7 +315,7 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
                         ],
                       ),
                     ),
-                  if (shown) _SummonResultCard(results: widget.results),
+                  if (shown) _SummonResultCard(lines: widget.lines),
                   // 기둥이 다 자라는 순간의 흰 섬광. 세기는 등급을 따른다 — 색만 바꾸면 ★1과 ★5가 같은 무게로 느껴진다.
                   IgnorePointer(
                     child: SizedBox.expand(

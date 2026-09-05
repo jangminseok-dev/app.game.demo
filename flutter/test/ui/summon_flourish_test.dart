@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/summon.dart';
@@ -21,11 +23,14 @@ void main() {
   });
 
   group('연출', () {
-    Future<void> open(WidgetTester tester, List<SummonResult> results) async {
+    // topStars를 안 넘기면 line들의 after 최고값을 쓴다 — 이 테스트들은 모두 before가 0이라
+    // after가 곧 굴린 값과 같다(승급을 확인하는 '탭하면 건너뛰고' 테스트는 색을 안 본다).
+    Future<void> open(WidgetTester tester, List<SummonLine> lines, {int? topStars}) async {
       await tester.pumpWidget(MaterialApp(
         home: Builder(
           builder: (context) => TextButton(
-            onPressed: () => showSummonFlourish(context, results),
+            onPressed: () => showSummonFlourish(context, lines,
+                topStars: topStars ?? lines.map((l) => l.after).reduce(math.max)),
             child: const Text('열기'),
           ),
         ),
@@ -35,18 +40,14 @@ void main() {
     }
 
     testWidgets('끝까지 두면 결과가 뜬다', (tester) async {
-      await open(tester, const [
-        SummonResult(slot: RelicSlot.horn, stars: 5, byPity: false, before: 0, after: 5),
-      ]);
+      await open(tester, const [SummonLine(label: '뿔', before: 0, after: 5)]);
       await tester.pump(const Duration(milliseconds: 1700));
       expect(find.text('뿔 ★5'), findsWidgets);
       expect(find.text('빈 곳을 터치하세요'), findsWidgets);
     });
 
     testWidgets('탭하면 건너뛰고 결과로 간다', (tester) async {
-      await open(tester, const [
-        SummonResult(slot: RelicSlot.wing, stars: 1, byPity: false, before: 4, after: 5),
-      ]);
+      await open(tester, const [SummonLine(label: '날개', before: 4, after: 5)]);
       // 아직 연출 중이라 결과가 없다.
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.text('날개 ★4 → ★5'), findsNothing);
@@ -57,28 +58,23 @@ void main() {
     });
 
     testWidgets('10연차는 기둥 하나에 결과 열 줄이다', (tester) async {
-      final results = [
+      const labels = ['뿔', '꼬리', '날개', '비늘'];
+      final lines = [
         for (var i = 0; i < 10; i++)
-          SummonResult(
-            slot: RelicSlot.values[i % 4],
-            stars: i == 3 ? 5 : 1,
-            byPity: false,
-            before: 0,
-            after: i == 3 ? 5 : 1,
-          ),
+          SummonLine(label: labels[i % 4], before: 0, after: i == 3 ? 5 : 1),
       ];
-      await open(tester, results);
+      await open(tester, lines);
       await tester.pump(const Duration(milliseconds: 1700));
       expect(find.byType(SummonResultLine), findsNWidgets(10));
       expect(find.byType(SummonPillar), findsOneWidget, reason: '10연차도 기둥은 하나다');
     });
 
     testWidgets('기둥 색은 굴린 값 중 최고를 따른다', (tester) async {
-      final results = [
-        const SummonResult(slot: RelicSlot.horn, stars: 1, byPity: false, before: 0, after: 1),
-        const SummonResult(slot: RelicSlot.tail, stars: 5, byPity: false, before: 0, after: 5),
+      final lines = [
+        const SummonLine(label: '뿔', before: 0, after: 1),
+        const SummonLine(label: '꼬리', before: 0, after: 5),
       ];
-      await open(tester, results);
+      await open(tester, lines);
       // 기둥 구간은 t=0.45부터다. 1600ms × 0.45 = 720ms — 800ms에는 이미 기둥이 있다.
       await tester.pump(const Duration(milliseconds: 800));
       final pillar = tester.widget<SummonPillar>(find.byType(SummonPillar));
@@ -86,9 +82,7 @@ void main() {
     });
 
     testWidgets('결과가 보이면 탭이 바로 닫는다 — 건너뛸 것이 없다', (tester) async {
-      await open(tester, const [
-        SummonResult(slot: RelicSlot.horn, stars: 5, byPity: false, before: 0, after: 5),
-      ]);
+      await open(tester, const [SummonLine(label: '뿔', before: 0, after: 5)]);
       // 1280ms부터 결과가 보인다. 그 뒤 아직 애니메이션이 안 끝난 시점을 고른다.
       await tester.pump(const Duration(milliseconds: 1400));
       expect(find.text('빈 곳을 터치하세요'), findsWidgets);
@@ -103,9 +97,7 @@ void main() {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        await open(tester, const [
-          SummonResult(slot: RelicSlot.horn, stars: 5, byPity: false, before: 0, after: 5),
-        ]);
+        await open(tester, const [SummonLine(label: '뿔', before: 0, after: 5)]);
         await tester.pump(const Duration(milliseconds: 800));
         final pillar = tester.getRect(find.byType(SummonPillar));
         final circle = tester.getRect(find.byType(SummonCircle));
@@ -117,6 +109,12 @@ void main() {
         await tester.tapAt(Offset(size.width / 2, size.height / 2));
         await tester.pumpAndSettle();
       }
+    });
+
+    testWidgets('정령도 같은 연출을 쓴다', (tester) async {
+      await open(tester, const [SummonLine(label: '서리의 꿈', before: 3, after: 4)]);
+      await tester.pump(const Duration(milliseconds: 1700));
+      expect(find.text('서리의 꿈 ★3 → ★4'), findsWidgets);
     });
   });
 
@@ -148,9 +146,11 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Builder(
           builder: (context) => TextButton(
-            onPressed: () => showSummonFlourish(context, [
-              SummonResult(slot: RelicSlot.horn, stars: stars, byPity: false, before: 0, after: stars),
-            ]),
+            onPressed: () => showSummonFlourish(
+              context,
+              [SummonLine(label: '뿔', before: 0, after: stars)],
+              topStars: stars,
+            ),
             child: const Text('열기'),
           ),
         ),

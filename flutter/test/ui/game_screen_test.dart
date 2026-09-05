@@ -370,4 +370,23 @@ void main() {
     expect(find.text('1회'), findsWidgets);
     expect(find.text('10회'), findsWidgets);
   });
+
+  testWidgets('정령 탭에 4종이 다 보이고 안 가진 것은 흐리다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('소환').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('정령').first);
+    await tester.pumpAndSettle();
+
+    for (final label in ['이끼의 꿈', '수정의 꿈', '잿불의 꿈', '서리의 꿈']) {
+      expect(find.text(label), findsWidgets, reason: label);
+    }
+    expect(find.text('정령 — 준비 중'), findsNothing, reason: '이제 자리가 채워졌다');
+    expect(find.text('1회'), findsWidgets);
+    expect(find.text('10회'), findsWidgets);
+  });
 }
