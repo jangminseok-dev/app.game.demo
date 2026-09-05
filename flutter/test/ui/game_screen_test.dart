@@ -26,7 +26,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
-    expect(find.textContaining('스테이지 1'), findsWidgets);
+    expect(find.textContaining('1층'), findsWidgets);
     expect(find.byType(BattleArea), findsOneWidget);
     expect(find.text('몬스터'), findsWidgets, reason: '카탈로그가 비어 있으면 일반 이름 (외곽선 글자라 stroke·fill 2개)');
     // 하단 5칸 + 우상단 4칸 + 좌측 아래 2칸. 잠긴 것도 자리는 있다.

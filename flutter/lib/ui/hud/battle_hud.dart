@@ -7,30 +7,47 @@ import '../../domain/monster.dart';
 import '../../domain/number_format.dart';
 import 'pixel_ui.dart';
 
-/// 전투 무대 위에 겹치는 HUD. 레퍼런스(가로)의 배치를 세로 화면에 옮긴 것.
-///
-/// 상단: 전투력 · 재화 · 지역 / 스테이지 진행 게이지
-/// 하단: 몬스터 이름 · HP · 포획 정보
-class BattleHud extends StatelessWidget {
-  const BattleHud({
-    super.key,
-    required this.state,
-    required this.config,
-    required this.monster,
-    required this.regionName,
-    required this.captureLine,
-  });
+/// 좌상단 · 나에 관한 것. 전투력 · 골드 · 젬.
+/// Lv·이름은 계정 시스템(3등급)이 생기면 붙는다.
+class ProfileBadge extends StatelessWidget {
+  const ProfileBadge({super.key, required this.state, required this.config});
 
   final GameState state;
   final BalanceConfig config;
-  final Monster? monster;
-  final String regionName;
-  final String captureLine;
 
   @override
   Widget build(BuildContext context) {
     final stats = state.statsWith(config);
-    // 던전에 들어가 있으면 같은 자리에 던전 진행을 보여 준다.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PowerBadge(power: stats.dps(config)),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CurrencyChip(amount: formatNumber(state.gold), color: PixelPalette.gold),
+            const SizedBox(width: 5),
+            const CurrencyChip(amount: '0', color: PixelPalette.gem, gem: true),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 상단 중앙 · 지금 상태. 층 이름 · 제한 시간 막대 · 남은 수.
+/// 던전에 들어가 있으면 같은 자리에 던전 진행을 보여 준다.
+class StageStatus extends StatelessWidget {
+  const StageStatus({super.key, required this.state, required this.config, required this.regionName});
+
+  final GameState state;
+  final BalanceConfig config;
+  final String regionName;
+
+  @override
+  Widget build(BuildContext context) {
     final run = state.dungeon.run;
     final progress = run != null
         ? (1 - run.wavesLeft / config.dungeonWaves).clamp(0.0, 1.0)
@@ -43,32 +60,20 @@ class BattleHud extends StatelessWidget {
             ? PixelPalette.boss
             : PixelPalette.gold;
 
-    return Padding(
-      padding: const EdgeInsets.all(6),
+    return SizedBox(
+      width: 300,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // ── 상단: 전투력 · 재화 · 지역
-          Row(
-            children: [
-              _PowerBadge(power: stats.dps(config)),
-              const SizedBox(width: 5),
-              CurrencyChip(amount: formatNumber(state.gold), color: PixelPalette.gold),
-              const SizedBox(width: 5),
-              const CurrencyChip(amount: '0', color: PixelPalette.gem, gem: true),
-              const Spacer(),
-              PixelPanel(
-                border: run == null ? PixelPalette.ink : PixelPalette.gem,
-                child: PixelText(
-                  run == null ? '$regionName 스테이지 ${state.stage}' : '${run.type.label} ${run.floor}층',
-                  size: 11,
-                  color: run == null ? PixelPalette.textDim : PixelPalette.gem,
-                ),
-              ),
-            ],
+          PixelPanel(
+            border: run == null ? PixelPalette.ink : PixelPalette.gem,
+            child: PixelText(
+              run == null ? '$regionName ${state.stage}층' : '${run.type.label} ${run.floor}층',
+              size: 11,
+              color: run == null ? PixelPalette.textDim : PixelPalette.gem,
+            ),
           ),
-          const SizedBox(height: 5),
-          // ── 층에 남은 시간. 이 안에 보스까지 못 가면 진행이 절반 밀린다.
+          const SizedBox(height: 4),
           if (run == null && !state.isBoss)
             Row(
               children: [
@@ -83,13 +88,10 @@ class BattleHud extends StatelessWidget {
                 PixelText('${state.stageTimeLeftOr(config).ceil()}초', size: 10, color: PixelPalette.textDim),
               ],
             ),
-          const SizedBox(height: 4),
-          // ── 스테이지 진행 게이지
+          const SizedBox(height: 3),
           Row(
             children: [
-              Expanded(
-                child: PixelGauge(value: progress, color: accent, height: 12),
-              ),
+              Expanded(child: PixelGauge(value: progress, color: accent, height: 10)),
               const SizedBox(width: 5),
               PixelPanel(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -98,32 +100,42 @@ class BattleHud extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
-          // ── 하단 한 줄: 지금 무엇을 상대하는지와 포획 정보. 체력 바는 캐릭터 발밑에 붙는다.
-          Row(
-            children: [
-              PixelText(
-                monster == null ? '몬스터' : '${monster!.name} [${monster!.element.label}]',
-                size: 11,
-              ),
-              if (state.wave.length > 1) ...[
-                const SizedBox(width: 6),
-                PixelText('남은 ${state.wave.length}마리', size: 10, color: PixelPalette.gold),
-              ],
-              const Spacer(),
-              Flexible(child: PixelText(captureLine, size: 10, color: PixelPalette.textDim)),
-            ],
-          ),
-          if (state.isDown) ...[
-            const SizedBox(height: 3),
-            PixelText(
-              '쓰러졌습니다 · ${state.reviveLeft.ceil()}초 뒤 일어섭니다',
-              size: 11,
-              color: PixelPalette.hpLow,
-            ),
-          ],
         ],
       ),
+    );
+  }
+}
+
+/// 무대 하단 · 지금 무엇을 상대하는지와 포획 정보. 쓰러지면 그 안내.
+class MonsterLine extends StatelessWidget {
+  const MonsterLine({super.key, required this.state, required this.monster, required this.captureLine});
+
+  final GameState state;
+  final Monster? monster;
+  final String captureLine;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PixelText(monster == null ? '몬스터' : '${monster!.name} [${monster!.element.label}]', size: 11),
+            if (state.wave.length > 1) ...[
+              const SizedBox(width: 6),
+              PixelText('남은 ${state.wave.length}마리', size: 10, color: PixelPalette.gold),
+            ],
+            const SizedBox(width: 8),
+            PixelText(captureLine, size: 10, color: PixelPalette.textDim),
+          ],
+        ),
+        if (state.isDown) ...[
+          const SizedBox(height: 3),
+          PixelText('쓰러졌습니다 · ${state.reviveLeft.ceil()}초 뒤 일어섭니다', size: 11, color: PixelPalette.hpLow),
+        ],
+      ],
     );
   }
 }

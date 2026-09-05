@@ -76,15 +76,20 @@ class _BattleAreaState extends ConsumerState<BattleArea> with SingleTickerProvid
     return Stack(
       children: [
         Positioned.fill(child: GameWidget(game: _game)),
-        Positioned.fill(
+        // HUD 셋. 자리는 화면 지도(스펙 2절) — 좌상단 나 · 상단 중앙 지금 상태 · 무대 하단 상대.
+        Positioned(left: 6, top: 6, child: IgnorePointer(child: ProfileBadge(state: state, config: config))),
+        Positioned(
+          left: 0, right: 0, top: 6,
           child: IgnorePointer(
-            child: BattleHud(
-              state: state,
-              config: config,
-              monster: monster,
-              regionName: catalog.regionFor(state.stage)?.name ?? '???',
-              captureLine: captureLine(),
+            child: Center(
+              child: StageStatus(state: state, config: config, regionName: catalog.regionFor(state.stage)?.name ?? '???'),
             ),
+          ),
+        ),
+        Positioned(
+          left: 0, right: 0, bottom: 70,
+          child: IgnorePointer(
+            child: Center(child: MonsterLine(state: state, monster: monster, captureLine: captureLine())),
           ),
         ),
         Positioned.fill(child: IgnorePointer(child: _CaptureBanner(anim: _capture, text: _captureText))),
