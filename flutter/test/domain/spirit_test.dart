@@ -5,6 +5,7 @@ import 'package:idle_fantasy/domain/balance_config.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/spirit.dart';
+import 'package:idle_fantasy/domain/summon.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
 void main() {
@@ -210,6 +211,63 @@ void main() {
           9,
           Random(1));
       expect(boss.spirits.gauge, closeTo(normal.spirits.gauge * 1.5, 0.01));
+    });
+  });
+
+  group('정령 소환', () {
+    test('종류는 균등하다', () {
+      final rng = Random(11);
+      final counts = <SpiritId, int>{};
+      var stones = const SummonState(stones: 1000000);
+      var spirits = SpiritState.empty;
+      for (var i = 0; i < 8000; i++) {
+        final (s2, sp2, r) = summonSpirits(stones, spirits, rng, config, count: 1);
+        stones = s2;
+        spirits = sp2;
+        counts[r.single.id] = (counts[r.single.id] ?? 0) + 1;
+      }
+      for (final id in SpiritId.values) {
+        expect(counts[id]! / 8000, closeTo(0.25, 0.03), reason: id.label);
+      }
+    });
+
+    test('성급 상한이 ★5다 — 유물의 ★10이 아니다', () {
+      final rng = Random(3);
+      var stones = const SummonState(stones: 1000000);
+      var spirits = SpiritState.empty;
+      for (var i = 0; i < 500; i++) {
+        final (s2, sp2, _) = summonSpirits(stones, spirits, rng, config, count: 1);
+        stones = s2;
+        spirits = sp2;
+      }
+      for (final id in SpiritId.values) {
+        expect(spirits.starsOf(id), lessThanOrEqualTo(SpiritState.maxStars), reason: id.label);
+      }
+      expect(spirits.owned.values.any((v) => v == SpiritState.maxStars), isTrue,
+          reason: '500번이면 하나는 만렙이다');
+    });
+
+    test('소환석이 모자라면 아무 일도 없다', () {
+      const poor = SummonState(stones: 10);
+      final (after, spirits, results) =
+          summonSpirits(poor, SpiritState.empty, Random(1), config, count: 1);
+      expect(results, isEmpty);
+      expect(after.stones, 10);
+      expect(spirits.owned, isEmpty);
+    });
+
+    test('결과 한 줄이 승급을 보여 준다', () {
+      const fresh = SpiritSummonResult(id: SpiritId.moss, stars: 2, byPity: false, before: 0, after: 2);
+      const up = SpiritSummonResult(id: SpiritId.frost, stars: 1, byPity: false, before: 3, after: 4);
+      expect(fresh.line.text, '이끼의 꿈 ★2');
+      expect(up.line.text, '서리의 꿈 ★3 → ★4');
+    });
+
+    test('상한에 닿은 정령은 승급 화살표를 안 그린다', () {
+      const capped = SpiritSummonResult(
+          id: SpiritId.ember, stars: 1, byPity: false,
+          before: SpiritState.maxStars, after: SpiritState.maxStars);
+      expect(capped.line.text, '잿불의 꿈 ★5');
     });
   });
 }

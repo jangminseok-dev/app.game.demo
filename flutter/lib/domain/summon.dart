@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'balance_config.dart';
+import 'spirit.dart';
 
 /// 유물 네 칸. GAME_DESIGN 18.2의 용 형태 곡선을 주인공에게 건다 —
 /// 뿔이 나고, 꼬리가 붙고, 날개막이 생기고, 마지막에 등줄기 비늘이 돋는다.
@@ -142,6 +143,27 @@ class SummonResult {
   ///
   /// 상한에 닿은 부위는 upgraded가 참이어도 성급이 안 오른다. 화면 문구는 after > before로 판단한다.
   bool get upgraded => before > 0;
+
+  /// 연출이 그릴 한 줄.
+  SummonLine get line => SummonLine(label: slot.label, before: before, after: after);
+}
+
+/// 연출이 그리는 한 줄. 유물과 정령이 같은 모양으로 넘긴다.
+///
+/// 연출은 무엇을 뽑았는지 몰라도 된다 — 이름과 성급 전후만 있으면 그린다.
+class SummonLine {
+  const SummonLine({required this.label, required this.before, required this.after});
+
+  final String label;
+  final int before;
+  final int after;
+
+  /// 이미 갖고 있던 것이었나. **상한에 닿으면 참이어도 성급이 안 오른다** —
+  /// 문구는 [text] 가 `after > before` 로 판단한다.
+  bool get upgraded => before > 0;
+
+  String get text =>
+      upgraded && after > before ? '$label ★$before → ★$after' : '$label ★$after';
 }
 
 /// 성급 확률표. 스펙 8.1과 같아야 한다 — 화면의 `확률 보기`도 이 표를 읽는다.
@@ -151,26 +173,31 @@ const relicStarChances = <int, double>{1: 0.60, 2: 0.25, 3: 0.10, 4: 0.04, 5: 0.
 /// 상한 위쪽은 중복 승급으로만 오른다. 천장도 이 값을 준다.
 final maxRolledStars = relicStarChances.keys.reduce(max);
 
+/// 표를 따라 성급 하나를 굴린다. 천장은 호출부가 처리한다.
+int _rollStars(Random rng) {
+  var r = rng.nextDouble();
+  for (final entry in relicStarChances.entries) {
+    if (r < entry.value) return entry.key;
+    r -= entry.value;
+  }
+  return 1;
+}
+
 /// 유물 하나를 뽑는다. 부위는 균등, 성급은 표. 천장에 닿았으면 ★5 확정.
 SummonResult rollRelic(Random rng, {required bool pityReached}) {
   final slot = RelicSlot.values[rng.nextInt(RelicSlot.values.length)];
   if (pityReached) {
     return SummonResult(slot: slot, stars: maxRolledStars, byPity: true);
   }
-  var r = rng.nextDouble();
-  for (final entry in relicStarChances.entries) {
-    if (r < entry.value) return SummonResult(slot: slot, stars: entry.key, byPity: false);
-    r -= entry.value;
-  }
-  return SummonResult(slot: slot, stars: 1, byPity: false);
+  return SummonResult(slot: slot, stars: _rollStars(rng), byPity: false);
 }
 
 /// 이미 가진 성급과 나온 성급을 합친다.
 ///
 /// 낮게 나와도 +1은 오른다. 무료 소환이라 뽑는 횟수가 적어서
-/// 한 번이라도 버려지면 안 된다(스펙 3.2).
-int mergeStars({required int current, required int rolled}) =>
-    current == 0 ? rolled : max(current + 1, rolled).clamp(1, SummonState.maxStars);
+/// 한 번이라도 버려지면 안 된다(스펙 3.2). `cap`은 유물(★10)과 정령(★5)이 다르다.
+int mergeStars({required int current, required int rolled, int cap = SummonState.maxStars}) =>
+    current == 0 ? rolled : max(current + 1, rolled).clamp(1, cap);
 
 /// 소환을 count번 굴려 새 상태와 결과 목록을 돌려준다.
 ///
@@ -212,7 +239,65 @@ int mergeStars({required int current, required int rolled}) =>
 /// 굴린 값을 보여 주면 뿔 ★4에 ★1이 나왔을 때 화면이 `뿔 ★1`이라 말한다 —
 /// 실제로는 ★5가 되는데도. "헛도는 소환이 없다"는 이 시스템의 약속(1절·10절)이
 /// 화면에서 한 번도 안 보이던 자리다.
-String summonResultLine(SummonResult r) =>
-    r.upgraded && r.after > r.before
-        ? '${r.slot.label} ★${r.before} → ★${r.after}'
-        : '${r.slot.label} ★${r.after}';
+String summonResultLine(SummonResult r) => r.line.text;
+
+/// 정령 소환 한 건의 결과.
+class SpiritSummonResult {
+  const SpiritSummonResult({
+    required this.id,
+    required this.stars,
+    required this.byPity,
+    this.before = 0,
+    this.after = 0,
+  });
+
+  final SpiritId id;
+
+  /// 굴려 나온 성급. 실제로 오른 값은 [after] 다.
+  final int stars;
+
+  final bool byPity;
+  final int before;
+  final int after;
+
+  SummonLine get line => SummonLine(label: id.label, before: before, after: after);
+}
+
+/// 정령을 count번 소환한다. 소환석은 유물과 같은 지갑에서 나간다(스펙 5.1).
+///
+/// 확률표는 유물과 같다(스펙 8.1) — 종류 균등, 성급은 [relicStarChances].
+/// 천장 카운터도 소환석과 함께 [SummonState] 에 있으므로 유물과 공유한다.
+(SummonState, SpiritState, List<SpiritSummonResult>) summonSpirits(
+  SummonState stones,
+  SpiritState spirits,
+  Random rng,
+  BalanceConfig c, {
+  required int count,
+}) {
+  final cost = count == 1 ? c.summonCost : c.summonTenCost;
+  if (stones.stones < cost) return (stones, spirits, const []);
+
+  final owned = {...spirits.owned};
+  final results = <SpiritSummonResult>[];
+  var pity = stones.pityCount;
+
+  for (var i = 0; i < count; i++) {
+    pity += 1;
+    final pityReached = pity >= c.summonPity;
+    final id = SpiritId.values[rng.nextInt(SpiritId.values.length)];
+    final rolled = pityReached ? maxRolledStars : _rollStars(rng);
+    if (rolled >= maxRolledStars) pity = 0;
+
+    final current = owned[id] ?? 0;
+    final merged = mergeStars(current: current, rolled: rolled, cap: SpiritState.maxStars);
+    owned[id] = merged;
+    results.add(SpiritSummonResult(
+        id: id, stars: rolled, byPity: pityReached, before: current, after: merged));
+  }
+
+  return (
+    stones.copyWith(stones: stones.stones - cost, pityCount: pity),
+    spirits.copyWith(owned: owned),
+    results,
+  );
+}
