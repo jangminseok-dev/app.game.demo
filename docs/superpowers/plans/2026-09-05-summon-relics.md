@@ -20,7 +20,7 @@
 - 화면은 가로 고정. 세로용 분기를 만들지 마라.
 - 레퍼런스 게임의 이름·고유명을 코드·UI·자산 이름에 절대 넣지 마라.
 - 주석·커밋 메시지·UI 문구는 **한국어**. 주변 코드의 말투(단정형, 짧은 문장)를 따른다.
-- 각 태스크 끝에서 `cd flutter && flutter analyze` 가 **0건**(info 포함), `flutter test` 가 전부 통과. **시작 기준은 254개 통과 · analyze 0건.** 백엔드를 건드리는 태스크는 `cd backend && .venv/bin/pytest -q` 도 통과(시작 기준 79개).
+- 각 태스크 끝에서 `cd flutter && flutter analyze` 가 **0건**(info 포함), `flutter test` 가 전부 통과. **시작 기준은 254개 통과 · analyze 0건.** **백엔드는 이 계획에서 건드리지 않는다.**
 - Dart lint `sort_child_properties_last` 가 켜져 있다 — `child:` 를 마지막 인자로 유지하라.
 - 커밋 메시지 끝에 두 줄:
   ```
@@ -42,7 +42,7 @@
 | `flutter/lib/domain/quest.dart` | 퀘스트와 보상 종류 | `RewardKind.summonStone` |
 | `flutter/lib/domain/battle_engine.dart` | 상태 전이 | 지역 첫 진입 지급, 소환 실행 |
 | `flutter/lib/app/game_controller.dart` | UI가 부르는 명령 | `summonRelic`·`summonRelicTen` |
-| `backend/apps/masterdata/resources/balance.json` | 마스터 데이터 정본 | 같은 계수 6개 |
+| `flutter/lib/data/balance_codec.dart` | 서버 응답 ↔ `BalanceConfig` | 폴백 있는 읽기 6개 |
 | `flutter/lib/ui/summon_panel.dart` | 소환 화면 | **신규** |
 | `flutter/lib/ui/game_screen.dart` · `hud/menu_grid.dart` | 진입점 | `소환` 잠금 해제 |
 | `GAME_DESIGN.md` · 스펙 · `docs/BACKLOG.md` | 문서 | 마지막 태스크 |
@@ -58,7 +58,7 @@
 - Modify: `flutter/lib/domain/balance_config.dart` (계수 6개)
 - Modify: `flutter/lib/domain/game_state.dart` (`summon` 필드)
 - Modify: `flutter/lib/domain/save_codec.dart` (직렬화)
-- Modify: `backend/apps/masterdata/resources/balance.json` (같은 계수)
+- Modify: `flutter/lib/data/balance_codec.dart` (서버 응답 ↔ `BalanceConfig`)
 - Test: `flutter/test/domain/summon_test.dart` (신규), `flutter/test/domain/save_codec_test.dart` (추가)
 
 **Interfaces:**
@@ -187,7 +187,20 @@ cd flutter && flutter test test/domain/summon_test.dart 2>&1 | tail -15
   final double dragonStageMultiplier;
 ```
 
-`backend/apps/masterdata/resources/balance.json` 에도 **같은 값**을 같은 이름(camelCase 그대로인지 snake_case인지 그 파일이 쓰는 쪽을 따라라)으로 더한다. 두 곳이 갈라지면 서버가 보내는 값이 클라이언트를 덮어써서 조용히 달라진다.
+`flutter/lib/data/balance_codec.dart` 의 `balanceFromJson`·`balanceToJson` 에도 여섯 개를 더한다. **읽을 때는 반드시 폴백이 있는 `_d`/`_i` 를 써라** — 그 파일의 나중 필드들이 쓰는 방식이다:
+
+```dart
+      summonCost: _i(j, 'summonCost', 30),
+      summonTenCost: _i(j, 'summonTenCost', 270),
+      summonPity: _i(j, 'summonPity', 90),
+      summonStonePerRegion: _i(j, 'summonStonePerRegion', 150),
+      summonStonePerQuest: _i(j, 'summonStonePerQuest', 60),
+      dragonStageMultiplier: _d(j, 'dragonStageMultiplier', 1.06),
+```
+
+폴백 값은 `BalanceConfig` 기본값과 **같아야 한다.** 서버가 아직 이 키를 안 보내므로 폴백이 실제로 쓰이는 값이다.
+
+**백엔드는 이 계획에서 건드리지 않는다.** 밸런스 값 하나를 서버로 내보내려면 `balance.json` 말고도 `balance_dto.py`·`balance_source_port.py`·`hub/app/dtos/balance_dto.py`·`save/domain/balance/formulas.py`와 테스트 지원 파일 넷을 같이 고쳐야 한다(`grep -rln "monster_hp_base" backend --exclude-dir=.venv` 로 확인했다). 소환 계수는 아직 조정 전 초기값이라 서버에서 내려보낼 이유가 없다. 백로그 항목으로 남긴다(Task 6).
 
 - [ ] **Step 5: `summon.dart` 를 쓴다**
 
@@ -337,17 +350,16 @@ double dragonMultiplier(int stage, BalanceConfig c) =>
 
 ```bash
 cd flutter && flutter analyze 2>&1 | tail -3 && flutter test 2>&1 | tail -3
-cd ../backend && .venv/bin/pytest -q 2>&1 | tail -2
 ```
 
-기대: analyze 0건, Flutter 263 통과(254 + `summon_test.dart` 8 + `save_codec_test.dart` 1), 백엔드 79 통과.
+기대: analyze 0건, Flutter 263 통과(254 + `summon_test.dart` 8 + `save_codec_test.dart` 1).
 
-`balance.json` 을 고쳤으므로 백엔드에 마스터 데이터 스키마 검증 테스트가 있으면 그것도 통과해야 한다. 깨지면 그 테스트가 요구하는 형식을 리포트에 적고 맞춰라.
+백엔드는 안 건드리므로 돌릴 필요가 없다.
 
 - [ ] **Step 9: 커밋**
 
 ```bash
-git add flutter/lib/domain flutter/test/domain backend/apps/masterdata/resources/balance.json
+git add flutter/lib/domain flutter/lib/data flutter/test/domain
 git commit -m "feat(domain): 소환석과 유물 네 칸 — 용화 단계는 성급 합의 평균
 
 부위마다 성급 하나만 갖는다. 중복은 승급에 쓰이므로 여러 개를 들고
@@ -1002,7 +1014,7 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
     expect(find.textContaining('1%'), findsWidgets, reason: '★5 확률 1%');
   });
 
-  testWidgets('소환석이 모자라면 뽑아도 아무 일이 없다', (tester) async {
+  testWidgets('연 직후 상태가 정해진 대로다 — 천장 90회, 용화 0단계, 단추 둘', (tester) async {
     tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -1010,12 +1022,14 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 
     await tester.tap(find.text('소환').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('1회').first);
-    await tester.pumpAndSettle();
 
-    // 새 게임은 소환석이 0이다. 용화 단계가 0에서 안 움직인다.
     expect(find.textContaining('용화 0'), findsWidgets);
+    expect(find.textContaining('90'), findsWidgets, reason: '천장 카운터는 pityCount 0에서 90회다');
+    expect(find.text('1회'), findsWidgets);
+    expect(find.text('10회'), findsWidgets);
   });
+
+**이 테스트가 뽑기를 누르지 않는 이유**: 시작 소환석이 몇 개인지는 지역 첫 진입 지급(Task 4)이 위젯 테스트의 짧은 틱 동안 걸리는지에 달려 있어 정해지지 않는다. 굴리기는 도메인 테스트(Task 2)가 이미 덮으므로 화면 테스트는 **열림과 배선만** 확인한다.
 ```
 
 **기존 테스트 하나를 반드시 고쳐야 한다.** `'잠금 단추는 화면을 열지 않고 준비 중만 알린다'` 테스트가 `find.text('소환').first` 를 탭한다(`game_screen_test.dart:175`). 소환이 열리므로 그 테스트는 **아직 잠긴 다른 단추**로 바꾼다 — `상점` 이 적당하다. 라벨만 바꾸고 나머지 단언은 그대로 둔다.
@@ -1082,7 +1096,7 @@ cd flutter && flutter test test/ui/game_screen_test.dart 2>&1 | tail -20
 cd flutter && flutter analyze 2>&1 | tail -3 && flutter test 2>&1 | tail -5
 ```
 
-기대: analyze 0건, 285 통과(282 + 새 테스트 3, 기존 잠금 테스트는 라벨만 바뀌어 개수 그대로).
+기대: analyze 0건, 285 통과(282 + 새 테스트 3, 기존 잠금 테스트는 탭 대상 라벨만 바뀌어 개수 그대로).
 
 - [ ] **Step 7: 캡처로 눈으로 본다**
 
@@ -1172,6 +1186,13 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 붙여야 반복 수급이 생긴다. 광고는 SDK(C3) 뒤다. 과제는 지금도 가능하지만 `DailyGoal` 3종의 보상을
 바꾸면 기존 보상이 하나 사라지므로, 넷째 과제를 더할지 완료 덤을 줄지 먼저 정한다.
 
+### D6-1. 소환 계수를 서버에서 조정하기 · S
+소환 계수 6개(`summonCost`·`summonTenCost`·`summonPity`·`summonStonePerRegion`·`summonStonePerQuest`·`dragonStageMultiplier`)가
+지금은 클라이언트 기본값으로만 산다. `balance_codec.dart` 가 폴백으로 읽으므로 서버가 안 보내도 돌아가지만,
+**밸런스를 고치려면 앱을 새로 내야 한다.** 서버로 내보내려면 `balance.json` 말고도
+`masterdata/app/dtos/balance_dto.py`·`masterdata/app/ports/output/balance_source_port.py`·`hub/app/dtos/balance_dto.py`·
+`save/domain/balance/formulas.py`와 테스트 지원 넷을 같이 고쳐야 한다. 수급량을 실제로 조정할 때(스펙 12절) 한다.
+
 ### D7. 용화 단계 스프라이트 · M
 용화 0~5단계가 지금은 글자로만 보인다. `ART_GUIDE.md` 2절의 용 단계 표(뿔·꼬리·날개막·비늘)를 주인공에게
 입힌다. 스펙 12절의 기울기는 **부위를 겹치는 쪽** — 5장을 따로 그리면 주인공 그림을 바꿀 때 5장을 다 다시 그린다.
@@ -1182,7 +1203,7 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 
 ```bash
 cd flutter && flutter test 2>&1 | tail -2
-cd .. && grep -n "소환은 예외가 아니다" GAME_DESIGN.md && grep -n "^### D6\|^### D7" docs/BACKLOG.md
+cd .. && grep -n "소환은 예외가 아니다" GAME_DESIGN.md && grep -n "^### D6\|^### D6-1\|^### D7" docs/BACKLOG.md
 ```
 
 기대: 테스트 285 통과(문서만 고쳤으니 그대로), 세 문서에 새 줄이 있다.
