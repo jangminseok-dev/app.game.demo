@@ -229,4 +229,30 @@ void main() {
     expect(find.text('장비 도움말'), findsWidgets, reason: '도움말 창이 열렸다');
     expect(find.textContaining('가방을 눌러'), findsWidgets, reason: '장비 도움말 문구');
   });
+
+  testWidgets('장비 팝업 왼쪽에 초상 열이 붙고 펫으로 갈아 끼운다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('장비').first);
+    await tester.pumpAndSettle();
+
+    // 초상 열은 팝업 본체 **밖 왼쪽**에 있다 (스펙 4.3).
+    // find.byType(PortraitTile).first는 우하단 HUD 줄(팝업 뒤에 그대로 남아 있다)의
+    // 초상을 집는다 — 팝업 열의 초상만 Key로 콕 집어야 한다.
+    final body = tester.getRect(find.byKey(const Key('popup-body')));
+    final column = tester.getRect(find.byKey(const ValueKey('popup-portrait-hero')));
+    expect(column.right, lessThanOrEqualTo(body.left),
+        reason: '초상은 팝업 위가 아니라 옆이다');
+
+    // 팝업 열의 펫 초상을 누르면 팝업이 새로 뜨지 않고 내용만 바뀐다.
+    expect(find.byKey(const Key('popup-body')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('popup-portrait-pet')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('popup-body')), findsOneWidget,
+        reason: '팝업 위에 팝업이 뜨면 안 된다 — 본문이 둘이면 창이 쌓인 것이다');
+    expect(find.text('부화'), findsWidgets, reason: '펫 화면으로 바뀌었다');
+  });
 }

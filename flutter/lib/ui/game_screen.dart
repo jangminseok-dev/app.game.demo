@@ -13,16 +13,16 @@ import 'attendance_panel.dart';
 import 'battle_area.dart';
 import 'daily_panel.dart';
 import 'contents_panel.dart';
-import 'equipment_panel.dart';
 import 'forge_panel.dart';
 import 'hud/game_popup.dart';
 import 'hud/menu_grid.dart';
 import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
+import 'hud/portrait_tile.dart';
 import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
+import 'hud/target_popup.dart';
 import 'party_row.dart';
-import 'pet_panel.dart';
 import 'quest_strip.dart';
 
 /// 메인 화면 — 전투가 화면을 다 채우고 기능은 그 위에 팝업으로 뜬다.
@@ -78,8 +78,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                 HudButton(
                   label: '장비',
                   icon: PixelIcon.shield,
-                  onTap: () => showGamePopup(context, title: '장비', icon: PixelIcon.shield,
-                      help: '왼쪽은 입은 것, 오른쪽은 가방. 가방을 눌러 비교한다.', child: const EquipmentPanel()),
+                  onTap: () => showTargetPopup(context, PopupTarget.hero),
                 ),
                 HudButton(
                   label: '스킬',
@@ -90,8 +89,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                 HudButton(
                   label: '펫',
                   icon: PixelIcon.egg,
-                  onTap: () => showGamePopup(context, title: '펫', icon: PixelIcon.egg,
-                      help: '알을 부화하고 용을 탐험 보낸다. 둘 다 시간이 지나야 끝난다.', child: const PetPanel()),
+                  onTap: () => showTargetPopup(context, PopupTarget.pet),
                 ),
               ],
             ),
@@ -250,8 +248,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     label: '장비',
                     icon: PixelIcon.shield,
                     alert: state.equipment.canEnhance || state.equipment.inventory.isNotEmpty,
-                    onTap: () => showGamePopup(context, title: '장비', icon: PixelIcon.shield,
-                        help: '왼쪽은 입은 것, 오른쪽은 가방. 가방을 눌러 비교한다.', child: const EquipmentPanel()),
+                    onTap: () => showTargetPopup(context, PopupTarget.hero),
                   ),
                   const SizedBox(width: 10),
                   HudButton(
@@ -293,10 +290,10 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  PartyPortraits(),
-                  SizedBox(height: 6),
-                  SkillBar(),
+                children: [
+                  PartyPortraits(onSelect: (t) => showTargetPopup(context, t)),
+                  const SizedBox(height: 6),
+                  const SkillBar(),
                 ],
               ),
             ),
