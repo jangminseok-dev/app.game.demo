@@ -3,6 +3,7 @@ import 'dart:math';
 import 'balance_config.dart';
 import 'codex.dart';
 import 'pet.dart';
+import 'summon.dart';
 
 /// 골드로 사는 능력치 업그레이드 5종. GAME_DESIGN.md 3장·17장.
 ///
@@ -65,6 +66,21 @@ class Stats {
       attacksPerSecond: attacksPerSecond,
       critChance: min(1.0, critChance + pets.bonusOf(PetBonus.crit)),
       goldMultiplier: goldMultiplier * (1 + pets.bonusOf(PetBonus.gold)),
+    );
+  }
+
+  /// 유물 네 칸과 용화 단계를 얹는다.
+  ///
+  /// 용화 배수는 공격력·공속·골드에만 곱한다. 치명타는 0~1 확률이라
+  /// 곱하면 상한을 넘기므로 날개 보정을 **더하고** 1.0으로 묶는다.
+  Stats withRelics(SummonState summon, BalanceConfig c) {
+    if (summon.totalStars == 0) return this;
+    final m = dragonMultiplier(summon.dragonStage, c);
+    return Stats(
+      attack: attack * (1 + relicBonus(summon.starsOf(RelicSlot.horn))) * m,
+      attacksPerSecond: attacksPerSecond * (1 + relicBonus(summon.starsOf(RelicSlot.tail))) * m,
+      critChance: min(1.0, critChance + relicBonus(summon.starsOf(RelicSlot.wing))),
+      goldMultiplier: goldMultiplier * m,
     );
   }
 

@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/summon.dart';
+import 'package:idle_fantasy/domain/upgrade.dart';
 
 void main() {
   const config = BalanceConfig();
@@ -135,6 +137,48 @@ void main() {
       final (after, results) = summonRelics(start, Random(5), config, count: 1);
       expect(results.single.stars, 5);
       expect(after.pityCount, 0);
+    });
+  });
+
+  group('스탯 반영', () {
+    test('유물이 없으면 스탯이 그대로다', () {
+      const stats = Stats(attack: 100, attacksPerSecond: 2, critChance: 0.1, goldMultiplier: 1);
+      final after = stats.withRelics(SummonState.empty, config);
+      expect(after.attack, 100);
+      expect(after.attacksPerSecond, 2);
+      expect(after.critChance, 0.1);
+      expect(after.goldMultiplier, 1);
+    });
+
+    test('뿔은 공격력, 꼬리는 공속, 날개는 치명타에 걸린다', () {
+      const stats = Stats(attack: 100, attacksPerSecond: 2, critChance: 0.1, goldMultiplier: 1);
+      // 뿔 ★5(+30%) 하나뿐이면 성급 합 5 → 용화 1단계(×1.06).
+      const one = SummonState(relics: {RelicSlot.horn: 5});
+      final a = stats.withRelics(one, config);
+      expect(a.attack, closeTo(100 * 1.30 * 1.06, 1e-6));
+      expect(a.attacksPerSecond, closeTo(2 * 1.06, 1e-6), reason: '꼬리가 없어도 용화 배수는 걸린다');
+
+      const wing = SummonState(relics: {RelicSlot.wing: 3});
+      expect(stats.withRelics(wing, config).critChance, closeTo(0.1 + 0.15, 1e-6),
+          reason: '치명타는 더하기다 — 곱하면 1.0을 넘긴다');
+    });
+
+    test('치명타는 1.0을 넘지 않는다', () {
+      const stats = Stats(attack: 1, attacksPerSecond: 1, critChance: 0.95, goldMultiplier: 1);
+      const wing = SummonState(relics: {RelicSlot.wing: 5});
+      expect(stats.withRelics(wing, config).critChance, 1.0);
+    });
+
+    test('비늘은 최대 체력에 걸린다', () {
+      final bare = GameState.initial(config);
+      final scaled = bare.copyWith(summon: const SummonState(relics: {RelicSlot.scale: 4}));
+      expect(scaled.maxHeroHp(config), closeTo(bare.maxHeroHp(config) * 1.22, 1e-6));
+    });
+
+    test('statsWith가 유물을 거친다 — 사슬에 붙어 있어야 한다', () {
+      final bare = GameState.initial(config);
+      final horned = bare.copyWith(summon: const SummonState(relics: {RelicSlot.horn: 5}));
+      expect(horned.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
     });
   });
 }

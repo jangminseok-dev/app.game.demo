@@ -123,9 +123,11 @@ class GameState {
   /// 업그레이드에 투자한 만큼 몸도 단단해진다.
   int get totalUpgradeLevels => levels.values.fold(0, (a, b) => a + b);
 
+  /// 비늘은 여기 걸린다. `Stats` 에는 체력 칸이 없다.
   double maxHeroHp(BalanceConfig c) =>
       (c.heroHpBase + c.heroHpPerLevel * totalUpgradeLevels) *
-      pow(c.heroHpStageGrowth, highestStage - 1);
+      pow(c.heroHpStageGrowth, highestStage - 1) *
+      (1 + relicBonus(summon.starsOf(RelicSlot.scale)));
 
   double maxHeroMp(BalanceConfig c) => c.heroMpBase + c.heroMpPerLevel * totalUpgradeLevels;
 
@@ -210,7 +212,8 @@ class GameState {
 
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
-      .withPet(pets);
+      .withPet(pets)
+      .withRelics(summon, config);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 
