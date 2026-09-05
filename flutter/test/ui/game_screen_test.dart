@@ -136,4 +136,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('보상'), findsNothing);
   });
+
+  testWidgets('메뉴 그리드가 열리고 콘텐츠에 던전·층 이동이 있다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('메뉴').first);
+    await tester.pumpAndSettle();
+    for (final label in ['캐릭터', '강화', '영지', '동료', '랭킹', '도움말', '설정']) {
+      expect(find.text(label), findsWidgets, reason: '$label 칸 (잠금이라도 자리는 있다)');
+    }
+    expect(find.textContaining('도감'), findsWidgets);
+
+    // 메뉴 그리드가 열린 뒤라 화면에 '콘텐츠'가 둘이다 — 뒤쪽(원래 우상단 단추)은 바리어에 가려 눌리지 않는다. 그리드 칸(뒤 항목)을 누른다.
+    await tester.tap(find.text('콘텐츠').last);
+    await tester.pumpAndSettle();
+    expect(find.text('던전'), findsWidgets);
+    expect(find.text('도전'), findsWidgets);
+    expect(find.text('층 이동'), findsWidgets, reason: '층 이동이 던전 탭 안에 있다');
+  });
 }

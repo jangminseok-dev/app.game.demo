@@ -12,11 +12,11 @@ import '../domain/upgrade.dart';
 import 'attendance_panel.dart';
 import 'battle_area.dart';
 import 'daily_panel.dart';
-import 'codex_screen.dart';
-import 'dungeon_panel.dart';
+import 'contents_panel.dart';
 import 'equipment_panel.dart';
 import 'forge_panel.dart';
 import 'hud/game_popup.dart';
+import 'hud/menu_grid.dart';
 import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
@@ -24,7 +24,6 @@ import 'hud/skill_bar.dart';
 import 'party_row.dart';
 import 'pet_panel.dart';
 import 'quest_strip.dart';
-import 'stage_select_panel.dart';
 
 /// 메인 화면 — 전투가 화면을 다 채우고 기능은 그 위에 팝업으로 뜬다.
 ///
@@ -217,16 +216,14 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     icon: PixelIcon.gate,
                     badge: '${state.dungeon.tickets}',
                     alert: state.dungeon.tickets > 0 && state.dungeon.run == null,
-                    // Task 5가 던전/도전 2탭 팝업으로 바꾼다. 지금은 던전만.
-                    onTap: () => showGamePopup(context, title: '던전', child: const DungeonPanel()),
+                    onTap: () => showGamePopup(context, title: '콘텐츠', child: const ContentsPanel()),
                   ),
                   const SizedBox(width: 8),
                   HudButton(label: '소환', icon: PixelIcon.spark, locked: true, onTap: () => _showComingSoon(context, '소환')),
                   const SizedBox(width: 8),
                   HudButton(label: '상점', icon: PixelIcon.shop, locked: true, onTap: () => _showComingSoon(context, '상점')),
                   const SizedBox(width: 8),
-                  // Task 5가 메뉴 그리드로 바꾼다.
-                  HudButton(label: '메뉴', icon: PixelIcon.menu, onTap: () => _showComingSoon(context, '메뉴')),
+                  HudButton(label: '메뉴', icon: PixelIcon.menu, onTap: () => showMenuGrid(context)),
                 ],
               ),
             ),

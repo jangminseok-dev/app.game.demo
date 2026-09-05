@@ -22,7 +22,11 @@ class DungeonPanel extends ConsumerWidget {
     final controller = ref.read(gameControllerProvider.notifier);
     final run = state.dungeon.run;
 
+    // 콘텐츠 팝업의 바깥 ListView 안에 들어간다. 안쪽은 스크롤을 끄고 높이를 내용에 맞춘다 —
+    // 안 그러면 높이가 무한대라 깨진다.
     return ListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(12),
       children: [
         _TicketCard(dungeon: state.dungeon, config: config),
