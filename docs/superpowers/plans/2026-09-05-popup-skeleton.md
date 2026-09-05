@@ -490,9 +490,9 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
     expect(column.right, lessThanOrEqualTo(body.left),
         reason: '초상은 팝업 위가 아니라 옆이다');
 
-    // 펫 초상(열의 둘째 칸)을 누르면 팝업이 새로 뜨지 않고 내용만 바뀐다.
+    // 팝업 열의 펫 초상을 누르면 팝업이 새로 뜨지 않고 내용만 바뀐다.
     expect(find.byKey(const Key('popup-body')), findsOneWidget);
-    await tester.tap(find.byType(PortraitTile).at(1));
+    await tester.tap(find.byKey(const ValueKey('popup-portrait-pet')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('popup-body')), findsOneWidget,
         reason: '팝업 위에 팝업이 뜨면 안 된다 — 본문이 둘이면 창이 쌓인 것이다');
@@ -500,11 +500,10 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
   });
 ```
 
-`PortraitTile` 은 화면에 두 곳에 있다 — 우하단 HUD 줄과 팝업 왼쪽 열. `at(1)` 이
-어느 쪽을 집는지는 위젯 트리 순서에 달렸다. 팝업이 열린 뒤에는 오버레이가 나중에
-그려지므로 `find.byType(PortraitTile)` 의 뒤쪽 셋이 팝업 열이다. 위 단언이
-HUD 줄의 펫을 눌러 버려 실패하면 `.at(4)`(= 팝업 열의 둘째)로 바꾸고
-리포트에 실제 순서를 적어라.
+**왜 `Key`로 찾는가**: 팝업이 열리면 화면에 `PortraitTile` 이 여섯 개다 — 우하단 HUD 줄 셋과
+팝업 왼쪽 열 셋. `find.byType(...).at(1)` 은 HUD 줄의 펫을 집는데, 그 자리는 팝업 막에
+가려 눌리지 않는다. 그래서 팝업 열의 칸에만 `ValueKey('popup-portrait-<대상>')` 를 붙인다
+(Step 4의 `_PortraitColumn` 참조).
 
 - [ ] **Step 2: 실패를 확인한다**
 
@@ -695,6 +694,8 @@ class _PortraitColumn extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: PortraitTile(
+              // 테스트가 HUD 줄의 같은 초상과 구별할 수 있게 팝업 열에만 이름을 준다.
+              key: ValueKey('popup-portrait-${t.name}'),
               label: t == PopupTarget.pet
                   ? (state.pets.active?.grade.label ?? t.portraitLabel)
                   : t.portraitLabel,
