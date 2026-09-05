@@ -80,6 +80,12 @@ class BalanceConfig {
       UpgradeType.goldGain: 40,
       UpgradeType.captureRate: 100,
     },
+    this.summonCost = 30,
+    this.summonTenCost = 270,
+    this.summonPity = 90,
+    this.summonStonePerRegion = 150,
+    this.summonStonePerQuest = 60,
+    this.dragonStageMultiplier = 1.06,
   });
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
@@ -248,4 +254,22 @@ class BalanceConfig {
 
   /// 업그레이드 종류별 레벨 0 비용. 비용 = base × upgradeCostGrowth^레벨.
   final Map<UpgradeType, double> upgradeBaseCosts;
+
+  /// 소환 1회에 드는 소환석.
+  final int summonCost;
+
+  /// 10회 소환 값. 낱개 열 번보다 10% 싸다.
+  final int summonTenCost;
+
+  /// 이 횟수 안에 ★5가 확정으로 나온다(천장).
+  final int summonPity;
+
+  /// 지역을 처음 밟을 때 주는 소환석.
+  final int summonStonePerRegion;
+
+  /// 번호 퀘스트가 소환석을 줄 때의 양.
+  final int summonStonePerQuest;
+
+  /// 용화 한 단계가 주는 곱연산 배수.
+  final double dragonStageMultiplier;
 }

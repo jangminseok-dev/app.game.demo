@@ -13,6 +13,7 @@ import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
+import 'summon.dart';
 import 'upgrade.dart';
 
 /// 게임 진행 상태. 불변 객체이며 [BattleEngine]이 새 상태를 만들어 돌려준다.
@@ -49,6 +50,7 @@ class GameState {
     this.skills = SkillState.empty,
     this.attendance = AttendanceState.empty,
     this.daily = DailyState.empty,
+    this.summon = SummonState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -203,6 +205,9 @@ class GameState {
   /// 오늘치 과제 3개.
   final DailyState daily;
 
+  /// 소환석과 유물 네 칸.
+  final SummonState summon;
+
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
       .withPet(pets);
@@ -243,6 +248,7 @@ class GameState {
     SkillState? skills,
     AttendanceState? attendance,
     DailyState? daily,
+    SummonState? summon,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -276,6 +282,7 @@ class GameState {
       skills: skills ?? this.skills,
       attendance: attendance ?? this.attendance,
       daily: daily ?? this.daily,
+      summon: summon ?? this.summon,
     );
   }
 }

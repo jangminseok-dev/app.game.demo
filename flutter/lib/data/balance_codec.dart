@@ -65,6 +65,12 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       equipGearCoefficient: _d(j, 'equipGearCoefficient', 0.02),
       equipEnhancePerLevel: _d(j, 'equipEnhancePerLevel', 0.03),
       upgradeBaseCosts: _costs(j['upgradeBaseCosts'] as Map<String, dynamic>?),
+      summonCost: _i(j, 'summonCost', 30),
+      summonTenCost: _i(j, 'summonTenCost', 270),
+      summonPity: _i(j, 'summonPity', 90),
+      summonStonePerRegion: _i(j, 'summonStonePerRegion', 150),
+      summonStonePerQuest: _i(j, 'summonStonePerQuest', 60),
+      dragonStageMultiplier: _d(j, 'dragonStageMultiplier', 1.06),
     );
 
 Map<UpgradeType, double> _costs(Map<String, dynamic>? raw) {
@@ -130,4 +136,10 @@ Map<String, dynamic> balanceToJson(BalanceConfig c) => {
       'expeditionShards': c.expeditionShards,
       'adSpeedUpSeconds': c.adSpeedUpSeconds,
       'upgradeBaseCosts': {for (final e in c.upgradeBaseCosts.entries) e.key.name: e.value},
+      'summonCost': c.summonCost,
+      'summonTenCost': c.summonTenCost,
+      'summonPity': c.summonPity,
+      'summonStonePerRegion': c.summonStonePerRegion,
+      'summonStonePerQuest': c.summonStonePerQuest,
+      'dragonStageMultiplier': c.dragonStageMultiplier,
     };

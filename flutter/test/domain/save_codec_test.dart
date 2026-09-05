@@ -6,6 +6,7 @@ import 'package:idle_fantasy/domain/field.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
+import 'package:idle_fantasy/domain/summon.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
 void main() {
@@ -84,5 +85,14 @@ void main() {
     json['levels'] = {'attack': 3, 'teleport': 9};
     final s = decodeState(json)!;
     expect(s.levels, {UpgradeType.attack: 3});
+  });
+
+  test('소환 상태가 저장에 실린다', () {
+    final state = GameState.initial(config).copyWith(
+      summon: const SummonState(stones: 120, relics: {RelicSlot.wing: 4}),
+    );
+    final back = decodeState(encodeState(state))!;
+    expect(back.summon.stones, 120);
+    expect(back.summon.starsOf(RelicSlot.wing), 4);
   });
 }
