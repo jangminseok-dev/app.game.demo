@@ -195,6 +195,24 @@ iPhone SE 가로(논리 320, SafeArea 뒤 ≈299)에서 초상 열 여유가 **2
 ### E4. 법규 체크리스트 · 스토어 제출 · M
 기획서 14장.
 
+### D6. 소환 반복 수급 · S
+계획 1의 소환석은 **진도 보상뿐이다** — 지역 첫 진입 10회와 퀘스트 약 7회, 합쳐 약 1,900석(소환 63회).
+다 쓰면 더 벌 길이 없어 천장(90회)에 못 닿는다. 오늘 과제(과제당 20)와 리워드 광고(회당 15, 일 3회)를
+붙여야 반복 수급이 생긴다. 광고는 SDK(C3) 뒤다. 과제는 지금도 가능하지만 `DailyGoal` 3종의 보상을
+바꾸면 기존 보상이 하나 사라지므로, 넷째 과제를 더할지 완료 덤을 줄지 먼저 정한다.
+
+### D6-1. 소환 계수를 서버에서 조정하기 · S
+소환 계수 6개(`summonCost`·`summonTenCost`·`summonPity`·`summonStonePerRegion`·`summonStonePerQuest`·`dragonStageMultiplier`)가
+지금은 클라이언트 기본값으로만 산다. `balance_codec.dart` 가 폴백으로 읽으므로 서버가 안 보내도 돌아가지만,
+**밸런스를 고치려면 앱을 새로 내야 한다.** 서버로 내보내려면 `balance.json` 말고도
+`masterdata/app/dtos/balance_dto.py`·`masterdata/app/ports/output/balance_source_port.py`·`hub/app/dtos/balance_dto.py`·
+`save/domain/balance/formulas.py`와 테스트 지원 넷을 같이 고쳐야 한다. 수급량을 실제로 조정할 때(스펙 12절) 한다.
+
+### D7. 용화 단계 스프라이트 · M
+용화 0~5단계가 지금은 글자로만 보인다. `ART_GUIDE.md` 2절의 용 단계 표(뿔·꼬리·날개막·비늘)를 주인공에게
+입힌다. 스펙 12절의 기울기는 **부위를 겹치는 쪽** — 5장을 따로 그리면 주인공 그림을 바꿀 때 5장을 다 다시 그린다.
+`battle_stage_game.dart` 가 `_heroSheetId = 'warrior_1'` 로 시트 하나를 읽으므로 겹치려면 로더가 여러 장을 얹을 수 있어야 한다.
+
 ---
 
 ## F. 보류 — 지금은 안 한다
