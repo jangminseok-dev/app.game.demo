@@ -7,7 +7,7 @@ import 'hud/game_popup.dart';
 import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/popup_two_pane.dart';
-import 'hud/reward_popup.dart';
+import 'hud/summon_flourish.dart';
 
 /// 소환 — 유물 네 칸을 굴려 주인공을 용으로 키운다. 유물 / 정령 2탭.
 ///
@@ -61,12 +61,7 @@ class _SummonPanelState extends ConsumerState<SummonPanel> {
     final results = controller.summonRelic(count: count);
     if (results.isEmpty) return;
     setState(() => _results = results);
-    showRewardPopup(
-      context,
-      title: '소환',
-      icon: PixelIcon.spark,
-      lines: [for (final r in results) summonResultLine(r)],
-    );
+    showSummonFlourish(context, results);
   }
 
   /// `확률 보기` — relicStarChances를 그대로 읽어 그린다. 손으로 다시 적으면 코드와 갈라진다.
