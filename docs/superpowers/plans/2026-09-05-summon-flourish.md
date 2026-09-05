@@ -721,6 +721,6 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 |---|---|---|
 | `barrierColor: Colors.transparent` 라 연출 전에 뒤가 다 보인다 | Task 2 Step 3 | 의도한 것이다 — 막이 먼저 깔리면 소환진이 안 보인다. 어둡게는 연출이 직접 한다 |
 | 애니메이션 위젯 테스트가 `pumpAndSettle` 로 멈추지 않는다 | Task 2 Step 1 | `pumpAndSettle` 을 쓰지 마라. 이 연출은 끝나면 멈추지만, 확실한 것은 `pump(Duration)` 로 시간을 직접 넘기는 것이다 |
-| 결과가 열 줄이면 화면 밖으로 넘친다 | Task 2 Step 5 | 열 줄 × 약 16px = 160px. 가로 화면 세로 390에서 들어간다. 넘치면 `Column` 을 `SingleChildScrollView` 로 감싸고 리포트에 적어라 |
+| 결과가 열 줄이면 화면 밖으로 넘친다 | Task 2 Step 5 | 열 줄 × 약 18.4px(`height: 1.2` × 12 + 세로 패딩 4) = 184px, 힌트까지 합쳐 213px. 가로 화면의 최소 높이는 320이라 들어간다. 넘치면 `Column` 을 `SingleChildScrollView` 로 감싸고 리포트에 적어라 |
 | `_results` 가 화면 오른쪽 단에도 그려진다 | Task 2 Step 6 | 그대로 둔다. 연출은 한 번 보고 닫지만 오른쪽 단은 남아 다시 볼 수 있다 |
 | `SummonResult` 에 필드를 더해 기존 생성자 호출이 깨진다 | Task 1 Step 3 | `before`·`after` 는 기본값이 있어 안 깨진다. `upgraded:` 인자를 넘기던 곳만 고치면 된다(`summonRelics` 한 곳) |

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/summon.dart';
+import 'pixel_icons.dart';
 import 'pixel_ui.dart';
 
 /// 소환 연출 한 벌 — 소환진 → 빛기둥 → 결과.
@@ -14,6 +15,7 @@ Future<void> showSummonFlourish(BuildContext context, List<SummonResult> results
   return showDialog<void>(
     context: context,
     barrierColor: Colors.transparent, // 어둡게는 연출이 직접 한다 — 막이 먼저 깔리면 소환진이 안 보인다
+    useSafeArea: false, // 어둡게를 연출 자식이 그리므로 노치·홈바 자리까지 덮어야 한다
     builder: (_) => _SummonFlourish(results: results),
   );
 }
@@ -27,6 +29,9 @@ Color pillarColorFor(int topStars) {
   return PixelPalette.text;
 }
 
+/// 소환진 높이. 기둥 바닥을 여기 중앙에 붙이는 계산에도 쓴다.
+const _circleHeight = 56.0;
+
 /// 바닥의 소환진. progress 0~1 동안 원이 시계방향으로 차오르고 룬이 켜진다.
 class SummonCircle extends StatelessWidget {
   const SummonCircle({super.key, required this.progress, required this.color});
@@ -36,7 +41,7 @@ class SummonCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      SizedBox(width: 160, height: 56, child: CustomPaint(painter: _CirclePainter(progress, color)));
+      SizedBox(width: 160, height: _circleHeight, child: CustomPaint(painter: _CirclePainter(progress, color)));
 }
 
 class _CirclePainter extends CustomPainter {
@@ -127,8 +132,42 @@ class SummonResultLine extends StatelessWidget {
         child: PixelText(
           summonResultLine(result),
           size: 12,
-          color: result.upgraded ? PixelPalette.gold : PixelPalette.text,
+          color: result.upgraded && result.after > result.before ? PixelPalette.gold : PixelPalette.text,
         ),
+      );
+}
+
+/// 결과 카드. 4.8(`reward_popup.dart`)과 같은 문법이다 —
+/// `결과` 라벨 → 아이콘 패널(금테) → 결과 줄(금테 패널) → '빈 곳을 터치하세요'.
+/// 카드가 바탕을 가지므로 뒤에서 아직 켜져 있는 기둥·소환진과도 안 겹친다.
+class _SummonResultCard extends StatelessWidget {
+  const _SummonResultCard({required this.results});
+
+  final List<SummonResult> results;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const PixelText('결과', size: 12, color: PixelPalette.textDim),
+          const SizedBox(height: 10),
+          const PixelPanel(
+            padding: EdgeInsets.all(10),
+            border: PixelPalette.gold,
+            child: PixelIconView(PixelIcon.spark, size: 36),
+          ),
+          const SizedBox(height: 12),
+          PixelPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            border: PixelPalette.gold,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [for (final r in results) SummonResultLine(result: r)],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const PixelText('빈 곳을 터치하세요', size: 11, color: PixelPalette.textDim),
+        ],
       );
 }
 
@@ -148,15 +187,19 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
   late final AnimationController _c =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..forward();
 
+  /// 결과가 보이기 시작하는 지점. 여기부터는 탭이 '건너뛰기'가 아니라 '닫기'다 —
+  /// 화면이 "빈 곳을 터치하세요"라고 말하는 동안 탭이 먹통이면 안 된다.
+  static const _resultAt = 0.80;
+
   @override
   void dispose() {
     _c.dispose();
     super.dispose();
   }
 
-  /// 한 번 탭하면 건너뛰고, 끝난 뒤 탭하면 닫는다.
+  /// 결과가 보이기 전 탭하면 건너뛰고, 보인 뒤 탭하면 닫는다.
   void _tap() {
-    if (_c.value < 1) {
+    if (_c.value < _resultAt) {
       _c.value = 1;
     } else {
       Navigator.of(context).maybePop();
@@ -179,7 +222,7 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
           final dim = _phase(t, 0, 0.15);
           final circle = _phase(t, 0.15, 0.45);
           final pillar = _phase(t, 0.45, 0.80);
-          final shown = t >= 0.80;
+          final shown = t >= _resultAt;
 
           // SizedBox.expand가 없으면 Stack이 자식 크기로 줄어 '아무 데나 탭'이 빗나간다.
           return SizedBox.expand(
@@ -188,21 +231,24 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (pillar > 0) SummonPillar(progress: pillar, color: color),
-                  if (circle > 0)
+                  if (pillar > 0 || circle > 0)
+                    // 기둥·소환진을 같은 Align에 얹는다 — 기준이 갈리면 화면이 커질수록 벌어진다.
+                    // 기둥 바닥이 소환진 중심에 오도록 기둥에 소환진 높이의 절반만큼 아래 여백을 준다.
                     Align(
                       alignment: const Alignment(0, 0.35),
-                      child: SummonCircle(progress: circle, color: color),
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          if (pillar > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: _circleHeight / 2),
+                              child: SummonPillar(progress: pillar, color: color),
+                            ),
+                          if (circle > 0) SummonCircle(progress: circle, color: color),
+                        ],
+                      ),
                     ),
-                  if (shown)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final r in widget.results) SummonResultLine(result: r),
-                        const SizedBox(height: 20),
-                        const PixelText('빈 곳을 터치하세요', size: 11, color: PixelPalette.textDim),
-                      ],
-                    ),
+                  if (shown) _SummonResultCard(results: widget.results),
                 ],
               ),
             ),

@@ -159,6 +159,15 @@ void main() {
       expect(summonResultLine(up), '날개 ★4 → ★5',
           reason: '굴린 값(★1)이 아니라 오른 값을 보여야 한다 — 헛도는 소환이 없다는 약속이 여기서 보인다');
     });
+
+    test('상한에 닿은 부위는 승급 화살표를 안 그린다', () {
+      const capped = SummonResult(
+          slot: RelicSlot.horn, stars: 1, byPity: false,
+          before: SummonState.maxStars, after: SummonState.maxStars);
+      expect(capped.upgraded, isTrue, reason: '이미 갖고 있던 부위인 것은 맞다');
+      expect(summonResultLine(capped), '뿔 ★10',
+          reason: '안 올랐는데 ★10 → ★10 이라 쓰면 거짓말이다');
+    });
   });
 
   group('소환 실행', () {

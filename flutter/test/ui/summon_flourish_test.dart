@@ -70,6 +70,7 @@ void main() {
       await open(tester, results);
       await tester.pump(const Duration(milliseconds: 1700));
       expect(find.byType(SummonResultLine), findsNWidgets(10));
+      expect(find.byType(SummonPillar), findsOneWidget, reason: '10연차도 기둥은 하나다');
     });
 
     testWidgets('기둥 색은 굴린 값 중 최고를 따른다', (tester) async {
@@ -78,10 +79,44 @@ void main() {
         const SummonResult(slot: RelicSlot.tail, stars: 5, byPity: false, before: 0, after: 5),
       ];
       await open(tester, results);
-      // 기둥 구간은 t=0.45부터다. 1600ms × 0.45 = 720ms — 600ms에는 아직 위젯이 없다.
+      // 기둥 구간은 t=0.45부터다. 1600ms × 0.45 = 720ms — 800ms에는 이미 기둥이 있다.
       await tester.pump(const Duration(milliseconds: 800));
       final pillar = tester.widget<SummonPillar>(find.byType(SummonPillar));
       expect(pillar.color, PixelPalette.gold);
+    });
+
+    testWidgets('결과가 보이면 탭이 바로 닫는다 — 건너뛸 것이 없다', (tester) async {
+      await open(tester, const [
+        SummonResult(slot: RelicSlot.horn, stars: 5, byPity: false, before: 0, after: 5),
+      ]);
+      // 1280ms부터 결과가 보인다. 그 뒤 아직 애니메이션이 안 끝난 시점을 고른다.
+      await tester.pump(const Duration(milliseconds: 1400));
+      expect(find.text('빈 곳을 터치하세요'), findsWidgets);
+
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pumpAndSettle();
+      expect(find.text('빈 곳을 터치하세요'), findsNothing, reason: '한 번 탭으로 닫혀야 한다');
+    });
+
+    testWidgets('기둥 바닥이 소환진 중심에 붙어 있다 — 화면이 커져도', (tester) async {
+      for (final size in const [Size(844, 390), Size(1600, 720)]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await open(tester, const [
+          SummonResult(slot: RelicSlot.horn, stars: 5, byPity: false, before: 0, after: 5),
+        ]);
+        await tester.pump(const Duration(milliseconds: 800));
+        final pillar = tester.getRect(find.byType(SummonPillar));
+        final circle = tester.getRect(find.byType(SummonCircle));
+        expect((pillar.bottom - circle.center.dy).abs(), lessThan(8),
+            reason: '$size 에서 기둥이 소환진에서 떨어졌다');
+        // 다음 반복이 새 화면에서 열 수 있게 이번 연출을 닫는다 —
+        // 안 닫으면 같은 Navigator에 남은 이 연출이 다음 open()의 탭을 먹는다.
+        await tester.pump(const Duration(milliseconds: 900));
+        await tester.tapAt(Offset(size.width / 2, size.height / 2));
+        await tester.pumpAndSettle();
+      }
     });
   });
 }

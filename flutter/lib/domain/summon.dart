@@ -139,6 +139,8 @@ class SummonResult {
   final int after;
 
   /// 이미 갖고 있던 부위라 승급으로 들어갔는지.
+  ///
+  /// 상한에 닿은 부위는 upgraded가 참이어도 성급이 안 오른다. 화면 문구는 after > before로 판단한다.
   bool get upgraded => before > 0;
 }
 
@@ -211,4 +213,6 @@ int mergeStars({required int current, required int rolled}) =>
 /// 실제로는 ★5가 되는데도. "헛도는 소환이 없다"는 이 시스템의 약속(1절·10절)이
 /// 화면에서 한 번도 안 보이던 자리다.
 String summonResultLine(SummonResult r) =>
-    r.upgraded ? '${r.slot.label} ★${r.before} → ★${r.after}' : '${r.slot.label} ★${r.after}';
+    r.upgraded && r.after > r.before
+        ? '${r.slot.label} ★${r.before} → ★${r.after}'
+        : '${r.slot.label} ★${r.after}';
