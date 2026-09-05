@@ -10,6 +10,7 @@ import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/hud/game_popup.dart';
 import 'package:idle_fantasy/ui/hud/pixel_icons.dart';
 import 'package:idle_fantasy/ui/hud/popup_two_pane.dart';
+import 'package:idle_fantasy/ui/hud/reward_popup.dart';
 import 'package:idle_fantasy/ui/hud/skill_bar.dart';
 import 'package:idle_fantasy/ui/party_row.dart';
 
@@ -282,5 +283,27 @@ void main() {
         reason: '자동 장착은 왼쪽 단 소속이다');
     expect(find.descendant(of: panes.last, matching: find.text('일괄 분해')), findsWidgets,
         reason: '일괄 분해는 오른쪽 단 소속이다');
+  });
+
+  testWidgets('획득 연출에 아이콘이 있다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showRewardPopup(context, title: '출석 보상',
+              icon: PixelIcon.check, lines: const['골드 +100']),
+          child: const Text('열기'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PixelIconView), findsWidgets, reason: '스펙 4.8의 아이콘');
+    expect(find.text('골드 +100'), findsWidgets);
+    expect(find.text('빈 곳을 터치하세요'), findsWidgets);
   });
 }

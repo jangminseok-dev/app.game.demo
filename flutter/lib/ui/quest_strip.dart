@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/number_format.dart';
 import '../domain/quest.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 
@@ -53,7 +54,7 @@ class QuestStrip extends ConsumerWidget {
                 onTap: ready
                     ? () {
                         ref.read(gameControllerProvider.notifier).claimQuest();
-                        showRewardPopup(context, lines: [
+                        showRewardPopup(context, icon: PixelIcon.check, lines: [
                           '${quest.reward.label} +${formatNumber(quest.rewardAmount.toDouble())}',
                         ]);
                       }

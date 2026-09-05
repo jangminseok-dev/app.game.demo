@@ -149,7 +149,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
           after.dungeon.run == null &&
           after.dungeon.clearedFloor(run.type) >= run.floor) {
         final config = ref.read(balanceConfigProvider);
-        showRewardPopup(context, title: '${run.type.label} ${run.floor}층 클리어', lines: [
+        showRewardPopup(context, title: '${run.type.label} ${run.floor}층 클리어', icon: PixelIcon.gate, lines: [
           '${run.type.currency.label} +${formatNumber(dungeonReward(run.type, run.floor, config))}',
         ]);
       }

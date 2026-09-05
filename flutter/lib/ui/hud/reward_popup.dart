@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'pixel_icons.dart';
 import 'pixel_ui.dart';
 
 /// 무엇을 얻었는지 알리는 연출 하나. 퀘스트·던전·제작·해금이 전부 이것을 쓴다.
@@ -9,19 +10,21 @@ import 'pixel_ui.dart';
 Future<void> showRewardPopup(
   BuildContext context, {
   String title = '보상',
+  PixelIcon icon = PixelIcon.growth,
   required List<String> lines,
 }) {
   return showDialog<void>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.78),
-    builder: (context) => _RewardOverlay(title: title, lines: lines),
+    builder: (context) => _RewardOverlay(title: title, icon: icon, lines: lines),
   );
 }
 
 class _RewardOverlay extends StatelessWidget {
-  const _RewardOverlay({required this.title, required this.lines});
+  const _RewardOverlay({required this.title, required this.icon, required this.lines});
 
   final String title;
+  final PixelIcon icon;
   final List<String> lines;
 
   @override
@@ -51,6 +54,12 @@ class _RewardOverlay extends StatelessWidget {
             const SizedBox(height: 26),
             const PixelText('결과', size: 12, color: PixelPalette.textDim),
             const SizedBox(height: 10),
+            PixelPanel(
+              padding: const EdgeInsets.all(10),
+              border: PixelPalette.gold,
+              child: PixelIconView(icon, size: 36),
+            ),
+            const SizedBox(height: 12),
             for (final line in lines) ...[
               PixelPanel(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

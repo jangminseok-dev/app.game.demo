@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/attendance.dart';
 import '../domain/number_format.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 
@@ -36,7 +37,7 @@ class AttendancePanel extends ConsumerWidget {
                     ? () {
                         final got = controller.claimAttendance();
                         if (got == null) return;
-                        showRewardPopup(context, title: '출석 보상', lines: [
+                        showRewardPopup(context, title: '출석 보상', icon: PixelIcon.calendar, lines: [
                           '${got.$1.label} +${formatNumber(got.$2.toDouble())}',
                         ]);
                       }
