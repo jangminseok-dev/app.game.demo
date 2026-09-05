@@ -20,6 +20,7 @@ import '../domain/offline_reward.dart';
 import '../domain/quest.dart';
 import '../domain/save_codec.dart';
 import '../domain/skill.dart';
+import '../domain/summon.dart';
 import '../domain/upgrade.dart';
 
 /// 서버 마스터 데이터(또는 캐시). main()에서 override한다. 없으면 내장 기본값.
@@ -149,6 +150,14 @@ class GameController extends Notifier<GameState> {
     if (result == null) return null;
     state = result.$1;
     return result.$2;
+  }
+
+  /// 유물을 count번 소환한다. 소환석이 모자라면 빈 목록.
+  List<SummonResult> summonRelic({required int count}) {
+    final (next, results) = summonRelics(state.summon, _rng, _engine.config, count: count);
+    if (results.isEmpty) return const [];
+    state = state.copyWith(summon: next);
+    return results;
   }
 
   /// 부위마다 가장 센 것을 자동으로 입는다.

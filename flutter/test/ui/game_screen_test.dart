@@ -172,7 +172,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
 
-    await tester.tap(find.text('소환').first);
+    await tester.tap(find.text('상점').first);
     await tester.pump();
     expect(find.textContaining('준비 중'), findsWidgets);
     expect(find.byType(GamePopup), findsNothing, reason: '잠금 단추는 팝업을 열지 않는다');
@@ -319,5 +319,52 @@ void main() {
     expect(find.byType(PixelIconView), findsWidgets, reason: '스펙 4.8의 아이콘');
     expect(find.text('골드 +100'), findsWidgets);
     expect(find.text('빈 곳을 터치하세요'), findsWidgets);
+  });
+
+  testWidgets('소환 단추가 소환 화면을 연다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('소환').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('유물'), findsWidgets);
+    expect(find.text('정령'), findsWidgets);
+    expect(find.textContaining('용화'), findsWidgets, reason: '왼쪽 단에 용화 단계');
+    for (final label in ['뿔', '꼬리', '날개', '비늘']) {
+      expect(find.text(label), findsWidgets, reason: '$label 칸');
+    }
+  });
+
+  testWidgets('확률 보기가 표를 띄운다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('소환').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('확률 보기').first);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('60'), findsWidgets, reason: '★1 확률 60%');
+    expect(find.textContaining('1%'), findsWidgets, reason: '★5 확률 1%');
+  });
+
+  testWidgets('연 직후 상태가 정해진 대로다 — 천장 90회, 용화 0단계, 단추 둘', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('소환').first);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('용화 0'), findsWidgets);
+    expect(find.textContaining('90'), findsWidgets, reason: '천장 카운터는 pityCount 0에서 90회다');
+    expect(find.text('1회'), findsWidgets);
+    expect(find.text('10회'), findsWidgets);
   });
 }

@@ -24,6 +24,7 @@ import 'hud/skill_bar.dart';
 import 'hud/target_popup.dart';
 import 'party_row.dart';
 import 'quest_strip.dart';
+import 'summon_panel.dart';
 
 /// 메인 화면 — 전투가 화면을 다 채우고 기능은 그 위에 팝업으로 뜬다.
 ///
@@ -226,7 +227,13 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                         help: '던전은 표를 쓴다. 층 이동은 깬 층까지 갈 수 있다.', child: const ContentsPanel()),
                   ),
                   const SizedBox(width: 8),
-                  HudButton(label: '소환', icon: PixelIcon.spark, locked: true, onTap: () => _showComingSoon(context, '소환')),
+                  HudButton(
+                    label: '소환',
+                    icon: PixelIcon.spark,
+                    onTap: () => showGamePopup(context, title: '소환', icon: PixelIcon.spark,
+                        help: '유물을 뽑아 주인공을 용으로 키운다. 중복은 승급에 쓰인다.',
+                        child: const SummonPanel()),
+                  ),
                   const SizedBox(width: 8),
                   HudButton(label: '상점', icon: PixelIcon.shop, locked: true, onTap: () => _showComingSoon(context, '상점')),
                   const SizedBox(width: 8),

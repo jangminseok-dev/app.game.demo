@@ -8,6 +8,7 @@ import '../attendance_panel.dart';
 import '../codex_screen.dart';
 import '../contents_panel.dart';
 import '../daily_panel.dart';
+import '../summon_panel.dart';
 import 'game_popup.dart';
 import 'pixel_icons.dart';
 import 'pixel_ui.dart';
@@ -50,7 +51,9 @@ class _MenuGrid extends ConsumerWidget {
       HudButton(label: '콘텐츠', icon: PixelIcon.gate, badge: '${state.dungeon.tickets}',
           onTap: () => _open(context, '콘텐츠', PixelIcon.gate, const ContentsPanel(),
               help: '던전은 표를 쓴다. 층 이동은 깬 층까지 갈 수 있다.')),
-      HudButton(label: '소환', icon: PixelIcon.spark, locked: true, onTap: () => _soon(context, '소환')),
+      HudButton(label: '소환', icon: PixelIcon.spark,
+          onTap: () => _open(context, '소환', PixelIcon.spark, const SummonPanel(),
+              help: '유물을 뽑아 주인공을 용으로 키운다. 중복은 승급에 쓰인다.')),
       HudButton(label: '상점', icon: PixelIcon.shop, locked: true, onTap: () => _soon(context, '상점')),
       HudButton(label: '닫기', icon: PixelIcon.menu, onTap: () => Navigator.of(context).pop()),
 
