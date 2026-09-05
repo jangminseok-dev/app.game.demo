@@ -13,6 +13,7 @@ import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
+import 'spirit.dart';
 import 'summon.dart';
 import 'upgrade.dart';
 
@@ -51,6 +52,7 @@ class GameState {
     this.attendance = AttendanceState.empty,
     this.daily = DailyState.empty,
     this.summon = SummonState.empty,
+    this.spirits = SpiritState.empty,
   });
 
   factory GameState.initial(BalanceConfig config) {
@@ -212,6 +214,9 @@ class GameState {
   /// 소환석과 유물 네 칸.
   final SummonState summon;
 
+  /// 정령 — 가진 것·데리고 다니는 하나·게이지.
+  final SpiritState spirits;
+
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
       .withPet(pets)
@@ -254,6 +259,7 @@ class GameState {
     AttendanceState? attendance,
     DailyState? daily,
     SummonState? summon,
+    SpiritState? spirits,
   }) {
     return GameState(
       stage: stage ?? this.stage,
@@ -288,6 +294,7 @@ class GameState {
       attendance: attendance ?? this.attendance,
       daily: daily ?? this.daily,
       summon: summon ?? this.summon,
+      spirits: spirits ?? this.spirits,
     );
   }
 }

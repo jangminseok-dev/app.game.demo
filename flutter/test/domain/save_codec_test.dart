@@ -6,6 +6,7 @@ import 'package:idle_fantasy/domain/field.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/monster_unit.dart';
 import 'package:idle_fantasy/domain/save_codec.dart';
+import 'package:idle_fantasy/domain/spirit.dart';
 import 'package:idle_fantasy/domain/summon.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
 
@@ -94,5 +95,14 @@ void main() {
     final back = decodeState(encodeState(state))!;
     expect(back.summon.stones, 120);
     expect(back.summon.starsOf(RelicSlot.wing), 4);
+  });
+
+  test('정령 상태가 저장에 실린다', () {
+    final state = GameState.initial(config).copyWith(
+      spirits: const SpiritState(owned: {SpiritId.frost: 4}, active: SpiritId.frost),
+    );
+    final back = decodeState(encodeState(state))!;
+    expect(back.spirits.starsOf(SpiritId.frost), 4);
+    expect(back.spirits.active, SpiritId.frost);
   });
 }

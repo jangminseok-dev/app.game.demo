@@ -88,6 +88,14 @@ class BalanceConfig {
     this.summonStonePerDaily = 30,
     this.summonStonePerAttendance = 90,
     this.dragonStageMultiplier = 1.06,
+    this.spiritGaugeSeconds = 90,
+    this.spiritBossGaugeRate = 1.5,
+    this.spiritDamageBase = 12,
+    this.spiritDamagePerStar = 4,
+    this.spiritPassivePerStar = 0.02,
+    this.spiritHealRatio = 0.12,
+    this.spiritBurnSeconds = 5,
+    this.spiritSlowSeconds = 5,
   });
 
   /// 서버 마스터 데이터 버전. 내장 기본값은 0 — 서버 값이 오면 항상 갱신된다.
@@ -280,4 +288,29 @@ class BalanceConfig {
 
   /// 용화 한 단계가 주는 곱연산 배수.
   final double dragonStageMultiplier;
+
+  /// 정령 게이지가 다 차는 데 걸리는 초. **60 아래로 내리지 마라** —
+  /// 컷신이 매번 떠도 괜찮은 근거가 "90초에 한 번"이다(스펙 4.3).
+  final double spiritGaugeSeconds;
+
+  /// 보스전에서 게이지가 차는 속도 배수.
+  final double spiritBossGaugeRate;
+
+  /// ★1 정령의 피해 배수(평타 대비).
+  final double spiritDamageBase;
+
+  /// 성급마다 더해지는 피해 배수.
+  final double spiritDamagePerStar;
+
+  /// 평소 공격력 보정(성급당).
+  final double spiritPassivePerStar;
+
+  /// 이끼가 회복하는 최대 체력 비율.
+  final double spiritHealRatio;
+
+  /// 잿불의 화상이 지속되는 초.
+  final double spiritBurnSeconds;
+
+  /// 서리의 둔화가 지속되는 초.
+  final double spiritSlowSeconds;
 }
