@@ -85,6 +85,8 @@ class BalanceConfig {
     this.summonPity = 40,
     this.summonStonePerRegion = 50,
     this.summonStonePerQuest = 30,
+    this.summonStonePerDaily = 30,
+    this.summonStonePerAttendance = 90,
     this.dragonStageMultiplier = 1.06,
   });
 
@@ -269,6 +271,12 @@ class BalanceConfig {
 
   /// 번호 퀘스트가 소환석을 줄 때의 양.
   final int summonStonePerQuest;
+
+  /// 오늘 과제(몬스터 처치)가 주는 소환석. 하루 1회분이다.
+  final int summonStonePerDaily;
+
+  /// 출석부 5일차가 주는 소환석. 주당 3회분이다.
+  final int summonStonePerAttendance;
 
   /// 용화 한 단계가 주는 곱연산 배수.
   final double dragonStageMultiplier;

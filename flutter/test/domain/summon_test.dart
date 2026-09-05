@@ -2,6 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/quest.dart';
+import 'package:idle_fantasy/domain/daily.dart';
+import 'package:idle_fantasy/domain/attendance.dart';
 import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/monster.dart';
@@ -255,6 +258,19 @@ void main() {
       expect(nine.copyWith(relics: {
         RelicSlot.horn: 10, RelicSlot.tail: 10, RelicSlot.wing: 10, RelicSlot.scale: 10,
       }).isMaxed, isTrue);
+    });
+  });
+
+  group('접속 보상이 계수와 같다', () {
+    test('오늘 과제 처치 보상 = summonStonePerDaily', () {
+      expect(DailyGoal.kills.reward, RewardKind.summonStone);
+      expect(DailyGoal.kills.rewardAmount, config.summonStonePerDaily);
+    });
+
+    test('출석부에 소환석 칸이 있고 그 양이 summonStonePerAttendance다', () {
+      final stoneSlots = attendanceTable.where((e) => e.$1 == RewardKind.summonStone).toList();
+      expect(stoneSlots, hasLength(1), reason: '주당 한 칸');
+      expect(stoneSlots.single.$2, config.summonStonePerAttendance);
     });
   });
 

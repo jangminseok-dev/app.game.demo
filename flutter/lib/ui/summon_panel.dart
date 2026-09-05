@@ -109,8 +109,11 @@ class _RelicTab extends ConsumerWidget {
     final summon = state.summon;
     final config = ref.watch(balanceConfigProvider);
     final stage = summon.dragonStage;
-    final remainToNext =
-        stage >= SummonState.maxStars ? null : (stage + 1) * RelicSlot.values.length - summon.totalStars;
+    // 단계 상한은 maxDragonStage(5)다. maxStars(10)와 비교하면 조건이 영영 참이 안 되어
+    // 5단계에서 '다음 단계까지 성급 -16' 같은 음수가 찍힌다.
+    final remainToNext = stage >= SummonState.maxDragonStage
+        ? null
+        : (stage + 1) * RelicSlot.values.length - summon.totalStars;
 
     return PopupTwoPane(
       // ── 왼쪽: 지금 낀 것. 중복이 자동 승급이라 고를 것이 없어 action이 없다.
@@ -177,7 +180,10 @@ class _RelicTab extends ConsumerWidget {
                       ],
                     ),
             ),
-            PixelText('★5까지 ${config.summonPity - summon.pityCount}회', size: 10, color: PixelPalette.textDim),
+            // 천장을 낮추기 전에 저장한 사람은 pityCount가 지금 천장보다 클 수 있다.
+            // 다음 소환에서 확정으로 터지므로 0으로 묶어 보여 준다.
+            PixelText('★$maxRolledStars까지 ${(config.summonPity - summon.pityCount).clamp(0, config.summonPity)}회',
+                size: 10, color: PixelPalette.textDim),
             const SizedBox(height: 2),
             PixelText('소환석 ${summon.stones}', size: 11, color: PixelPalette.textDim),
           ],

@@ -70,6 +70,8 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       summonPity: _i(j, 'summonPity', 40),
       summonStonePerRegion: _i(j, 'summonStonePerRegion', 50),
       summonStonePerQuest: _i(j, 'summonStonePerQuest', 30),
+      summonStonePerDaily: _i(j, 'summonStonePerDaily', 30),
+      summonStonePerAttendance: _i(j, 'summonStonePerAttendance', 90),
       dragonStageMultiplier: _d(j, 'dragonStageMultiplier', 1.06),
     );
 
@@ -141,5 +143,7 @@ Map<String, dynamic> balanceToJson(BalanceConfig c) => {
       'summonPity': c.summonPity,
       'summonStonePerRegion': c.summonStonePerRegion,
       'summonStonePerQuest': c.summonStonePerQuest,
+      'summonStonePerDaily': c.summonStonePerDaily,
+      'summonStonePerAttendance': c.summonStonePerAttendance,
       'dragonStageMultiplier': c.dragonStageMultiplier,
     };

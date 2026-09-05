@@ -9,7 +9,7 @@ const attendanceTable = <(RewardKind, int)>[
   (RewardKind.stone, 40),
   (RewardKind.ticket, 1),
   (RewardKind.eggShard, 60),
-  (RewardKind.summonStone, 90),
+  (RewardKind.summonStone, 90), // BalanceConfig.summonStonePerAttendance 와 같아야 한다 (테스트가 묶는다)
   (RewardKind.skillPage, 50),
   (RewardKind.ticket, 2),
 ];

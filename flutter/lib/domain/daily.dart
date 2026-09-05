@@ -5,8 +5,12 @@ import 'quest.dart';
 ///
 /// 번호 퀘스트가 "어디까지 왔는가"라면 일일 과제는 "오늘 무엇을 했는가"다.
 /// 둘이 섞이면 둘 다 흐려지므로 표를 따로 둔다.
+/// `BalanceConfig.summonStonePerDaily` 와 같아야 한다. const 열거형 안에서는
+/// config 필드를 못 읽으므로(컴파일 상수가 아니다) 값을 옮겨 적고 테스트로 묶는다.
+const _dailyStones = 30;
+
 enum DailyGoal {
-  kills('오늘 몬스터 처치', 100, RewardKind.summonStone, 30),
+  kills('오늘 몬스터 처치', 100, RewardKind.summonStone, _dailyStones),
   dungeonFloors('오늘 던전 층 클리어', 1, RewardKind.ticket, 1),
   crafts('오늘 장비 제작', 3, RewardKind.stone, 60);
 

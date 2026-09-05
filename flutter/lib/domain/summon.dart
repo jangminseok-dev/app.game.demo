@@ -39,7 +39,7 @@ class SummonState {
 
   final int stones;
 
-  /// 부위 → 성급(1~5). 없는 부위는 키가 없다.
+  /// 부위 → 성급(1~maxStars). 없는 부위는 키가 없다.
   final Map<RelicSlot, int> relics;
 
   /// ★5 없이 뽑은 횟수. 천장에 닿으면 다음 한 번이 확정이다.
@@ -61,7 +61,7 @@ class SummonState {
   bool canSummon(BalanceConfig c) => stones >= c.summonCost;
   bool canSummonTen(BalanceConfig c) => stones >= c.summonTenCost;
 
-  /// 네 칸이 전부 ★5. 더 뽑아도 오를 것이 없다.
+  /// 네 칸이 전부 상한. 더 뽑아도 오를 것이 없다.
   bool get isMaxed => RelicSlot.values.every((s) => starsOf(s) >= maxStars);
 
   SummonState copyWith({
@@ -98,9 +98,12 @@ class SummonState {
   }
 }
 
-/// 유물 하나가 주는 보정(0~0.30).
-/// ★5까지는 가파르고 그 뒤는 완만하다. 깊은 성급은 축의 **길이**를 벌지 힘을 벌지 않는다 —
-/// 늘어난 힘이 빨리 오면 장비가 죽는다(스펙 3.4).
+/// 유물 하나가 주는 보정(0~0.40).
+/// ★5까지는 가파르고 그 뒤는 완만하다.
+///
+/// **곡선이 힘을 억제하는 것이 아니다.** ★10까지 열면 축의 천장이 ×2.91에서 ×3.62로 오른다.
+/// 억제하는 것은 **공급**이다 — 거기 닿는 데 소환 49회가 들고 진행 보상만으로는 23회뿐이다.
+/// 공급을 늘릴 때(광고 등) 이 사실을 잊으면 유물이 장비를 이긴다(스펙 3.4).
 const _relicBonusByStars = [0.0, 0.04, 0.09, 0.15, 0.22, 0.30, 0.33, 0.36, 0.38, 0.39, 0.40];
 
 double relicBonus(int stars) => _relicBonusByStars[stars.clamp(0, SummonState.maxStars)];

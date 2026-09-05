@@ -363,8 +363,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('용화 0'), findsWidgets);
-    expect(find.textContaining('${const BalanceConfig().summonPity}'), findsWidgets,
-        reason: '천장 카운터는 pityCount 0에서 summonPity회다');
+    // 값을 그대로 적는다. 상수를 다시 읽으면 무엇이든 통과하는 동어반복이 되고,
+    // 실제로 그 탓에 '★5까지 -49회'가 뜨던 것을 못 잡았다.
+    expect(find.text('★5까지 40회'), findsWidgets,
+        reason: '새 게임은 pityCount 0이고 천장은 40이다');
     expect(find.text('1회'), findsWidgets);
     expect(find.text('10회'), findsWidgets);
   });
