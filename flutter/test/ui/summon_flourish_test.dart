@@ -132,6 +132,11 @@ void main() {
       expect(top.flash, 1.0);
     });
 
+    test('섬광은 결과 카드가 뜨기 전에 꺼진다', () {
+      expect(flashAt(resultAt), 0, reason: '카드 위로 번지면 제일 중요한 순간에 글자가 안 읽힌다');
+      expect(flashAt(resultAt - 0.04), greaterThan(0), reason: '카드가 뜨기 전 어딘가는 켜져 있어야 섬광이다');
+    });
+
     test('범위를 벗어나도 안 터진다', () {
       expect(flourishForce(0).sparks, greaterThan(0));
       expect(flourishForce(99).sparks, flourishForce(5).sparks);

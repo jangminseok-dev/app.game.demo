@@ -37,13 +37,19 @@ Color pillarColorFor(int topStars) {
       _ => (sparks: 4, flash: 0.25),
     };
 
-/// 기둥이 다 자란 순간의 흰 섬광. 짧아야 한다 — 길면 눈이 아프다.
-double _flashAt(double t) {
-  const start = 0.78;
-  const end = 0.86;
-  if (t < start || t > end) return 0;
+/// 결과가 보이기 시작하는 지점. 여기부터는 탭이 '건너뛰기'가 아니라 '닫기'다 —
+/// 화면이 "빈 곳을 터치하세요"라고 말하는 동안 탭이 먹통이면 안 된다.
+/// `flashAt` 도 이 값을 참조한다 — 섬광이 카드 위로 번지면 안 된다.
+const resultAt = 0.80;
+
+/// 기둥이 다 자란 순간의 흰 섬광. **결과 카드가 뜨기 전에 꺼져야 한다** —
+/// 카드 위로 번지면 제일 중요한 순간(특히 ★5)에 글자가 안 읽힌다.
+double flashAt(double t) {
+  const start = 0.72;
+  const end = resultAt; // 0.80
+  if (t < start || t >= end) return 0;
   final x = (t - start) / (end - start); // 0~1
-  return (1 - (x * 2 - 1).abs()) * 0.55; // 가운데서 0.55, 양끝 0
+  return (1 - (x * 2 - 1).abs()) * 0.55; // 가운데(t=0.76)서 0.55, 양끝 0
 }
 
 /// 소환진 높이. 기둥 바닥을 여기 중앙에 붙이는 계산에도 쓴다.
@@ -245,10 +251,6 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
   late final AnimationController _c =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..forward();
 
-  /// 결과가 보이기 시작하는 지점. 여기부터는 탭이 '건너뛰기'가 아니라 '닫기'다 —
-  /// 화면이 "빈 곳을 터치하세요"라고 말하는 동안 탭이 먹통이면 안 된다.
-  static const _resultAt = 0.80;
-
   @override
   void dispose() {
     _c.dispose();
@@ -257,7 +259,7 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
 
   /// 결과가 보이기 전 탭하면 건너뛰고, 보인 뒤 탭하면 닫는다.
   void _tap() {
-    if (_c.value < _resultAt) {
+    if (_c.value < resultAt) {
       _c.value = 1;
     } else {
       Navigator.of(context).maybePop();
@@ -282,9 +284,9 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
           final circle = _phase(t, 0.15, 0.45);
           // 기둥 구간은 선형 그대로 두지 않는다 — easeOutCubic으로 솟았다가 감속해야 "쿵" 하는 순간이 산다.
           // 소환진은 계속 선형이다(원이 일정한 속도로 그어져야 룬이 규칙적으로 켜진다).
-          final rawPillar = _phase(t, 0.45, _resultAt);
+          final rawPillar = _phase(t, 0.45, resultAt);
           final pillar = Curves.easeOutCubic.transform(rawPillar);
-          final shown = t >= _resultAt;
+          final shown = t >= resultAt;
 
           // SizedBox.expand가 없으면 Stack이 자식 크기로 줄어 '아무 데나 탭'이 빗나간다.
           return SizedBox.expand(
@@ -316,7 +318,7 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
                   // 기둥이 다 자라는 순간의 흰 섬광. 세기는 등급을 따른다 — 색만 바꾸면 ★1과 ★5가 같은 무게로 느껴진다.
                   IgnorePointer(
                     child: SizedBox.expand(
-                      child: ColoredBox(color: Colors.white.withValues(alpha: _flashAt(t) * force.flash)),
+                      child: ColoredBox(color: Colors.white.withValues(alpha: flashAt(t) * force.flash)),
                     ),
                   ),
                 ],
