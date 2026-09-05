@@ -124,10 +124,12 @@ class GameState {
   int get totalUpgradeLevels => levels.values.fold(0, (a, b) => a + b);
 
   /// 비늘은 여기 걸린다. `Stats` 에는 체력 칸이 없다.
+  /// 용화 배수는 체력에도 곱한다 — 스펙 3.3의 "전 스탯"에서 빠질 이유가 없다.
   double maxHeroHp(BalanceConfig c) =>
       (c.heroHpBase + c.heroHpPerLevel * totalUpgradeLevels) *
       pow(c.heroHpStageGrowth, highestStage - 1) *
-      (1 + relicBonus(summon.starsOf(RelicSlot.scale)));
+      (1 + relicBonus(summon.starsOf(RelicSlot.scale))) *
+      dragonMultiplier(summon.dragonStage, c);
 
   double maxHeroMp(BalanceConfig c) => c.heroMpBase + c.heroMpPerLevel * totalUpgradeLevels;
 

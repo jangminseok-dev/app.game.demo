@@ -169,10 +169,15 @@ void main() {
       expect(stats.withRelics(wing, config).critChance, 1.0);
     });
 
-    test('비늘은 최대 체력에 걸린다', () {
+    test('비늘은 최대 체력에 걸리고 용화 배수도 곱해진다', () {
       final bare = GameState.initial(config);
       final scaled = bare.copyWith(summon: const SummonState(relics: {RelicSlot.scale: 4}));
-      expect(scaled.maxHeroHp(config), closeTo(bare.maxHeroHp(config) * 1.22, 1e-6));
+      // 비늘★4 = 합 4 → 용화 1단계. 유물 보정 1.22에 용화 1.06이 곱해진다.
+      expect(scaled.maxHeroHp(config), closeTo(bare.maxHeroHp(config) * 1.22 * 1.06, 1e-6));
+
+      // 용화 배수가 빠지면 이 단언이 깨진다 — 비늘★1은 합 1이라 0단계다.
+      final noStage = bare.copyWith(summon: const SummonState(relics: {RelicSlot.scale: 1}));
+      expect(noStage.maxHeroHp(config), closeTo(bare.maxHeroHp(config) * 1.04, 1e-6));
     });
 
     test('statsWith가 유물을 거친다 — 사슬에 붙어 있어야 한다', () {
