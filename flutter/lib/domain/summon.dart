@@ -118,19 +118,28 @@ class SummonResult {
     required this.slot,
     required this.stars,
     required this.byPity,
-    this.upgraded = false,
+    this.before = 0,
+    this.after = 0,
   });
 
   final RelicSlot slot;
 
-  /// 굴려 나온 성급(1~5). 실제로 오른 값은 upgraded와 함께 봐야 한다.
+  /// 굴려 나온 성급(1~maxRolledStars). 실제로 오른 값은 [after] 다.
   final int stars;
 
   /// 천장으로 확정된 것인지.
   final bool byPity;
 
+  /// 이 소환 **전** 그 부위의 성급. 0이면 처음 나온 부위다.
+  ///
+  /// [rollRelic] 은 굴리기만 하므로 이 값을 안 채운다. 채우는 곳은 [summonRelics] 하나다.
+  final int before;
+
+  /// 승급까지 끝난 **뒤**의 성급. 화면은 이 값을 보여 준다.
+  final int after;
+
   /// 이미 갖고 있던 부위라 승급으로 들어갔는지.
-  final bool upgraded;
+  bool get upgraded => before > 0;
 }
 
 /// 성급 확률표. 스펙 8.1과 같아야 한다 — 화면의 `확률 보기`도 이 표를 읽는다.
@@ -181,15 +190,25 @@ int mergeStars({required int current, required int rolled}) =>
     pity += 1;
     final rolled = rollRelic(rng, pityReached: pity >= c.summonPity);
     final current = relics[rolled.slot] ?? 0;
-    relics[rolled.slot] = mergeStars(current: current, rolled: rolled.stars);
+    final merged = mergeStars(current: current, rolled: rolled.stars);
+    relics[rolled.slot] = merged;
     results.add(SummonResult(
       slot: rolled.slot,
       stars: rolled.stars,
       byPity: rolled.byPity,
-      upgraded: current > 0,
+      before: current,
+      after: merged,
     ));
     if (rolled.stars >= maxRolledStars) pity = 0;
   }
 
   return (s.copyWith(stones: s.stones - cost, relics: relics, pityCount: pity), results);
 }
+
+/// 결과 한 줄. 승급이면 어디서 어디로 갔는지 보여 준다.
+///
+/// 굴린 값을 보여 주면 뿔 ★4에 ★1이 나왔을 때 화면이 `뿔 ★1`이라 말한다 —
+/// 실제로는 ★5가 되는데도. "헛도는 소환이 없다"는 이 시스템의 약속(1절·10절)이
+/// 화면에서 한 번도 안 보이던 자리다.
+String summonResultLine(SummonResult r) =>
+    r.upgraded ? '${r.slot.label} ★${r.before} → ★${r.after}' : '${r.slot.label} ★${r.after}';

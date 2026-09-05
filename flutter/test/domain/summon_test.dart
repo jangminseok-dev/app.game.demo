@@ -120,6 +120,45 @@ void main() {
       expect(mergeStars(current: SummonState.maxStars, rolled: 1), SummonState.maxStars,
           reason: '상한을 넘지 않는다');
     });
+
+    test('결과가 승급 전후를 싣는다', () {
+      // 네 칸을 다 ★3으로 두면 어느 부위가 나오든 승급이다.
+      // 한 칸만 씨앗으로 두면 그 부위가 10연차에 안 나올 확률이 5.6%라 씨앗에 기댄 테스트가 된다.
+      const start = SummonState(stones: 10000, relics: {
+        RelicSlot.horn: 3, RelicSlot.tail: 3, RelicSlot.wing: 3, RelicSlot.scale: 3,
+      });
+      final (_, results) = summonRelics(start, Random(1), config, count: 10);
+      expect(results.first.before, greaterThanOrEqualTo(3));
+      expect(results.first.after, greaterThan(results.first.before));
+      expect(results.first.upgraded, isTrue);
+    });
+
+    test('처음 나온 부위는 승급이 아니다', () {
+      final (_, results) = summonRelics(
+          const SummonState(stones: 10000), Random(2), config, count: 1);
+      expect(results.single.before, 0);
+      expect(results.single.after, results.single.stars);
+      expect(results.single.upgraded, isFalse);
+    });
+
+    test('한 배치에서 같은 부위가 두 번 나오면 두 번째의 before가 첫 번째의 after다', () {
+      final (_, results) = summonRelics(
+          const SummonState(stones: 10000), Random(4), config, count: 10);
+      final bySlot = <RelicSlot, List<SummonResult>>{};
+      for (final r in results) {
+        bySlot.putIfAbsent(r.slot, () => []).add(r);
+      }
+      final repeated = bySlot.values.firstWhere((v) => v.length >= 2);
+      expect(repeated[1].before, repeated[0].after);
+    });
+
+    test('결과 한 줄이 승급을 보여 준다', () {
+      const fresh = SummonResult(slot: RelicSlot.horn, stars: 2, byPity: false, before: 0, after: 2);
+      const up = SummonResult(slot: RelicSlot.wing, stars: 1, byPity: false, before: 4, after: 5);
+      expect(summonResultLine(fresh), '뿔 ★2');
+      expect(summonResultLine(up), '날개 ★4 → ★5',
+          reason: '굴린 값(★1)이 아니라 오른 값을 보여야 한다 — 헛도는 소환이 없다는 약속이 여기서 보인다');
+    });
   });
 
   group('소환 실행', () {

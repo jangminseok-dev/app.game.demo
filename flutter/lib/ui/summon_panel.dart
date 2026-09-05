@@ -65,7 +65,7 @@ class _SummonPanelState extends ConsumerState<SummonPanel> {
       context,
       title: '소환',
       icon: PixelIcon.spark,
-      lines: [for (final r in results) '${r.slot.label} ★${r.stars}'],
+      lines: [for (final r in results) summonResultLine(r)],
     );
   }
 
@@ -175,7 +175,7 @@ class _RelicTab extends ConsumerWidget {
                         for (final r in results)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: PixelText('[${r.slot.label} ★${r.stars}]', size: 11),
+                            child: PixelText('[${summonResultLine(r)}]', size: 11),
                           ),
                       ],
                     ),
