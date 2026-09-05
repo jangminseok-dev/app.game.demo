@@ -98,3 +98,81 @@ double relicBonus(int stars) => _relicBonusByStars[stars.clamp(0, SummonState.ma
 /// 용화 단계가 주는 곱연산 배수.
 double dragonMultiplier(int stage, BalanceConfig c) =>
     pow(c.dragonStageMultiplier, stage).toDouble();
+
+/// 소환 한 건의 결과.
+class SummonResult {
+  const SummonResult({
+    required this.slot,
+    required this.stars,
+    required this.byPity,
+    this.upgraded = false,
+  });
+
+  final RelicSlot slot;
+
+  /// 굴려 나온 성급(1~5). 실제로 오른 값은 upgraded와 함께 봐야 한다.
+  final int stars;
+
+  /// 천장으로 확정된 것인지.
+  final bool byPity;
+
+  /// 이미 갖고 있던 부위라 승급으로 들어갔는지.
+  final bool upgraded;
+}
+
+/// 성급 확률표. 스펙 8.1과 같아야 한다 — 화면의 `확률 보기`도 이 표를 읽는다.
+const relicStarChances = <int, double>{1: 0.60, 2: 0.25, 3: 0.10, 4: 0.04, 5: 0.01};
+
+/// 유물 하나를 뽑는다. 부위는 균등, 성급은 표. 천장에 닿았으면 ★5 확정.
+SummonResult rollRelic(Random rng, {required bool pityReached}) {
+  final slot = RelicSlot.values[rng.nextInt(RelicSlot.values.length)];
+  if (pityReached) {
+    return SummonResult(slot: slot, stars: SummonState.maxStars, byPity: true);
+  }
+  var r = rng.nextDouble();
+  for (final entry in relicStarChances.entries) {
+    if (r < entry.value) return SummonResult(slot: slot, stars: entry.key, byPity: false);
+    r -= entry.value;
+  }
+  return SummonResult(slot: slot, stars: 1, byPity: false);
+}
+
+/// 이미 가진 성급과 나온 성급을 합친다.
+///
+/// 낮게 나와도 +1은 오른다. 무료 소환이라 뽑는 횟수가 적어서
+/// 한 번이라도 버려지면 안 된다(스펙 3.2).
+int mergeStars({required int current, required int rolled}) =>
+    current == 0 ? rolled : max(current + 1, rolled).clamp(1, SummonState.maxStars);
+
+/// 소환을 count번 굴려 새 상태와 결과 목록을 돌려준다.
+///
+/// 소환석이 모자라면 아무 일도 안 하고 빈 목록을 돌려준다 — 값을 깎지 않는다.
+(SummonState, List<SummonResult>) summonRelics(
+  SummonState s,
+  Random rng,
+  BalanceConfig c, {
+  required int count,
+}) {
+  final cost = count == 1 ? c.summonCost : c.summonTenCost;
+  if (s.stones < cost) return (s, const []);
+
+  final relics = {...s.relics};
+  final results = <SummonResult>[];
+  var pity = s.pityCount;
+
+  for (var i = 0; i < count; i++) {
+    pity += 1;
+    final rolled = rollRelic(rng, pityReached: pity >= c.summonPity);
+    final current = relics[rolled.slot] ?? 0;
+    relics[rolled.slot] = mergeStars(current: current, rolled: rolled.stars);
+    results.add(SummonResult(
+      slot: rolled.slot,
+      stars: rolled.stars,
+      byPity: rolled.byPity,
+      upgraded: current > 0,
+    ));
+    if (rolled.stars >= SummonState.maxStars) pity = 0;
+  }
+
+  return (s.copyWith(stones: s.stones - cost, relics: relics, pityCount: pity), results);
+}
