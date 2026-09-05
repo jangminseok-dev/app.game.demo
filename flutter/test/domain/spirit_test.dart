@@ -133,7 +133,9 @@ void main() {
         spirits: SpiritState(owned: const {SpiritId.moss: 3}, active: SpiritId.moss, gauge: 1),
       );
       s = engine().tick(s, 0.1, Random(1));
-      expect(s.heroHpOr(config), greaterThan(maxHp * 0.3));
+      // 0.3만 넘으면 자연 회복만으로도 통과한다 — 0.42(0.3 + spiritHealRatio 0.12)에 못 미치는
+      // 0.4로 문턱을 올려서 회복이 실제로 걸렸는지를 본다.
+      expect(s.heroHpOr(config), greaterThan(maxHp * 0.4));
     });
 
     test('잿불은 화상을, 서리는 둔화를 남긴다', () {
@@ -177,6 +179,37 @@ void main() {
         spirits: const SpiritState(owned: {SpiritId.moss: 5}, active: SpiritId.moss),
       );
       expect(withIt.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
+    });
+
+    test('수정은 하나만 때리는 대신 세게 때린다', () {
+      // GameState.initial은 무리가 3~5마리라 무리 크기에 기대면 결과가 뒤집힌다.
+      // 한 마리로 줄여 targets가 둘 다 1이 되게 만들고 배수 차이만 남긴다.
+      GameState oneMonster(SpiritId id) {
+        final s = stateWith(id, 3).copyWith(
+          spirits: SpiritState(owned: {id: 3}, active: id, gauge: 1),
+        );
+        return s.copyWith(wave: [s.wave.first.copyWith(hp: 1e9)]);
+      }
+
+      final crystal = engine().tick(oneMonster(SpiritId.crystal), 0.1, Random(1));
+      final frost = engine().tick(oneMonster(SpiritId.frost), 0.1, Random(1));
+      final crystalHp = crystal.wave.fold<double>(0, (a, m) => a + m.hp);
+      final frostHp = frost.wave.fold<double>(0, (a, m) => a + m.hp);
+      expect(crystalHp, lessThan(frostHp), reason: '한 마리뿐일 때는 수정이 더 아프다');
+    });
+
+    test('전역 제약 두 값이 코드에 잠겨 있다', () {
+      expect(config.spiritGaugeSeconds, 90, reason: '60 아래로 내리면 스펙 4.3의 근거가 무너진다');
+      expect(config.spiritBossGaugeRate, 1.5);
+    });
+
+    test('보스전에서는 1.5배 빨리 찬다', () {
+      final normal = engine().tick(stateWith(SpiritId.crystal, 1), 9, Random(1));
+      final boss = engine().tick(
+          stateWith(SpiritId.crystal, 1).copyWith(isBoss: true, bossTimeLeft: config.bossTimeLimit),
+          9,
+          Random(1));
+      expect(boss.spirits.gauge, closeTo(normal.spirits.gauge * 1.5, 0.01));
     });
   });
 }

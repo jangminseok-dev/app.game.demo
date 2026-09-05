@@ -331,7 +331,11 @@ class BattleEngine {
   GameState _fireSpirit(GameState s, Stats stats, Random rng) {
     final sp = s.spirits;
     final id = sp.active!;
-    final damage = stats.attack * spiritDamageMultiplier(sp.activeStars, config);
+    // 수정은 하나만 때리는 대신 세게 때린다(스펙 4.4 "단일 큰 피해").
+    // 무리가 3~5라 광역의 총량을 이길 수는 없다 — 대신 한 마리뿐인 보스전에서 앞선다.
+    // 계수로 빼지 않는다. 조정할 값이 아니라 이 정령의 정체다.
+    final single = id.effect == SpiritEffect.singleBig ? 2.5 : 1.0;
+    final damage = stats.attack * spiritDamageMultiplier(sp.activeStars, config) * single;
     final all = s.wave.length;
 
     var next = sp.copyWith(gauge: 0, firedCount: sp.firedCount + 1);

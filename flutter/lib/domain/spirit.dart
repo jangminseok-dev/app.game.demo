@@ -68,9 +68,11 @@ class SpiritState {
   final int firedCount;
 
   /// 화상이 남은 초. 저장하지 않는다 — 전투가 끝나면 사라지는 것이다.
+  /// 무리가 아니라 전투 전체에 걸린다 — 무리가 바뀌어도 남은 시간 동안 이어진다.
   final double burnLeft;
 
   /// 둔화가 남은 초. 저장하지 않는다.
+  /// 무리가 아니라 전투 전체에 걸린다 — 무리가 바뀌어도 남은 시간 동안 이어진다.
   final double slowLeft;
 
   int starsOf(SpiritId id) => owned[id] ?? 0;
