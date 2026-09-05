@@ -493,12 +493,13 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
   group('전투 루프', () {
     BattleEngine engine() => const BattleEngine(BalanceConfig());
 
-    GameState withSpirit(SpiritId id, int stars) => GameState.initial(config).copyWith(
+    // 이름을 `withSpirit` 으로 두지 마라 — 같은 파일에서 `stats.withSpirit(...)` 을 부른다.
+    GameState stateWith(SpiritId id, int stars) => GameState.initial(config).copyWith(
           spirits: SpiritState(owned: {id: stars}, active: id),
         );
 
     test('게이지는 시간으로 찬다', () {
-      var s = withSpirit(SpiritId.crystal, 1);
+      var s = stateWith(SpiritId.crystal, 1);
       s = engine().tick(s, 9, Random(1));
       expect(s.spirits.gauge, closeTo(9 / config.spiritGaugeSeconds, 0.02),
           reason: '90초에 1이 되는 속도다');
@@ -511,7 +512,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('가득 차면 나오고 게이지가 0으로 돌아간다', () {
-      var s = withSpirit(SpiritId.crystal, 3).copyWith(
+      var s = stateWith(SpiritId.crystal, 3).copyWith(
         spirits: SpiritState(owned: const {SpiritId.crystal: 3}, active: SpiritId.crystal, gauge: 0.99),
       );
       final before = s.spirits.firedCount;
@@ -521,7 +522,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('이끼는 주인공을 회복시킨다', () {
-      var s = withSpirit(SpiritId.moss, 3);
+      var s = stateWith(SpiritId.moss, 3);
       final maxHp = s.maxHeroHp(config);
       s = s.copyWith(
         heroHp: maxHp * 0.3,
@@ -532,14 +533,14 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('잿불은 화상을, 서리는 둔화를 남긴다', () {
-      var burn = withSpirit(SpiritId.ember, 2).copyWith(
+      var burn = stateWith(SpiritId.ember, 2).copyWith(
         spirits: SpiritState(owned: const {SpiritId.ember: 2}, active: SpiritId.ember, gauge: 1),
       );
       burn = engine().tick(burn, 0.1, Random(1));
       expect(burn.spirits.burnLeft, greaterThan(0));
       expect(burn.spirits.slowLeft, 0);
 
-      var slow = withSpirit(SpiritId.frost, 2).copyWith(
+      var slow = stateWith(SpiritId.frost, 2).copyWith(
         spirits: SpiritState(owned: const {SpiritId.frost: 2}, active: SpiritId.frost, gauge: 1),
       );
       slow = engine().tick(slow, 0.1, Random(1));
@@ -548,7 +549,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('화상과 둔화는 시간이 지나면 사라진다', () {
-      var s = withSpirit(SpiritId.ember, 1).copyWith(
+      var s = stateWith(SpiritId.ember, 1).copyWith(
         spirits: const SpiritState(
             owned: {SpiritId.ember: 1}, active: SpiritId.ember, burnLeft: 1, slowLeft: 1),
       );
