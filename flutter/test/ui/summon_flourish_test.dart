@@ -119,4 +119,49 @@ void main() {
       }
     });
   });
+
+  group('세기', () {
+    test('등급이 셀수록 파티클이 많고 섬광이 밝다', () {
+      final weak = flourishForce(1);
+      final mid = flourishForce(3);
+      final top = flourishForce(5);
+      expect(weak.sparks, lessThan(mid.sparks));
+      expect(mid.sparks, lessThan(top.sparks));
+      expect(weak.flash, lessThan(mid.flash));
+      expect(mid.flash, lessThan(top.flash));
+      expect(top.flash, 1.0);
+    });
+
+    test('범위를 벗어나도 안 터진다', () {
+      expect(flourishForce(0).sparks, greaterThan(0));
+      expect(flourishForce(99).sparks, flourishForce(5).sparks);
+    });
+  });
+
+  testWidgets('★5는 ★1보다 파티클이 많다', (tester) async {
+    Future<int> sparksFor(int stars) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showSummonFlourish(context, [
+              SummonResult(slot: RelicSlot.horn, stars: stars, byPity: false, before: 0, after: stars),
+            ]),
+            child: const Text('열기'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('열기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+      final w = tester.widget<SummonSparks>(find.byType(SummonSparks));
+      // 다음 sparksFor()가 새 다이얼로그를 열 수 있게 이번 것을 닫는다 —
+      // 안 닫으면 같은 Navigator에 남은 이 연출이 다음 호출의 탭을 먹는다.
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pumpAndSettle();
+      return w.count;
+    }
+
+    expect(await sparksFor(5), greaterThan(await sparksFor(1)));
+  });
 }

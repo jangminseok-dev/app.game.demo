@@ -29,6 +29,23 @@ Color pillarColorFor(int topStars) {
   return PixelPalette.text;
 }
 
+/// 등급이 셀수록 요란하다. 색만 바꾸면 ★1과 ★5가 같은 무게로 느껴진다.
+({int sparks, double flash}) flourishForce(int topStars) => switch (topStars) {
+      >= 5 => (sparks: 18, flash: 1.0),
+      4 => (sparks: 12, flash: 0.7),
+      3 => (sparks: 8, flash: 0.45),
+      _ => (sparks: 4, flash: 0.25),
+    };
+
+/// 기둥이 다 자란 순간의 흰 섬광. 짧아야 한다 — 길면 눈이 아프다.
+double _flashAt(double t) {
+  const start = 0.78;
+  const end = 0.86;
+  if (t < start || t > end) return 0;
+  final x = (t - start) / (end - start); // 0~1
+  return (1 - (x * 2 - 1).abs()) * 0.55; // 가운데서 0.55, 양끝 0
+}
+
 /// 소환진 높이. 기둥 바닥을 여기 중앙에 붙이는 계산에도 쓴다.
 const _circleHeight = 56.0;
 
@@ -118,6 +135,47 @@ class _PillarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PillarPainter old) => old.progress != progress || old.color != color;
+}
+
+/// 소환진에서 위로 튀는 사각 파티클. 개수는 등급을 따른다.
+class SummonSparks extends StatelessWidget {
+  const SummonSparks({super.key, required this.progress, required this.color, required this.count});
+
+  final double progress;
+  final Color color;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) =>
+      SizedBox(width: 200, height: 170, child: CustomPaint(painter: _SparkPainter(progress, color, count)));
+}
+
+class _SparkPainter extends CustomPainter {
+  const _SparkPainter(this.progress, this.color, this.count);
+
+  final double progress;
+  final Color color;
+  final int count;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+    final origin = Offset(size.width / 2, size.height);
+    final fill = Paint();
+    for (var i = 0; i < count; i++) {
+      // 각도·속도를 인덱스로 정한다 — 프레임마다 Random()을 새로 뽑으면 자리가 지지직거린다.
+      final angle = i * 2.399; // 황금각(라디안). 파티클을 고르게 흩는다.
+      final speed = 0.55 + (i % 4) * 0.12; // 파티클마다 조금씩 다른 속도
+      final dx = math.cos(angle) * size.width * 0.42 * progress;
+      final dy = -size.height * 0.85 * progress * speed;
+      fill.color = color.withValues(alpha: (1 - progress).clamp(0.0, 1.0));
+      canvas.drawRect(Rect.fromCenter(center: origin + Offset(dx, dy), width: 3, height: 3), fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SparkPainter old) =>
+      old.progress != progress || old.color != color || old.count != count;
 }
 
 /// 결과 한 줄. 테스트가 개수를 세므로 공개 위젯이다.
@@ -211,6 +269,7 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
     // 기둥 색은 **굴린 값** 중 최고를 따른다(스펙 7.2 — 10연차도 기둥은 하나다).
     final top = widget.results.map((r) => r.stars).reduce(math.max);
     final color = pillarColorFor(top);
+    final force = flourishForce(top);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -221,7 +280,10 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
           final t = _c.value;
           final dim = _phase(t, 0, 0.15);
           final circle = _phase(t, 0.15, 0.45);
-          final pillar = _phase(t, 0.45, 0.80);
+          // 기둥 구간은 선형 그대로 두지 않는다 — easeOutCubic으로 솟았다가 감속해야 "쿵" 하는 순간이 산다.
+          // 소환진은 계속 선형이다(원이 일정한 속도로 그어져야 룬이 규칙적으로 켜진다).
+          final rawPillar = _phase(t, 0.45, _resultAt);
+          final pillar = Curves.easeOutCubic.transform(rawPillar);
           final shown = t >= _resultAt;
 
           // SizedBox.expand가 없으면 Stack이 자식 크기로 줄어 '아무 데나 탭'이 빗나간다.
@@ -231,24 +293,32 @@ class _SummonFlourishState extends State<_SummonFlourish> with SingleTickerProvi
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (pillar > 0 || circle > 0)
-                    // 기둥·소환진을 같은 Align에 얹는다 — 기준이 갈리면 화면이 커질수록 벌어진다.
+                  if (rawPillar > 0 || circle > 0)
+                    // 기둥·소환진·파티클을 같은 Align에 얹는다 — 기준이 갈리면 화면이 커질수록 벌어진다.
                     // 기둥 바닥이 소환진 중심에 오도록 기둥에 소환진 높이의 절반만큼 아래 여백을 준다.
                     Align(
                       alignment: const Alignment(0, 0.35),
                       child: Stack(
                         alignment: Alignment.bottomCenter,
                         children: [
-                          if (pillar > 0)
+                          if (rawPillar > 0)
                             Padding(
                               padding: const EdgeInsets.only(bottom: _circleHeight / 2),
                               child: SummonPillar(progress: pillar, color: color),
                             ),
                           if (circle > 0) SummonCircle(progress: circle, color: color),
+                          if (rawPillar > 0)
+                            SummonSparks(progress: rawPillar, color: color, count: force.sparks),
                         ],
                       ),
                     ),
                   if (shown) _SummonResultCard(results: widget.results),
+                  // 기둥이 다 자라는 순간의 흰 섬광. 세기는 등급을 따른다 — 색만 바꾸면 ★1과 ★5가 같은 무게로 느껴진다.
+                  IgnorePointer(
+                    child: SizedBox.expand(
+                      child: ColoredBox(color: Colors.white.withValues(alpha: _flashAt(t) * force.flash)),
+                    ),
+                  ),
                 ],
               ),
             ),
