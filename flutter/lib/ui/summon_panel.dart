@@ -220,6 +220,7 @@ class _SpiritTab extends ConsumerWidget {
       ],
     );
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: stars > 0 ? () => ref.read(gameControllerProvider.notifier).equipSpirit(id) : null,
       child: spirits.active == id ? PixelPanel(border: PixelPalette.gold, child: content) : content,
     );
@@ -251,16 +252,26 @@ class _SpiritTab extends ConsumerWidget {
         action: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Button(label: '1회', enabled: summon.canSummon(config), onTap: () => onSummon(1)),
+            _Button(
+              label: '1회',
+              enabled: summon.canSummon(config) && !spirits.isMaxed,
+              onTap: () => onSummon(1),
+            ),
             const SizedBox(width: 6),
-            _Button(label: '10회', enabled: summon.canSummonTen(config), onTap: () => onSummon(10)),
+            _Button(
+              label: '10회',
+              enabled: summon.canSummonTen(config) && !spirits.isMaxed,
+              onTap: () => onSummon(10),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: results.isEmpty
+              child: spirits.isMaxed
+                  ? const Center(child: PixelText('정령을 다 모았습니다', size: 11, color: PixelPalette.textDim))
+                  : results.isEmpty
                   ? const Center(child: PixelText('아직 없음', size: 11, color: PixelPalette.textDim))
                   : ListView(
                       padding: const EdgeInsets.all(4),

@@ -371,7 +371,7 @@ void main() {
     expect(find.text('10회'), findsWidgets);
   });
 
-  testWidgets('정령 탭에 4종이 다 보이고 안 가진 것은 흐리다', (tester) async {
+  testWidgets('정령 탭에 4종이 다 보인다', (tester) async {
     tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

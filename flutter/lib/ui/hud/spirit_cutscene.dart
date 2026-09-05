@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../domain/spirit.dart';
@@ -77,12 +79,26 @@ class _SpiritCutscene extends StatefulWidget {
 }
 
 class _SpiritCutsceneState extends State<_SpiritCutscene> with SingleTickerProviderStateMixin {
+  // 퇴장 페이드 150ms가 더해져 실제로 입력이 막히는 시간은 약 1.4초다. 스펙 7.3의 1.5초 안에 들어간다.
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1250))
         ..forward().whenComplete(_close);
 
+  NavigatorState? _navigator;
+  ModalRoute<void>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 자기 라우트를 잡아 둔다. maybePop()은 맨 위 라우트를 닫으므로,
+    // 컷신 위에 다른 팝업이 쌓이면 그것을 대신 닫고 컷신이 남아 화면을 잠근다.
+    _navigator = Navigator.of(context);
+    _route = ModalRoute.of(context) as ModalRoute<void>?;
+  }
+
   void _close() {
-    if (mounted) Navigator.of(context).maybePop();
+    final route = _route;
+    if (route != null && route.isActive) _navigator?.removeRoute(route);
   }
 
   @override
@@ -94,32 +110,36 @@ class _SpiritCutsceneState extends State<_SpiritCutscene> with SingleTickerProvi
   @override
   Widget build(BuildContext context) {
     final color = Color(widget.id.color);
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = _c.value;
-        final dim = _phase(t, 0, 0.15);
-        final grow = Curves.easeOutCubic.transform(_phase(t, 0.15, 0.45));
-        final fade = _phase(t, 0.70, 1.0);
-        final nameOn = t >= 0.30 && t < 0.85;
+    // 건너뛸 수 없다(스펙 7.3). 뒤로 가기도 막는다 — barrierDismissible은 막 탭만 막는다.
+    return PopScope(
+      canPop: false,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final t = _c.value;
+          final dim = _phase(t, 0, 0.15);
+          final grow = Curves.easeOutCubic.transform(_phase(t, 0.15, 0.45));
+          final fade = _phase(t, 0.70, 1.0);
+          final nameOn = t >= 0.30 && t < 0.85;
 
-        return SizedBox.expand(
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: 0.72 * dim * (1 - fade)),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (grow > 0) SpiritGlow(progress: grow, color: color, fade: fade),
-                if (nameOn)
-                  Align(
-                    alignment: const Alignment(0, 0.45),
-                    child: PixelText(widget.id.label, size: 16, color: color),
-                  ),
-              ],
+          return SizedBox.expand(
+            child: ColoredBox(
+              color: Colors.black.withValues(alpha: 0.72 * dim * (1 - fade)),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (grow > 0) SpiritGlow(progress: grow, color: color, fade: fade),
+                  if (nameOn)
+                    Align(
+                      alignment: const Alignment(0, 0.45),
+                      child: PixelText(widget.id.label, size: 16, color: color),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

@@ -89,6 +89,9 @@ class SpiritState {
   /// 게이지가 다 찼고 데리고 다니는 정령이 있다.
   bool get isReady => gauge >= 1 && active != null && activeStars > 0;
 
+  /// 4종이 전부 상한. 더 뽑아도 오를 것이 없다.
+  bool get isMaxed => SpiritId.values.every((s) => starsOf(s) >= maxStars);
+
   /// **`active`는 null로 되돌릴 수 없다**(`active ?? this.active`).
   /// 편성을 비우는 기능은 이 계획에 없으므로 그대로 둔다 — 필요해지면 그때 `Object?` 센티널을 쓴다.
   SpiritState copyWith({

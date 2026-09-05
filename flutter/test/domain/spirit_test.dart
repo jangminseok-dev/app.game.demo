@@ -50,6 +50,16 @@ void main() {
       expect(s.activeStars, 1);
       expect(s.starsOf(SpiritId.ember), 0);
     });
+
+    test('4종이 다 ★5여야 만렙이다', () {
+      const three = SpiritState(owned: {
+        SpiritId.moss: 5, SpiritId.crystal: 5, SpiritId.ember: 5, SpiritId.frost: 4,
+      });
+      expect(three.isMaxed, isFalse);
+      expect(three.copyWith(owned: {
+        SpiritId.moss: 5, SpiritId.crystal: 5, SpiritId.ember: 5, SpiritId.frost: 5,
+      }).isMaxed, isTrue);
+    });
   });
 
   group('세기', () {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/spirit.dart';
@@ -37,6 +39,37 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
     await tester.pumpAndSettle();
     expect(find.byType(SpiritGlow), findsNothing, reason: '스스로 닫힌다');
+  });
+
+  testWidgets('위에 다른 팝업이 쌓여도 컷신은 자기 것만 닫는다', (tester) async {
+    await open(tester, SpiritId.moss);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // 컷신이 떠 있는 동안 다른 다이얼로그를 얹는다.
+    final ctx = tester.element(find.byType(SpiritGlow));
+    unawaited(showDialog<void>(
+      context: ctx,
+      builder: (_) => const Material(child: Text('다른 팝업')),
+    ));
+    await tester.pump();
+    expect(find.text('다른 팝업'), findsWidgets);
+
+    // 컷신이 스스로 끝난다.
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect(find.byType(SpiritGlow), findsNothing, reason: '컷신은 닫혔다');
+    expect(find.text('다른 팝업'), findsWidgets, reason: '남의 팝업을 대신 닫으면 안 된다');
+  });
+
+  testWidgets('뒤로 가기로도 안 닫힌다', (tester) async {
+    await open(tester, SpiritId.crystal);
+    await tester.pump(const Duration(milliseconds: 400));
+    final popped = await tester.binding.handlePopRoute();
+    expect(popped, isTrue, reason: '시스템이 처리는 한다');
+    await tester.pump();
+    expect(find.byType(SpiritGlow), findsOneWidget, reason: '컷신은 남아 있어야 한다');
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('정령마다 색이 다르다', (tester) async {
