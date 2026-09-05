@@ -21,6 +21,7 @@ import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
+import 'party_row.dart';
 import 'pet_panel.dart';
 import 'quest_strip.dart';
 import 'stage_select_panel.dart';
@@ -284,7 +285,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  _PartySlotPlaceholder(),
+                  PartyPortraits(),
                   SizedBox(height: 6),
                   SkillBar(),
                 ],
@@ -430,10 +431,3 @@ class _UpgradeRow extends StatelessWidget {
   }
 }
 
-/// 우하단 초상 줄 자리. Task 4가 채운다.
-class _PartySlotPlaceholder extends StatelessWidget {
-  const _PartySlotPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => const SizedBox(width: 150, height: 44);
-}

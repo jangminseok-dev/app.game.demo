@@ -47,6 +47,17 @@ void main() {
       expect(find.textContaining(label), findsWidgets);
     }
     expect(find.textContaining('저장 전'), findsWidgets);
+
+    // 성장 팝업을 닫아야 우하단 AUTO 단추를 누를 수 있다.
+    await tester.tap(find.text('X').first);
+    await tester.pumpAndSettle();
+
+    // AUTO 단추는 슬롯 셋의 자동을 한 번에 끈다.
+    final container = ProviderScope.containerOf(tester.element(find.byType(BattleArea)));
+    await tester.tap(find.text('AUTO').first);
+    await tester.pump();
+    final skills = container.read(gameControllerProvider).skills;
+    expect([0, 1, 2].map(skills.isAuto), everyElement(isFalse), reason: 'AUTO를 끄면 셋 다 꺼진다');
   });
 
   testWidgets('카탈로그가 있으면 전투 무대에 몬스터 이름·속성·지역이 나온다', (tester) async {
