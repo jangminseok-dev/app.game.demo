@@ -73,7 +73,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                   label: '성장',
                   icon: PixelIcon.growth,
                   onTap: () => showGamePopup(context, title: '성장', icon: PixelIcon.growth,
-                      help: '골드로 능력치를 올린다. 층이 오르면 살 것이 는다.', child: const _UpgradeTab()),
+                      help: '골드로 능력치 5종을 올린다. 살수록 비싸진다.', child: const _UpgradeTab()),
                 ),
                 HudButton(
                   label: '장비',
@@ -277,7 +277,7 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
                     icon: PixelIcon.growth,
                     alert: _canBuyAnything(state),
                     onTap: () => showGamePopup(context, title: '성장', icon: PixelIcon.growth,
-                        help: '골드로 능력치를 올린다. 층이 오르면 살 것이 는다.', child: const _UpgradeTab()),
+                        help: '골드로 능력치 5종을 올린다. 살수록 비싸진다.', child: const _UpgradeTab()),
                   ),
                 ],
               ),

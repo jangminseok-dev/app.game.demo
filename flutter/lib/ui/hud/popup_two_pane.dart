@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'pixel_ui.dart';
 
 /// 팝업 본문 한 단. 아래에 그 단만의 일괄 단추와 경고가 붙는다(스펙 4.5·4.7).
+///
+/// `GamePopup` 의 본문처럼 **높이가 확정된 곳에서만** 쓴다 — 안쪽 `Expanded` 가 무한 높이에서 터진다.
 class PopupPane extends StatelessWidget {
   const PopupPane({super.key, required this.child, this.action, this.warning});
 
@@ -35,6 +37,8 @@ class PopupPane extends StatelessWidget {
 ///
 /// 여덟 화면이 같은 문법을 쓴다. 어느 창을 열어도 왼쪽이 "내 것",
 /// 오른쪽이 "바꿀 것"이라 매번 새로 읽지 않아도 된다.
+///
+/// `GamePopup` 의 본문처럼 **높이가 확정된 곳에서만** 쓴다 — 안쪽 `Expanded` 가 무한 높이에서 터진다.
 class PopupTwoPane extends StatelessWidget {
   const PopupTwoPane({super.key, required this.left, required this.right});
 

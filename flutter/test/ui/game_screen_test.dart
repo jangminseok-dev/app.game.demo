@@ -9,7 +9,9 @@ import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/hud/game_popup.dart';
 import 'package:idle_fantasy/ui/hud/pixel_icons.dart';
+import 'package:idle_fantasy/ui/hud/pixel_ui.dart';
 import 'package:idle_fantasy/ui/hud/popup_two_pane.dart';
+import 'package:idle_fantasy/ui/hud/portrait_tile.dart';
 import 'package:idle_fantasy/ui/hud/reward_popup.dart';
 import 'package:idle_fantasy/ui/hud/skill_bar.dart';
 import 'package:idle_fantasy/ui/party_row.dart';
@@ -207,13 +209,25 @@ void main() {
     addTearDown(tester.view.reset);
 
     // 화면 전체가 아니라 팝업 하나만 띄운다 — 좁은 폭에서 HUD가 겹치는 것은 별개 문제(백로그 D4-2)다.
-    await tester.pumpWidget(const MaterialApp(
-      home: GamePopup(title: '장비', icon: PixelIcon.shield, child: SizedBox()),
+    await tester.pumpWidget(MaterialApp(
+      home: GamePopup(
+        title: '장비',
+        icon: PixelIcon.shield,
+        leading: PortraitTile(
+          label: '주인공',
+          onTap: () {},
+          child: const PixelText('나', size: 12),
+        ),
+        child: const SizedBox.expand(),
+      ),
     ));
 
     final body = tester.getRect(find.byKey(const Key('popup-body')));
-    expect(body.left, greaterThanOrEqualTo(0));
+    final portrait = tester.getRect(find.byType(PortraitTile));
+    expect(portrait.left, greaterThanOrEqualTo(0), reason: '초상 열이 화면 밖으로 잘리지 않는다');
+    expect(portrait.right, lessThanOrEqualTo(body.left), reason: '초상은 팝업 옆이지 위가 아니다');
     expect(body.right, lessThanOrEqualTo(440));
+    expect(body.width, greaterThan(300), reason: '본체가 실제 폭을 갖는다 — 빈 child로 8px이 되면 아무것도 안 재는 테스트다');
   });
 
   testWidgets('제목 리본에 아이콘과 도움말이 있고 도움말이 열린다', (tester) async {
