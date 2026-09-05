@@ -1452,3 +1452,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 | 844×390에서 자리가 겹친다 | Task 7 | `Positioned` 값 조정. 특히 `MonsterLine`(bottom 70)과 하단 5칸, 좌측 아래 2칸과 좌하단 광고 |
 | `find.text('성장')` 등이 팝업 안 글자까지 잡는다 | Task 3 Step 5 | `findsWidgets`라 통과. `findsOneWidget`인 곳만 고친다 |
 | `SnackBar`가 `Scaffold` 밖에서 호출된다 | Task 5 `_MenuGrid._soon` | `showDialog` 안이라 `ScaffoldMessenger.of(context)`가 루트를 찾는다. 안 되면 `pop()` 뒤 호출 순서를 바꾼다 |
+
+## 실행 기록 (2026-09-05)
+
+7태스크 전부 리뷰 clean, 수정 루프 0회. 전체 브랜치 리뷰 "수정 후 병합" → 수정 1커밋(`abdeaeb`) → 범위 재리뷰 승인. 테스트 247→248.
+
+**판정(Ruling) 1건**: 전체 리뷰의 Minor 11건 중 M-1(MonsterLine `bottom 70→84`)·M-3(lint)·M-5(동료 준비 중)·M-9(잠금 회귀 테스트)·`_Unscrolled` 주석·스펙 2절·백로그 D4-2/D4-3만 고쳤다. I-1(논리 폭 660 미만 HUD 겹침)은 구조 변경이라 백로그 D4-2로 넘겨 팝업 골격 계획에서 `GamePopup width: 460`과 함께 푼다. 비용: 좁은 폰(≤667 논리)에서 겹침이 그때까지 남는다.
+
+**다음 계획(팝업 골격)에 넘기는 것**: `GamePopup width 460` 고정 → `min(460, 가용폭)`; `PartyPortraits` onTap 콜백 주입; 스펙 4.6 "보인다 vs 누를 수 있다" 결정; `_AlertDot` 추출; `party_row.dart`↔`PartyPortraits` 파일명; 하단 바 높이 상수화.
