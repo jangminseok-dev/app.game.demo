@@ -47,11 +47,13 @@ class SpiritState {
     this.firedCount = 0,
     this.burnLeft = 0,
     this.slowLeft = 0,
+    this.pityCount = 0,
   });
 
   static const empty = SpiritState();
 
   /// 정령 성급 상한. 유물(★10)과 다르다 — 위 주석 참조.
+  /// 유물과 달리 상한이 확률표 꼭대기와 같다 — 천장 한 번이 곧 만렙 한 칸이다.
   static const maxStars = 5;
 
   /// 종류 → 성급(1~5). 없는 종류는 키가 없다.
@@ -75,6 +77,11 @@ class SpiritState {
   /// 무리가 아니라 전투 전체에 걸린다 — 무리가 바뀌어도 남은 시간 동안 이어진다.
   final double slowLeft;
 
+  /// ★5 없이 뽑은 횟수. 천장에 닿으면 다음 한 번이 확정이다.
+  ///
+  /// **유물과 따로 센다**(스펙 8.2) — 한쪽만 뽑는 사람이 손해 보지 않는다.
+  final int pityCount;
+
   int starsOf(SpiritId id) => owned[id] ?? 0;
 
   int get activeStars => active == null ? 0 : starsOf(active!);
@@ -91,6 +98,7 @@ class SpiritState {
     int? firedCount,
     double? burnLeft,
     double? slowLeft,
+    int? pityCount,
   }) =>
       SpiritState(
         owned: owned ?? this.owned,
@@ -99,6 +107,7 @@ class SpiritState {
         firedCount: firedCount ?? this.firedCount,
         burnLeft: burnLeft ?? this.burnLeft,
         slowLeft: slowLeft ?? this.slowLeft,
+        pityCount: pityCount ?? this.pityCount,
       );
 
   Map<String, dynamic> toJson() => {
@@ -106,6 +115,7 @@ class SpiritState {
         'active': active?.name,
         'gauge': gauge,
         'firedCount': firedCount,
+        'pityCount': pityCount,
       };
 
   factory SpiritState.fromJson(Map<String, dynamic> j) {
@@ -119,6 +129,7 @@ class SpiritState {
       active: SpiritId.values.where((i) => i.name == activeName).firstOrNull,
       gauge: (j['gauge'] as num? ?? 0).toDouble(),
       firedCount: (j['firedCount'] as num? ?? 0).toInt(),
+      pityCount: (j['pityCount'] as num? ?? 0).toInt(),
     );
   }
 }

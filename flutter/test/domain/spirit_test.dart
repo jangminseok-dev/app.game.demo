@@ -73,6 +73,7 @@ void main() {
         active: SpiritId.moss,
         gauge: 0.4,
         firedCount: 7,
+        pityCount: 12,
       );
       final after = SpiritState.fromJson(before.toJson());
       expect(after.starsOf(SpiritId.moss), 3);
@@ -80,6 +81,7 @@ void main() {
       expect(after.active, SpiritId.moss);
       expect(after.gauge, closeTo(0.4, 1e-9));
       expect(after.firedCount, 7);
+      expect(after.pityCount, 12);
     });
 
     test('빈 json이면 빈 상태다 — 옛 저장이 열려야 한다', () {
@@ -268,6 +270,23 @@ void main() {
           id: SpiritId.ember, stars: 1, byPity: false,
           before: SpiritState.maxStars, after: SpiritState.maxStars);
       expect(capped.line.text, '잿불의 꿈 ★5');
+    });
+
+    test('천장은 유물과 따로 센다 — 한쪽만 뽑는 사람이 손해 보지 않는다', () {
+      // 유물 천장을 거의 채운 상태에서 정령을 뽑아도 유물 카운터는 안 줄어든다.
+      final stones = SummonState(stones: 100000, pityCount: config.summonPity - 1);
+      final (after, spirits, _) =
+          summonSpirits(stones, SpiritState.empty, Random(1), config, count: 1);
+      expect(after.pityCount, config.summonPity - 1, reason: '유물 카운터는 그대로다');
+      expect(spirits.pityCount, 1, reason: '정령은 자기 카운터를 센다');
+    });
+
+    test('정령 천장도 ★5를 확정으로 준다', () {
+      final spirits = SpiritState(pityCount: config.summonPity - 1);
+      final (_, after, results) = summonSpirits(
+          const SummonState(stones: 100000), spirits, Random(5), config, count: 1);
+      expect(results.single.stars, SpiritState.maxStars);
+      expect(after.pityCount, 0, reason: '★5가 나오면 0으로 돌아간다');
     });
   });
 }

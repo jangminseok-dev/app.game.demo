@@ -266,7 +266,7 @@ class SpiritSummonResult {
 /// 정령을 count번 소환한다. 소환석은 유물과 같은 지갑에서 나간다(스펙 5.1).
 ///
 /// 확률표는 유물과 같다(스펙 8.1) — 종류 균등, 성급은 [relicStarChances].
-/// 천장 카운터도 소환석과 함께 [SummonState] 에 있으므로 유물과 공유한다.
+/// 천장 카운터는 유물과 따로 센다(스펙 8.2) — [SpiritState.pityCount] 를 쓴다.
 (SummonState, SpiritState, List<SpiritSummonResult>) summonSpirits(
   SummonState stones,
   SpiritState spirits,
@@ -279,7 +279,7 @@ class SpiritSummonResult {
 
   final owned = {...spirits.owned};
   final results = <SpiritSummonResult>[];
-  var pity = stones.pityCount;
+  var pity = spirits.pityCount;
 
   for (var i = 0; i < count; i++) {
     pity += 1;
@@ -296,8 +296,8 @@ class SpiritSummonResult {
   }
 
   return (
-    stones.copyWith(stones: stones.stones - cost, pityCount: pity),
-    spirits.copyWith(owned: owned),
+    stones.copyWith(stones: stones.stones - cost),
+    spirits.copyWith(owned: owned, pityCount: pity),
     results,
   );
 }
