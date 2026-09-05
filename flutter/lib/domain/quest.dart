@@ -118,7 +118,10 @@ Quest _questAt(int number) {
     QuestGoal.equipWorn => 6,
     QuestGoal.petsOwned => step,
   };
-  final reward = RewardKind.values[(number - 1) % RewardKind.values.length];
+  // 보상은 목표와 주기가 어긋나야 한다. 둘 다 주기 6이면 목표마다 보상이 하나로 굳는다
+  // (RewardKind가 5→6이 되며 실제로 그렇게 됐다). number ~/ length 항이 블록마다 한 칸씩 민다.
+  final reward = RewardKind.values[
+      ((number - 1) + number ~/ RewardKind.values.length) % RewardKind.values.length];
   final amount = switch (reward) {
     RewardKind.gold => 500 * step * step,
     RewardKind.stone => 20 * step,

@@ -158,11 +158,21 @@ void main() {
       const one = SummonState(relics: {RelicSlot.horn: 5});
       final a = stats.withRelics(one, config);
       expect(a.attack, closeTo(100 * 1.30 * 1.06, 1e-6));
-      expect(a.attacksPerSecond, closeTo(2 * 1.06, 1e-6), reason: '꼬리가 없어도 용화 배수는 걸린다');
+      expect(a.attacksPerSecond, 2, reason: '꼬리가 없으므로 그대로다 — 용화 배수는 공격력에만 걸린다');
 
       const wing = SummonState(relics: {RelicSlot.wing: 3});
       expect(stats.withRelics(wing, config).critChance, closeTo(0.1 + 0.15, 1e-6),
           reason: '치명타는 더하기다 — 곱하면 1.0을 넘긴다');
+    });
+
+    test('용화 배수는 공격력에만 걸린다 — DPS가 제곱이 되면 장비를 이긴다', () {
+      const stats = Stats(attack: 100, attacksPerSecond: 2, critChance: 0.1, goldMultiplier: 1);
+      // 꼬리★5만: 합 5 → 용화 1단계. 공속은 유물 보정 1.30만 받고 용화 배수는 안 받는다.
+      const tail = SummonState(relics: {RelicSlot.tail: 5});
+      final a = stats.withRelics(tail, config);
+      expect(a.attacksPerSecond, closeTo(2 * 1.30, 1e-6));
+      expect(a.attack, closeTo(100 * 1.06, 1e-6), reason: '뿔이 없어도 공격력에는 용화 배수가 걸린다');
+      expect(a.goldMultiplier, 1, reason: '골드에는 전용 유물도 용화 배수도 없다');
     });
 
     test('치명타는 1.0을 넘지 않는다', () {

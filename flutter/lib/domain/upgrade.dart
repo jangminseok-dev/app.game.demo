@@ -71,16 +71,17 @@ class Stats {
 
   /// 유물 네 칸과 용화 단계를 얹는다.
   ///
-  /// 용화 배수는 공격력·공속·골드에만 곱한다. 치명타는 0~1 확률이라
-  /// 곱하면 상한을 넘기므로 날개 보정을 **더하고** 1.0으로 묶는다.
+  /// 용화 배수는 **공격력에만** 곱한다. DPS는 공격력 × 공속이라 둘 다 곱하면
+  /// 배수가 제곱으로 들어가 유물이 장비를 이긴다(스펙 3.4). 치명타는 0~1 확률이라
+  /// 곱하면 상한을 넘기므로 날개 보정을 더하고 1.0으로 묶는다.
   Stats withRelics(SummonState summon, BalanceConfig c) {
     if (summon.totalStars == 0) return this;
     final m = dragonMultiplier(summon.dragonStage, c);
     return Stats(
       attack: attack * (1 + relicBonus(summon.starsOf(RelicSlot.horn))) * m,
-      attacksPerSecond: attacksPerSecond * (1 + relicBonus(summon.starsOf(RelicSlot.tail))) * m,
+      attacksPerSecond: attacksPerSecond * (1 + relicBonus(summon.starsOf(RelicSlot.tail))),
       critChance: min(1.0, critChance + relicBonus(summon.starsOf(RelicSlot.wing))),
-      goldMultiplier: goldMultiplier * m,
+      goldMultiplier: goldMultiplier,
     );
   }
 

@@ -56,6 +56,9 @@ class SummonState {
   bool canSummon(BalanceConfig c) => stones >= c.summonCost;
   bool canSummonTen(BalanceConfig c) => stones >= c.summonTenCost;
 
+  /// 네 칸이 전부 ★5. 더 뽑아도 오를 것이 없다.
+  bool get isMaxed => RelicSlot.values.every((s) => starsOf(s) >= maxStars);
+
   SummonState copyWith({
     int? stones,
     Map<RelicSlot, int>? relics,

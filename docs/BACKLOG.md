@@ -195,18 +195,25 @@ iPhone SE 가로(논리 320, SafeArea 뒤 ≈299)에서 초상 열 여유가 **2
 ### E4. 법규 체크리스트 · 스토어 제출 · M
 기획서 14장.
 
-### D6. 소환 반복 수급 · S
-계획 1의 소환석은 **진도 보상뿐이다** — 지역 첫 진입 10회와 퀘스트 약 7회, 합쳐 약 1,900석(소환 63회).
-다 쓰면 더 벌 길이 없어 천장(90회)에 못 닿는다. 오늘 과제(과제당 20)와 리워드 광고(회당 15, 일 3회)를
-붙여야 반복 수급이 생긴다. 광고는 SDK(C3) 뒤다. 과제는 지금도 가능하지만 `DailyGoal` 3종의 보상을
-바꾸면 기존 보상이 하나 사라지므로, 넷째 과제를 더할지 완료 덤을 줄지 먼저 정한다.
+### D6. 소환석의 소비처 · M
+계획 1의 공급은 지역 첫 진입 10 × 150 + 퀘스트 7 × 60 = **1,920석**(낱개 64회, 10연차 71회)이다.
+그런데 **만렙(네 칸 ★5)까지 평균 26.6회**밖에 안 든다 — `mergeStars` 가 중복마다 최소 +1을 주기 때문이다.
+5지역째(301층) 무렵 이미 만렙이고 **약 1,000석이 갈 곳이 없다.**
+
+**부족이 아니라 잉여다.** 과제·광고 수급을 붙이면 잉여가 더 커지므로, 반복 수급보다 **소비처**가 먼저다.
+정령 축(계획 3)이 같은 소환석을 쓰는 것이 그 답이고, 그것으로도 남으면 성급 상한을 6·7로 여는 길이 있다.
+
+**천장 90회는 지금 죽은 장치다** — 닿을 무렵엔 이미 네 칸이 ★5다. 스펙 8.2의 근거("무료 뽑기라 운에
+맡기면 몇 달")는 `+1 승급` 규칙이 들어오며 무효가 됐다. 소비처를 정할 때 천장 수치도 같이 다시 잡는다.
 
 ### D6-1. 소환 계수를 서버에서 조정하기 · S
 소환 계수 6개(`summonCost`·`summonTenCost`·`summonPity`·`summonStonePerRegion`·`summonStonePerQuest`·`dragonStageMultiplier`)가
 지금은 클라이언트 기본값으로만 산다. `balance_codec.dart` 가 폴백으로 읽으므로 서버가 안 보내도 돌아가지만,
 **밸런스를 고치려면 앱을 새로 내야 한다.** 서버로 내보내려면 `balance.json` 말고도
-`masterdata/app/dtos/balance_dto.py`·`masterdata/app/ports/output/balance_source_port.py`·`hub/app/dtos/balance_dto.py`·
-`save/domain/balance/formulas.py`와 테스트 지원 넷을 같이 고쳐야 한다. 수급량을 실제로 조정할 때(스펙 12절) 한다.
+`backend/apps/masterdata/app/dtos/balance_dto.py`·`backend/apps/masterdata/app/ports/output/balance_source_port.py`·
+`backend/apps/hub/app/dtos/balance_dto.py`·`backend/apps/save/domain/balance/formulas.py`와 테스트 지원 넷을 같이 고쳐야 한다.
+서버는 유물 상태 자체를 모른다 — Snapshot에 유물이 없어 계수만 보내도 안 풀린다. 공속이 클라이언트 배수를 갖게 된 것은
+이번이 처음이라 delta_rules의 여유가 원리적으로 보장된 것은 아니다. 수급량을 실제로 조정할 때(스펙 12절) 한다.
 
 ### D7. 용화 단계 스프라이트 · M
 용화 0~5단계가 지금은 글자로만 보인다. `ART_GUIDE.md` 2절의 용 단계 표(뿔·꼬리·날개막·비늘)를 주인공에게

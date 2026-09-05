@@ -64,6 +64,17 @@ void main() {
       final after = grantQuestReward(before, quest, const BalanceConfig());
       expect(after.summon.stones, quest.rewardAmount);
     });
+
+    test('21~60번에서 목표가 보상 하나로 굳지 않는다', () {
+      final byGoal = <QuestGoal, Set<RewardKind>>{};
+      for (final q in questTable.where((q) => q.number >= 21)) {
+        byGoal.putIfAbsent(q.goal, () => {}).add(q.reward);
+      }
+      for (final entry in byGoal.entries) {
+        expect(entry.value.length, greaterThan(1),
+            reason: '${entry.key} 목표가 ${entry.value} 하나로 굳었다');
+      }
+    });
   });
 
   group('진행과 수령', () {
