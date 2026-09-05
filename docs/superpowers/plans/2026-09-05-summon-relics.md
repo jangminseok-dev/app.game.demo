@@ -622,6 +622,9 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 - Consumes: Task 1의 `SummonState`·`relicBonus`·`dragonMultiplier`
 - Produces: `Stats withRelics(SummonState summon, BalanceConfig c)` — `Stats` 사슬의 마지막 칸
 
+**`GameState` 는 `const GameState()` 로 못 만든다** — `stage`·`highestStage`·`gold` 등이 `required` 다.
+이 저장소의 테스트는 전부 `GameState.initial(config)` 로 시작하고 `copyWith` 로 바꾼다. 그 방식을 따라라.
+
 **어디에 무엇이 걸리나:**
 
 | 유물 | 어디에 |
@@ -677,13 +680,13 @@ grep -n "maxHeroHp" -A3 lib/domain/game_state.dart
     });
 
     test('비늘은 최대 체력에 걸린다', () {
-      const bare = GameState();
+      final bare = GameState.initial(config);
       final scaled = bare.copyWith(summon: const SummonState(relics: {RelicSlot.scale: 4}));
       expect(scaled.maxHeroHp(config), closeTo(bare.maxHeroHp(config) * 1.22, 1e-6));
     });
 
     test('statsWith가 유물을 거친다 — 사슬에 붙어 있어야 한다', () {
-      const bare = GameState();
+      final bare = GameState.initial(config);
       final horned = bare.copyWith(summon: const SummonState(relics: {RelicSlot.horn: 5}));
       expect(horned.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
     });
@@ -807,26 +810,26 @@ flutter test test/domain/quest_test.dart 2>&1 | tail -3
     BattleEngine engineWith(MonsterCatalog catalog) => BattleEngine(config, catalog: catalog);
 
     test('지역을 처음 밟을 때마다 소환석을 준다', () {
-      final after = engineWith(_twoRegionCatalog()).grantRegionStones(const GameState(highestStage: 1));
+      final after = engineWith(_twoRegionCatalog()).grantRegionStones(GameState.initial(config));
       expect(after.summon.stones, config.summonStonePerRegion, reason: '첫 지역 하나');
       expect(after.summon.regionsRewarded, 1);
     });
 
     test('같은 지역에서 또 부르면 안 준다 — 여러 번 불려도 안전해야 한다', () {
       final engine = engineWith(_twoRegionCatalog());
-      final once = engine.grantRegionStones(const GameState(highestStage: 1));
+      final once = engine.grantRegionStones(GameState.initial(config));
       final twice = engine.grantRegionStones(once);
       expect(twice.summon.stones, once.summon.stones);
     });
 
     test('여러 지역을 건너뛰어도 밀린 만큼 다 준다', () {
-      final after = engineWith(_twoRegionCatalog()).grantRegionStones(const GameState(highestStage: 500));
+      final after = engineWith(_twoRegionCatalog()).grantRegionStones(GameState.initial(config).copyWith(highestStage: 500));
       expect(after.summon.stones, config.summonStonePerRegion * 2);
       expect(after.summon.regionsRewarded, 2);
     });
 
     test('카탈로그가 비면 아무 일도 없다', () {
-      final after = engineWith(MonsterCatalog.empty).grantRegionStones(const GameState(highestStage: 500));
+      final after = engineWith(MonsterCatalog.empty).grantRegionStones(GameState.initial(config).copyWith(highestStage: 500));
       expect(after.summon.stones, 0);
     });
   });
@@ -844,7 +847,7 @@ flutter test test/domain/quest_test.dart 2>&1 | tail -3
 
   test('소환석 퀘스트를 받으면 소환석이 는다', () {
     final quest = questTable.firstWhere((q) => q.reward == RewardKind.summonStone);
-    const before = GameState();
+    final before = GameState.initial(const BalanceConfig());
     final after = grantQuestReward(before, quest, const BalanceConfig());
     expect(after.summon.stones, quest.rewardAmount);
   });
