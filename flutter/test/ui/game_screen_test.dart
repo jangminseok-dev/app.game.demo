@@ -8,8 +8,9 @@ import 'package:idle_fantasy/domain/offline_reward.dart';
 import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/hud/game_popup.dart';
-import 'package:idle_fantasy/ui/hud/hud_metrics.dart';
 import 'package:idle_fantasy/ui/hud/pixel_icons.dart';
+import 'package:idle_fantasy/ui/hud/skill_bar.dart';
+import 'package:idle_fantasy/ui/party_row.dart';
 
 import '../support/catalog.dart';
 import '../support/in_memory_save_repository.dart';
@@ -183,8 +184,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final body = tester.getRect(find.byKey(const Key('popup-body')));
-    expect(body.bottom, lessThanOrEqualTo(720 - hudBottomInset),
-        reason: '팝업 아래로 하단 바와 우하단 스킬칸 자리가 남아야 한다 (스펙 4.6)');
+    // 상수가 아니라 실제 HUD 위젯의 사각형과 비교한다 — hudBottomInset이 틀려도
+    // 실제 위젯이 겹치는지를 재는 것이 이 테스트의 목적이다.
+    final hudRects = [
+      tester.getRect(find.byType(PartyPortraits)),
+      tester.getRect(find.byType(SkillBar)),
+      tester.getRect(find.byWidgetPredicate((w) => w is HudButton && w.label == '대장간')),
+    ];
+    for (final hud in hudRects) {
+      expect(body.bottom, lessThanOrEqualTo(hud.top),
+          reason: '팝업이 실제 하단 HUD 위젯($hud)과 세로로 겹치면 안 된다 (스펙 4.6)');
+    }
   });
 
   testWidgets('좁은 화면에서도 팝업이 화면 안에 들어간다', (tester) async {
