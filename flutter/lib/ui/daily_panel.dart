@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/daily.dart';
 import '../domain/number_format.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 
@@ -32,7 +33,7 @@ class DailyPanel extends ConsumerWidget {
             onClaim: () {
               final got = controller.claimDaily(goal);
               if (got == null) return;
-              showRewardPopup(context, title: '오늘 과제', lines: [
+              showRewardPopup(context, title: '오늘 과제', icon: PixelIcon.calendar, lines: [
                 '${goal.reward.label} +${formatNumber(got.toDouble())}',
               ]);
             },

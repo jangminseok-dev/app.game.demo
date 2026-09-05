@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/equipment.dart';
 import '../domain/number_format.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 import 'hud/reward_popup.dart';
 
@@ -73,7 +74,7 @@ class ForgePanel extends ConsumerWidget {
                 ? () {
                     final made = controller.craft();
                     if (made == null) return;
-                    showRewardPopup(context, title: '제작', lines: [_line(made)]);
+                    showRewardPopup(context, title: '제작', icon: PixelIcon.hammer, lines: [_line(made)]);
                   }
                 : null,
             child: PixelPanel(

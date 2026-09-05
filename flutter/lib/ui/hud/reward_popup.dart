@@ -10,7 +10,7 @@ import 'pixel_ui.dart';
 Future<void> showRewardPopup(
   BuildContext context, {
   String title = '보상',
-  PixelIcon icon = PixelIcon.growth,
+  required PixelIcon icon,
   required List<String> lines,
 }) {
   return showDialog<void>(
