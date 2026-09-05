@@ -72,7 +72,7 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// ListView 안에 ListView를 넣을 때 안쪽 스크롤을 끈다.
+/// 스크롤바만 감춘다 — 스크롤 자체는 각 패널의 physics가 끈다.
 class _Unscrolled extends StatelessWidget {
   const _Unscrolled({required this.child});
   final Widget child;

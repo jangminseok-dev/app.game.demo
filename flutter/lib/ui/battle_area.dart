@@ -86,8 +86,9 @@ class _BattleAreaState extends ConsumerState<BattleArea> with SingleTickerProvid
             ),
           ),
         ),
+        // 하단 5칸(단추 54 + 라벨) 위 15px. textScaler·글꼴 메트릭으로 라벨이 자라도 겹치지 않게.
         Positioned(
-          left: 0, right: 0, bottom: 70,
+          left: 0, right: 0, bottom: 84,
           child: IgnorePointer(
             child: Center(child: MonsterLine(state: state, monster: monster, captureLine: captureLine())),
           ),

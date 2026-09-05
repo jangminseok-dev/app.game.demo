@@ -7,6 +7,7 @@ import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/offline_reward.dart';
 import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
+import 'package:idle_fantasy/ui/hud/game_popup.dart';
 
 import '../support/catalog.dart';
 import '../support/in_memory_save_repository.dart';
@@ -156,5 +157,17 @@ void main() {
     expect(find.text('던전'), findsWidgets);
     expect(find.text('도전'), findsWidgets);
     expect(find.text('층 이동'), findsWidgets, reason: '층 이동이 던전 탭 안에 있다');
+  });
+
+  testWidgets('잠금 단추는 화면을 열지 않고 준비 중만 알린다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('소환').first);
+    await tester.pump();
+    expect(find.textContaining('준비 중'), findsWidgets);
+    expect(find.byType(GamePopup), findsNothing, reason: '잠금 단추는 팝업을 열지 않는다');
   });
 }

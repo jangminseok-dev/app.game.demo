@@ -44,16 +44,23 @@ class PartyPortraits extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 8),
-        _Portrait(label: '주인공', child: const PixelText('나', size: 12, color: PixelPalette.gold), onTap: null),
+        _Portrait(label: '주인공', onTap: null, child: const PixelText('나', size: 12, color: PixelPalette.gold)),
         const SizedBox(width: 4),
         _Portrait(
           label: state.pets.active?.grade.label ?? '펫',
-          child: PixelIconView(PixelIcon.egg, size: 16),
           alert: state.hatchery.hasReady,
           onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
+          child: PixelIconView(PixelIcon.egg, size: 16),
         ),
         const SizedBox(width: 4),
-        _Portrait(label: '동료', child: const PixelText('L', size: 10), locked: true, onTap: null),
+        _Portrait(
+          label: '동료',
+          locked: true,
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: PixelText('동료 — 준비 중', size: 12), duration: const Duration(seconds: 1)),
+          ),
+          child: const PixelText('L', size: 10),
+        ),
       ],
     );
   }
