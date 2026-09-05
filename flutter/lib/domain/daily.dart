@@ -6,7 +6,7 @@ import 'quest.dart';
 /// 번호 퀘스트가 "어디까지 왔는가"라면 일일 과제는 "오늘 무엇을 했는가"다.
 /// 둘이 섞이면 둘 다 흐려지므로 표를 따로 둔다.
 enum DailyGoal {
-  kills('오늘 몬스터 처치', 100, RewardKind.gold, 20000),
+  kills('오늘 몬스터 처치', 100, RewardKind.summonStone, 30),
   dungeonFloors('오늘 던전 층 클리어', 1, RewardKind.ticket, 1),
   crafts('오늘 장비 제작', 3, RewardKind.stone, 60);
 

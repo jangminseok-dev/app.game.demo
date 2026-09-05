@@ -67,9 +67,9 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       upgradeBaseCosts: _costs(j['upgradeBaseCosts'] as Map<String, dynamic>?),
       summonCost: _i(j, 'summonCost', 30),
       summonTenCost: _i(j, 'summonTenCost', 270),
-      summonPity: _i(j, 'summonPity', 90),
-      summonStonePerRegion: _i(j, 'summonStonePerRegion', 150),
-      summonStonePerQuest: _i(j, 'summonStonePerQuest', 60),
+      summonPity: _i(j, 'summonPity', 40),
+      summonStonePerRegion: _i(j, 'summonStonePerRegion', 50),
+      summonStonePerQuest: _i(j, 'summonStonePerQuest', 30),
       dragonStageMultiplier: _d(j, 'dragonStageMultiplier', 1.06),
     );
 

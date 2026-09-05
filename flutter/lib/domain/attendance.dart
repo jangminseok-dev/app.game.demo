@@ -9,7 +9,7 @@ const attendanceTable = <(RewardKind, int)>[
   (RewardKind.stone, 40),
   (RewardKind.ticket, 1),
   (RewardKind.eggShard, 60),
-  (RewardKind.gold, 12000),
+  (RewardKind.summonStone, 90),
   (RewardKind.skillPage, 50),
   (RewardKind.ticket, 2),
 ];

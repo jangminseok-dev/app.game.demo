@@ -113,7 +113,9 @@ void main() {
       expect(mergeStars(current: 3, rolled: 1), 4);
       expect(mergeStars(current: 3, rolled: 5), 5);
       expect(mergeStars(current: 0, rolled: 2), 2);
-      expect(mergeStars(current: 5, rolled: 1), 5, reason: '상한을 넘지 않는다');
+      expect(mergeStars(current: 5, rolled: 1), 6, reason: '★5는 더 이상 끝이 아니다 — 상한은 ★10이다');
+      expect(mergeStars(current: SummonState.maxStars, rolled: 1), SummonState.maxStars,
+          reason: '상한을 넘지 않는다');
     });
   });
 
@@ -196,6 +198,63 @@ void main() {
       final bare = GameState.initial(config);
       final horned = bare.copyWith(summon: const SummonState(relics: {RelicSlot.horn: 5}));
       expect(horned.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
+    });
+  });
+
+  group('깊어진 유물 축', () {
+    test('성급 상한은 ★10이다', () {
+      expect(SummonState.maxStars, 10);
+    });
+
+    test('용화 단계는 5에서 멈춘다 — 아트 표가 5단계뿐이다', () {
+      // 네 칸 다 ★10이면 합 40, 4로 나누면 10이지만 단계는 5가 끝이다.
+      const full = SummonState(relics: {
+        RelicSlot.horn: 10, RelicSlot.tail: 10, RelicSlot.wing: 10, RelicSlot.scale: 10,
+      });
+      expect(full.totalStars, 40);
+      expect(full.dragonStage, 5);
+      expect(SummonState.maxDragonStage, 5);
+    });
+
+    test('★5 뒤 보정은 완만해진다', () {
+      final values = [for (var s = 0; s <= 10; s++) relicBonus(s)];
+      expect(values, [0, 0.04, 0.09, 0.15, 0.22, 0.30, 0.33, 0.36, 0.38, 0.39, 0.40]);
+      // 증가폭이 줄어든다 — 깊은 성급은 길이를 벌지 힘을 벌지 않는다.
+      final steps = [for (var s = 1; s <= 10; s++) values[s] - values[s - 1]];
+      for (var i = 5; i < steps.length; i++) {
+        expect(steps[i], lessThanOrEqualTo(steps[i - 1] + 1e-9), reason: '★${i + 1} 증가폭');
+      }
+    });
+
+    test('상한이 올라도 굴려 나오는 최고 성급은 ★5다', () {
+      expect(maxRolledStars, 5);
+      final rng = Random(3);
+      for (var i = 0; i < 200; i++) {
+        expect(rollRelic(rng, pityReached: false).stars, lessThanOrEqualTo(5));
+      }
+    });
+
+    test('천장은 상한이 아니라 확률표 꼭대기(★5)를 준다', () {
+      final r = rollRelic(Random(1), pityReached: true);
+      expect(r.stars, 5, reason: '★10을 주면 천장 하나로 한 칸이 끝난다');
+      expect(r.byPity, isTrue);
+    });
+
+    test('천장 카운터는 굴린 ★5에서 초기화된다 — 상한 기준이면 영영 안 걸린다', () {
+      final start = SummonState(stones: 10000, pityCount: config.summonPity - 1);
+      final (after, results) = summonRelics(start, Random(5), config, count: 1);
+      expect(results.single.stars, 5);
+      expect(after.pityCount, 0);
+    });
+
+    test('만렙은 네 칸이 다 ★10일 때다', () {
+      const nine = SummonState(relics: {
+        RelicSlot.horn: 10, RelicSlot.tail: 10, RelicSlot.wing: 10, RelicSlot.scale: 9,
+      });
+      expect(nine.isMaxed, isFalse);
+      expect(nine.copyWith(relics: {
+        RelicSlot.horn: 10, RelicSlot.tail: 10, RelicSlot.wing: 10, RelicSlot.scale: 10,
+      }).isMaxed, isTrue);
     });
   });
 

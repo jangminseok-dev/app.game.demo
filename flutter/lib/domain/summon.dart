@@ -29,8 +29,13 @@ class SummonState {
 
   static const empty = SummonState();
 
-  /// 유물 성급 상한.
-  static const maxStars = 5;
+  /// 유물 성급 상한. ★5 뒤는 보정이 완만해져 힘보다 길이를 번다.
+  static const maxStars = 10;
+
+  /// 용화 단계 상한. 아트 표가 다섯 단계뿐이다 —
+  /// 뿔·꼬리·날개막·비늘, 그리고 눈이 빛나는 것(ART_GUIDE 2절).
+  /// 성급 상한과 따로 둔다. 묶으면 상한을 올릴 때 없는 그림을 요구하게 된다.
+  static const maxDragonStage = 5;
 
   final int stones;
 
@@ -51,7 +56,7 @@ class SummonState {
   ///
   /// 최솟값으로 재면 한 칸이 안 나올 때 나머지 셋이 통째로 죽는다.
   /// 무료 소환이라 뽑는 횟수가 적어 그 벽이 몇 주가 된다(스펙 3.3).
-  int get dragonStage => (totalStars ~/ RelicSlot.values.length).clamp(0, maxStars);
+  int get dragonStage => (totalStars ~/ RelicSlot.values.length).clamp(0, maxDragonStage);
 
   bool canSummon(BalanceConfig c) => stones >= c.summonCost;
   bool canSummonTen(BalanceConfig c) => stones >= c.summonTenCost;
@@ -94,7 +99,9 @@ class SummonState {
 }
 
 /// 유물 하나가 주는 보정(0~0.30).
-const _relicBonusByStars = [0.0, 0.04, 0.09, 0.15, 0.22, 0.30];
+/// ★5까지는 가파르고 그 뒤는 완만하다. 깊은 성급은 축의 **길이**를 벌지 힘을 벌지 않는다 —
+/// 늘어난 힘이 빨리 오면 장비가 죽는다(스펙 3.4).
+const _relicBonusByStars = [0.0, 0.04, 0.09, 0.15, 0.22, 0.30, 0.33, 0.36, 0.38, 0.39, 0.40];
 
 double relicBonus(int stars) => _relicBonusByStars[stars.clamp(0, SummonState.maxStars)];
 
@@ -126,11 +133,15 @@ class SummonResult {
 /// 성급 확률표. 스펙 8.1과 같아야 한다 — 화면의 `확률 보기`도 이 표를 읽는다.
 const relicStarChances = <int, double>{1: 0.60, 2: 0.25, 3: 0.10, 4: 0.04, 5: 0.01};
 
+/// 굴려서 나올 수 있는 최고 성급. **성급 상한과 다르다** —
+/// 상한 위쪽은 중복 승급으로만 오른다. 천장도 이 값을 준다.
+final maxRolledStars = relicStarChances.keys.reduce(max);
+
 /// 유물 하나를 뽑는다. 부위는 균등, 성급은 표. 천장에 닿았으면 ★5 확정.
 SummonResult rollRelic(Random rng, {required bool pityReached}) {
   final slot = RelicSlot.values[rng.nextInt(RelicSlot.values.length)];
   if (pityReached) {
-    return SummonResult(slot: slot, stars: SummonState.maxStars, byPity: true);
+    return SummonResult(slot: slot, stars: maxRolledStars, byPity: true);
   }
   var r = rng.nextDouble();
   for (final entry in relicStarChances.entries) {
@@ -174,7 +185,7 @@ int mergeStars({required int current, required int rolled}) =>
       byPity: rolled.byPity,
       upgraded: current > 0,
     ));
-    if (rolled.stars >= SummonState.maxStars) pity = 0;
+    if (rolled.stars >= maxRolledStars) pity = 0;
   }
 
   return (s.copyWith(stones: s.stones - cost, relics: relics, pityCount: pity), results);

@@ -353,7 +353,7 @@ void main() {
     expect(find.textContaining('1%'), findsWidgets, reason: '★5 확률 1%');
   });
 
-  testWidgets('연 직후 상태가 정해진 대로다 — 천장 90회, 용화 0단계, 단추 둘', (tester) async {
+  testWidgets('연 직후 상태가 정해진 대로다 — 천장 카운터, 용화 0단계, 단추 둘', (tester) async {
     tester.view.physicalSize = const Size(1600, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -363,7 +363,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('용화 0'), findsWidgets);
-    expect(find.textContaining('90'), findsWidgets, reason: '천장 카운터는 pityCount 0에서 90회다');
+    expect(find.textContaining('${const BalanceConfig().summonPity}'), findsWidgets,
+        reason: '천장 카운터는 pityCount 0에서 summonPity회다');
     expect(find.text('1회'), findsWidgets);
     expect(find.text('10회'), findsWidgets);
   });

@@ -33,7 +33,8 @@ void main() {
     expect(dailyReady(DailyGoal.kills, s), isTrue);
 
     final claimed = engine.claimDaily(s, DailyGoal.kills)!.$1;
-    expect(claimed.gold, greaterThan(s.gold));
+    // 처치 과제는 골드가 아니라 소환석을 준다 — 접속 보상이 소환 축을 먹인다.
+    expect(claimed.summon.stones, greaterThan(s.summon.stones));
     expect(engine.claimDaily(claimed, DailyGoal.kills), isNull, reason: '두 번은 안 된다');
   });
 

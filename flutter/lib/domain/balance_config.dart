@@ -82,9 +82,9 @@ class BalanceConfig {
     },
     this.summonCost = 30,
     this.summonTenCost = 270,
-    this.summonPity = 90,
-    this.summonStonePerRegion = 150,
-    this.summonStonePerQuest = 60,
+    this.summonPity = 40,
+    this.summonStonePerRegion = 50,
+    this.summonStonePerQuest = 30,
     this.dragonStageMultiplier = 1.06,
   });
 
