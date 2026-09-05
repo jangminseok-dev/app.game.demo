@@ -8,6 +8,7 @@ import '../domain/number_format.dart';
 import 'hud/game_popup.dart';
 import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
+import 'hud/popup_two_pane.dart';
 
 /// 장비 화면 — 왼쪽은 입고 있는 것, 오른쪽은 가방.
 ///
@@ -23,90 +24,70 @@ class EquipmentPanel extends ConsumerWidget {
     final config = ref.watch(balanceConfigProvider);
     final controller = ref.read(gameControllerProvider.notifier);
 
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── 왼쪽: 입고 있는 것과 강화
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(8),
-                  children: [
-                    _EnhanceCard(equipment: eq, config: config, onEnhance: controller.enhance),
-                    const SizedBox(height: 8),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 6,
-                      crossAxisSpacing: 6,
-                      childAspectRatio: 1.1,
-                      children: [
-                        for (final slot in EquipSlot.values)
-                          _SlotTile(slot: slot, item: eq.equipped[slot]),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              // ── 오른쪽: 가방
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 8, 2, 4),
-                      child: PixelText('가방 ${eq.inventory.length}', size: 11, color: PixelPalette.textDim),
-                    ),
-                    Expanded(
-                      child: eq.inventory.isEmpty
-                          ? const Center(
-                              child: PixelText('비어 있음', size: 11, color: PixelPalette.textDim),
-                            )
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(2),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                mainAxisSpacing: 5,
-                                crossAxisSpacing: 5,
-                                childAspectRatio: 0.95,
-                              ),
-                              itemCount: eq.inventory.length,
-                              itemBuilder: (context, i) => GestureDetector(
-                                onTap: () => _openCompare(context, ref, i),
-                                child: _BagTile(item: eq.inventory[i]),
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return PopupTwoPane(
+      // ── 왼쪽: 입고 있는 것과 강화
+      left: PopupPane(
+        action: _Button(
+          label: '자동 장착',
+          enabled: eq.inventory.isNotEmpty,
+          onTap: controller.autoEquip,
         ),
-        // ── 아래: 일괄 단추
-        Padding(
+        child: ListView(
           padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _Button(
-                label: '자동 장착',
-                enabled: eq.inventory.isNotEmpty,
-                onTap: controller.autoEquip,
-              ),
-              _Button(
-                label: '일괄 분해',
-                enabled: eq.inventory.isNotEmpty,
-                onTap: controller.scrapAll,
-              ),
-            ],
-          ),
+          children: [
+            _EnhanceCard(equipment: eq, config: config, onEnhance: controller.enhance),
+            const SizedBox(height: 8),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: 1.1,
+              children: [
+                for (final slot in EquipSlot.values)
+                  _SlotTile(slot: slot, item: eq.equipped[slot]),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
+      // ── 오른쪽: 가방
+      right: PopupPane(
+        warning: eq.inventory.isEmpty ? null : '분해한 장비는 되돌릴 수 없습니다',
+        action: _Button(
+          label: '일괄 분해',
+          enabled: eq.inventory.isNotEmpty,
+          onTap: controller.scrapAll,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(2, 8, 2, 4),
+              child: PixelText('가방 ${eq.inventory.length}', size: 11, color: PixelPalette.textDim),
+            ),
+            Expanded(
+              child: eq.inventory.isEmpty
+                  ? const Center(child: PixelText('비어 있음', size: 11, color: PixelPalette.textDim))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(2),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 5,
+                        crossAxisSpacing: 5,
+                        childAspectRatio: 0.95,
+                      ),
+                      itemCount: eq.inventory.length,
+                      itemBuilder: (context, i) => GestureDetector(
+                        onTap: () => _openCompare(context, ref, i),
+                        child: _BagTile(item: eq.inventory[i]),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

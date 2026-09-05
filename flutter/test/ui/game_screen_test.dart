@@ -9,6 +9,7 @@ import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/hud/game_popup.dart';
 import 'package:idle_fantasy/ui/hud/pixel_icons.dart';
+import 'package:idle_fantasy/ui/hud/popup_two_pane.dart';
 import 'package:idle_fantasy/ui/hud/skill_bar.dart';
 import 'package:idle_fantasy/ui/party_row.dart';
 
@@ -254,5 +255,32 @@ void main() {
     expect(find.byKey(const Key('popup-body')), findsOneWidget,
         reason: '팝업 위에 팝업이 뜨면 안 된다 — 본문이 둘이면 창이 쌓인 것이다');
     expect(find.text('부화'), findsWidgets, reason: '펫 화면으로 바뀌었다');
+  });
+
+  testWidgets('일괄 단추가 각 단 아래에 따로 서고 분해에 경고가 붙는다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('장비').first);
+    await tester.pumpAndSettle();
+
+    final auto = tester.getRect(find.text('자동 장착').first);
+    final scrap = tester.getRect(find.text('일괄 분해').first);
+    expect(auto.center.dx, lessThan(scrap.center.dx), reason: '왼쪽 단 아래 · 오른쪽 단 아래 (스펙 4.5)');
+
+    final body = tester.getRect(find.byKey(const Key('popup-body')));
+    expect(auto.center.dx, lessThan(body.center.dx), reason: '자동 장착은 왼쪽 단 안이다');
+    expect(scrap.center.dx, greaterThan(body.center.dx), reason: '일괄 분해는 오른쪽 단 안이다');
+
+    // 스펙 4.5의 핵심은 좌표가 아니라 소속이다 — 각 단추가 자기 단 안에 있는가.
+    // 위치만 재면 옛 구조(한 줄 spaceEvenly)도 통과한다. 자식 둘이면 1/3·2/3라 좌우 대칭이기 때문이다.
+    final panes = find.byType(PopupPane);
+    expect(panes, findsNWidgets(2));
+    expect(find.descendant(of: panes.first, matching: find.text('자동 장착')), findsWidgets,
+        reason: '자동 장착은 왼쪽 단 소속이다');
+    expect(find.descendant(of: panes.last, matching: find.text('일괄 분해')), findsWidgets,
+        reason: '일괄 분해는 오른쪽 단 소속이다');
   });
 }
