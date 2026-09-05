@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/game_controller.dart';
+import '../domain/spirit.dart';
 import '../domain/summon.dart';
 import 'hud/game_popup.dart';
 import 'hud/pixel_icons.dart';
@@ -10,8 +13,6 @@ import 'hud/popup_two_pane.dart';
 import 'hud/summon_flourish.dart';
 
 /// 소환 — 유물 네 칸을 굴려 주인공을 용으로 키운다. 유물 / 정령 2탭.
-///
-/// 정령은 이번 계획 밖이라 탭 자리만 두고 잠근다(스펙 6절).
 class SummonPanel extends ConsumerStatefulWidget {
   const SummonPanel({super.key});
 
@@ -22,6 +23,7 @@ class SummonPanel extends ConsumerStatefulWidget {
 class _SummonPanelState extends ConsumerState<SummonPanel> {
   int _tab = 0;
   List<SummonResult> _results = const [];
+  List<SpiritSummonResult> _spiritResults = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class _SummonPanelState extends ConsumerState<SummonPanel> {
         Expanded(
           child: _tab == 0
               ? _RelicTab(results: _results, onSummon: _summon)
-              : const Center(child: PixelText('정령 — 준비 중', size: 12, color: PixelPalette.textDim)),
+              : _SpiritTab(results: _spiritResults, onSummon: _summonSpirit),
         ),
       ],
     );
@@ -61,7 +63,17 @@ class _SummonPanelState extends ConsumerState<SummonPanel> {
     final results = controller.summonRelic(count: count);
     if (results.isEmpty) return;
     setState(() => _results = results);
-    showSummonFlourish(context, results);
+    showSummonFlourish(context, [for (final r in results) r.line],
+        topStars: results.map((r) => r.stars).reduce(math.max));
+  }
+
+  void _summonSpirit(int count) {
+    final controller = ref.read(gameControllerProvider.notifier);
+    final results = controller.summonSpirit(count: count);
+    if (results.isEmpty) return;
+    setState(() => _spiritResults = results);
+    showSummonFlourish(context, [for (final r in results) r.line],
+        topStars: results.map((r) => r.stars).reduce(math.max));
   }
 
   /// `확률 보기` — relicStarChances를 그대로 읽어 그린다. 손으로 다시 적으면 코드와 갈라진다.
@@ -179,6 +191,105 @@ class _RelicTab extends ConsumerWidget {
             // 다음 소환에서 확정으로 터지므로 0으로 묶어 보여 준다.
             PixelText('★$maxRolledStars까지 ${(config.summonPity - summon.pityCount).clamp(0, config.summonPity)}회',
                 size: 10, color: PixelPalette.textDim),
+            const SizedBox(height: 2),
+            PixelText('소환석 ${summon.stones}', size: 11, color: PixelPalette.textDim),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 정령 탭 본문 — 왼쪽 4종 다 보여 주고 편성, 오른쪽 나온 것.
+class _SpiritTab extends ConsumerWidget {
+  const _SpiritTab({required this.results, required this.onSummon});
+
+  final List<SpiritSummonResult> results;
+  final void Function(int count) onSummon;
+
+  /// 정령 한 줄. 안 가진 것은 흐린 `—`, 편성된 것은 금테.
+  Widget _row(SpiritId id, SpiritState spirits, WidgetRef ref) {
+    final stars = spirits.starsOf(id);
+    final content = Row(
+      children: [
+        PixelText(id.label, size: 12, color: Color(id.color)),
+        const Spacer(),
+        stars > 0
+            ? PixelText('★$stars', size: 12, color: PixelPalette.gold)
+            : const PixelText('—', size: 12, color: PixelPalette.textDim),
+      ],
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: stars > 0 ? () => ref.read(gameControllerProvider.notifier).equipSpirit(id) : null,
+      child: spirits.active == id ? PixelPanel(border: PixelPalette.gold, child: content) : content,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(gameControllerProvider);
+    final summon = state.summon;
+    final spirits = state.spirits;
+    final config = ref.watch(balanceConfigProvider);
+
+    return PopupTwoPane(
+      // ── 왼쪽: 4종 다 보여 준다. 편성은 눌러서 바꾼다 — 일괄 단추는 없다.
+      left: PopupPane(
+        child: ListView(
+          padding: const EdgeInsets.all(8),
+          children: [
+            for (final id in SpiritId.values)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: _row(id, spirits, ref),
+              ),
+          ],
+        ),
+      ),
+      // ── 오른쪽: 나온 것, 천장 카운터, 소환석, 소환 단추.
+      right: PopupPane(
+        action: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _Button(
+              label: '1회',
+              enabled: summon.canSummon(config) && !spirits.isMaxed,
+              onTap: () => onSummon(1),
+            ),
+            const SizedBox(width: 6),
+            _Button(
+              label: '10회',
+              enabled: summon.canSummonTen(config) && !spirits.isMaxed,
+              onTap: () => onSummon(10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: spirits.isMaxed
+                  ? const Center(child: PixelText('정령을 다 모았습니다', size: 11, color: PixelPalette.textDim))
+                  : results.isEmpty
+                  ? const Center(child: PixelText('아직 없음', size: 11, color: PixelPalette.textDim))
+                  : ListView(
+                      padding: const EdgeInsets.all(4),
+                      children: [
+                        for (final r in results)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: PixelText('[${r.line.text}]', size: 11),
+                          ),
+                      ],
+                    ),
+            ),
+            // 정령은 천장을 유물과 따로 센다(SpiritState.pityCount).
+            PixelText(
+              '★$maxRolledStars까지 ${(config.summonPity - spirits.pityCount).clamp(0, config.summonPity)}회',
+              size: 10,
+              color: PixelPalette.textDim,
+            ),
             const SizedBox(height: 2),
             PixelText('소환석 ${summon.stones}', size: 11, color: PixelPalette.textDim),
           ],

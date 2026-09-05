@@ -493,12 +493,13 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
   group('전투 루프', () {
     BattleEngine engine() => const BattleEngine(BalanceConfig());
 
-    GameState withSpirit(SpiritId id, int stars) => GameState.initial(config).copyWith(
+    // 이름을 `withSpirit` 으로 두지 마라 — 같은 파일에서 `stats.withSpirit(...)` 을 부른다.
+    GameState stateWith(SpiritId id, int stars) => GameState.initial(config).copyWith(
           spirits: SpiritState(owned: {id: stars}, active: id),
         );
 
     test('게이지는 시간으로 찬다', () {
-      var s = withSpirit(SpiritId.crystal, 1);
+      var s = stateWith(SpiritId.crystal, 1);
       s = engine().tick(s, 9, Random(1));
       expect(s.spirits.gauge, closeTo(9 / config.spiritGaugeSeconds, 0.02),
           reason: '90초에 1이 되는 속도다');
@@ -511,7 +512,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('가득 차면 나오고 게이지가 0으로 돌아간다', () {
-      var s = withSpirit(SpiritId.crystal, 3).copyWith(
+      var s = stateWith(SpiritId.crystal, 3).copyWith(
         spirits: SpiritState(owned: const {SpiritId.crystal: 3}, active: SpiritId.crystal, gauge: 0.99),
       );
       final before = s.spirits.firedCount;
@@ -521,7 +522,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('이끼는 주인공을 회복시킨다', () {
-      var s = withSpirit(SpiritId.moss, 3);
+      var s = stateWith(SpiritId.moss, 3);
       final maxHp = s.maxHeroHp(config);
       s = s.copyWith(
         heroHp: maxHp * 0.3,
@@ -532,14 +533,14 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('잿불은 화상을, 서리는 둔화를 남긴다', () {
-      var burn = withSpirit(SpiritId.ember, 2).copyWith(
+      var burn = stateWith(SpiritId.ember, 2).copyWith(
         spirits: SpiritState(owned: const {SpiritId.ember: 2}, active: SpiritId.ember, gauge: 1),
       );
       burn = engine().tick(burn, 0.1, Random(1));
       expect(burn.spirits.burnLeft, greaterThan(0));
       expect(burn.spirits.slowLeft, 0);
 
-      var slow = withSpirit(SpiritId.frost, 2).copyWith(
+      var slow = stateWith(SpiritId.frost, 2).copyWith(
         spirits: SpiritState(owned: const {SpiritId.frost: 2}, active: SpiritId.frost, gauge: 1),
       );
       slow = engine().tick(slow, 0.1, Random(1));
@@ -548,7 +549,7 @@ grep -n "config.monsterMoveSpeed" lib/domain/battle_engine.dart
     });
 
     test('화상과 둔화는 시간이 지나면 사라진다', () {
-      var s = withSpirit(SpiritId.ember, 1).copyWith(
+      var s = stateWith(SpiritId.ember, 1).copyWith(
         spirits: const SpiritState(
             owned: {SpiritId.ember: 1}, active: SpiritId.ember, burnLeft: 1, slowLeft: 1),
       );
@@ -1452,3 +1453,38 @@ Claude-Session: https://claude.ai/code/session_017f4M3d46u19kG6LomXX2th"
 | 컷신이 전투 중에 뜨는데 팝업이 이미 떠 있다 | Task 5 Step 4 | `showDialog` 는 쌓인다. 소환 화면을 보는 중에 정령이 나오면 컷신이 그 위에 뜬다 — 1.4초 뒤 스스로 닫히므로 갇히지 않는다. 그대로 둔다 |
 | 컷신이 `barrierDismissible: false` 라 안드로이드 뒤로 가기로도 안 닫힌다 | Task 5 Step 3 | 스스로 닫히므로 갇히지 않는다. 다만 뒤로 가기가 먹히는지 리포트에 적어라 |
 | 게이지가 도는 동안 화면이 안 보여 준다 | Task 4 | 이 계획은 게이지 표시를 안 만든다. 유저는 정령이 언제 나올지 모른다 — **리포트에 적고 백로그 후보로 남겨라** |
+
+---
+
+## 실행 기록 (2026-09-05)
+
+브랜치 `feat/summon-spirits`, 커밋 `fb82575..56ed8e8` 11개. Flutter 313 → 350, 백엔드 79 그대로, analyze 0건.
+
+**이 계획이 틀렸던 곳**
+
+1. **백엔드 함수 이름을 추측했다** — 브리프가 `encodeSave`/`decodeSave` 라고 적었는데 실제는 `encodeState`/`decodeState` 다.
+   구현자가 지시대로 실제 이름을 확인해 고쳤다.
+2. **천장을 유물과 같이 세라고 적었다** — 스펙 8.2는 "유물·정령 각각 따로 센다"다. 자기 범위 밖을 본 리뷰어가 잡았고
+   `SpiritState.pityCount` 로 갈랐다.
+3. **수정의 꿈이 열등했다** — `spiritDamageMultiplier` 가 정령 종류를 안 봐서 단일 대상이 광역과 같은 피해를 냈다.
+   하나만 때리는 대신 2.5배로 판정했다.
+4. **컷신이 자기 라우트가 아니라 맨 위 라우트를 닫았다 (Critical)** — `maybePop()` 을 쓴 것이 원인이다.
+   컷신이 떠 있는 1.4초 안에 던전 보상이나 벽 안내가 겹치면 컷신이 그것을 대신 닫고 자기는 남는다.
+   남은 컷신은 알파 0이라 안 보이는데 입력을 다 삼켜, 맥·iOS에서 앱 재시작 말고는 빠져나올 수 없었다.
+   전체 리뷰가 재현해서 잡았다. 자기 `ModalRoute` 를 잡아 그것만 닫는 것으로 고쳤다.
+5. **뒤로 가기로 컷신이 닫혔다** — 스펙 7.3이 "건너뛸 수 없다"고 못 박은 자리다. `barrierDismissible: false` 는
+   막 탭만 막는다. 태스크 5 리포트가 "뒤로 가기도 안 닫힘"이라고 적었는데 **그 프로브가 틀렸다.**
+6. **정령 만렙에서도 소환석이 탔다** — 유물 탭에 있는 `isMaxed` 가드가 정령 탭에 없었다.
+7. **무의미한 테스트가 또 나왔다** — 뒤로 가기 테스트가 가드를 빼도 통과했다. 시계를 한 번에 점프시키면
+   라우트 퇴장이 그 프레임에 안 잡히는 것이 원인이다. 25ms씩 여덟 번 나눠 그리게 바꿔 회귀를 지키게 했다.
+   **이 브랜치들에서 세 번째로 나온 같은 실패다.**
+8. **문서가 코드보다 앞서 나갔다** — 스펙 11절의 "스펙 전체가 구현됐다", 스펙 7.3의 컷신 길이,
+   백로그 D9의 "파티클·플래시·이징이 없다"가 전부 사실과 달랐다. 병합 전에 셋 다 고쳤다.
+
+**범위 밖으로 뺀 것**
+
+- **D11** — 이끼와 서리가 잿불에 층·처치 두 지표 모두 진다. 회복은 자연 회복 3%/s에 묻히고 둔화는 이동에만 걸린다.
+  회복률과 몬스터 공격 속도를 건드리는 밸런스 변경이라 별도 시뮬이 필요하다.
+- **D12** — 정령 게이지가 화면에 없다.
+- **D9** — 컷신이 소환 연출보다 밋밋하다. `hud/effects.dart` 추출과 함께 간다.
+- **D13** — 무대를 넓히고 카메라가 따라가는 건. 사용자가 실제 앱에서 지적한 문제이고 스펙을 쓰고 가기로 했다.

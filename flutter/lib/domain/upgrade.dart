@@ -3,6 +3,7 @@ import 'dart:math';
 import 'balance_config.dart';
 import 'codex.dart';
 import 'pet.dart';
+import 'spirit.dart';
 import 'summon.dart';
 
 /// 골드로 사는 능력치 업그레이드 5종. GAME_DESIGN.md 3장·17장.
@@ -81,6 +82,19 @@ class Stats {
       attack: attack * (1 + relicBonus(summon.starsOf(RelicSlot.horn))) * m,
       attacksPerSecond: attacksPerSecond * (1 + relicBonus(summon.starsOf(RelicSlot.tail))),
       critChance: min(1.0, critChance + relicBonus(summon.starsOf(RelicSlot.wing))),
+      goldMultiplier: goldMultiplier,
+    );
+  }
+
+  /// 데리고 다니는 정령의 평소 보정. 공격력에만 걸린다 —
+  /// 정령의 값어치는 평소가 아니라 나올 때다.
+  Stats withSpirit(SpiritState spirits, BalanceConfig c) {
+    final bonus = spiritPassive(spirits.activeStars, c);
+    if (bonus == 0) return this;
+    return Stats(
+      attack: attack * (1 + bonus),
+      attacksPerSecond: attacksPerSecond,
+      critChance: critChance,
       goldMultiplier: goldMultiplier,
     );
   }

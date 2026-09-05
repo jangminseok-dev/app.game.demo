@@ -73,6 +73,14 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       summonStonePerDaily: _i(j, 'summonStonePerDaily', 30),
       summonStonePerAttendance: _i(j, 'summonStonePerAttendance', 90),
       dragonStageMultiplier: _d(j, 'dragonStageMultiplier', 1.06),
+      spiritGaugeSeconds: _d(j, 'spiritGaugeSeconds', 90),
+      spiritBossGaugeRate: _d(j, 'spiritBossGaugeRate', 1.5),
+      spiritDamageBase: _d(j, 'spiritDamageBase', 12),
+      spiritDamagePerStar: _d(j, 'spiritDamagePerStar', 4),
+      spiritPassivePerStar: _d(j, 'spiritPassivePerStar', 0.02),
+      spiritHealRatio: _d(j, 'spiritHealRatio', 0.12),
+      spiritBurnSeconds: _d(j, 'spiritBurnSeconds', 5),
+      spiritSlowSeconds: _d(j, 'spiritSlowSeconds', 5),
     );
 
 Map<UpgradeType, double> _costs(Map<String, dynamic>? raw) {
@@ -146,4 +154,12 @@ Map<String, dynamic> balanceToJson(BalanceConfig c) => {
       'summonStonePerDaily': c.summonStonePerDaily,
       'summonStonePerAttendance': c.summonStonePerAttendance,
       'dragonStageMultiplier': c.dragonStageMultiplier,
+      'spiritGaugeSeconds': c.spiritGaugeSeconds,
+      'spiritBossGaugeRate': c.spiritBossGaugeRate,
+      'spiritDamageBase': c.spiritDamageBase,
+      'spiritDamagePerStar': c.spiritDamagePerStar,
+      'spiritPassivePerStar': c.spiritPassivePerStar,
+      'spiritHealRatio': c.spiritHealRatio,
+      'spiritBurnSeconds': c.spiritBurnSeconds,
+      'spiritSlowSeconds': c.spiritSlowSeconds,
     };

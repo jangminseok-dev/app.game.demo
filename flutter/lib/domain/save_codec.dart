@@ -9,6 +9,7 @@ import 'monster_unit.dart';
 import 'pet.dart';
 import 'quest.dart';
 import 'skill.dart';
+import 'spirit.dart';
 import 'summon.dart';
 import 'upgrade.dart';
 
@@ -75,6 +76,7 @@ Map<String, dynamic> encodeState(GameState s) => {
       'attendance': s.attendance.toJson(),
       'daily': s.daily.toJson(),
       'summon': s.summon.toJson(),
+      'spirits': s.spirits.toJson(),
     };
 
 /// 도감의 패시브는 여기서 복원하지 않는다 — 카탈로그가 필요하므로 호출 측이 [BattleEngine.withCodex]로 채운다.
@@ -118,6 +120,7 @@ GameState? decodeState(Map<String, dynamic> j) {
       attendance: AttendanceState.fromJson(j['attendance'] as Map<String, dynamic>? ?? const {}),
       daily: DailyState.fromJson(j['daily'] as Map<String, dynamic>? ?? const {}),
       summon: SummonState.fromJson(j['summon'] as Map<String, dynamic>? ?? const {}),
+      spirits: SpiritState.fromJson(j['spirits'] as Map<String, dynamic>? ?? const {}),
     );
   } on TypeError {
     return null;
