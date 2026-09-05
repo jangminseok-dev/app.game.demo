@@ -21,6 +21,7 @@ import 'hud/pixel_ui.dart';
 import 'hud/portrait_tile.dart';
 import 'hud/reward_popup.dart';
 import 'hud/skill_bar.dart';
+import 'hud/spirit_cutscene.dart';
 import 'hud/target_popup.dart';
 import 'party_row.dart';
 import 'quest_strip.dart';
@@ -142,6 +143,13 @@ class _GameScreenState extends ConsumerState<GameScreen> with SingleTickerProvid
         } else if (after.stageFailCount > before.stageFailCount) {
           _showGrowthHint(title: '시간이 모자랍니다', message: '이 층이 벽입니다. 무엇을 키울지 골라 보세요');
         }
+      }
+
+      // 정령이 나온 순간에만 컷신을 띄운다. 횟수가 오른 것으로 안다 —
+      // 게이지를 보면 프레임마다 흔들리고, bool은 놓친다.
+      if (before != null && after.spirits.firedCount > before.spirits.firedCount) {
+        final id = after.spirits.active;
+        if (id != null) showSpiritCutscene(context, id);
       }
 
       // 던전을 깨고 나온 순간에만 보상 창을 띄운다.
