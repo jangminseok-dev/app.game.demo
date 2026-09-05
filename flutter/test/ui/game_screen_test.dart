@@ -175,7 +175,9 @@ void main() {
   });
 
   testWidgets('팝업이 하단 HUD 자리를 비운다', (tester) async {
-    tester.view.physicalSize = const Size(1600, 720);
+    // 실제 기기 크기. 720 높이에서는 heightFactor가 먼저 걸려 띠에 여유가 남고,
+    // inset을 낮춰도 팝업이 안 커져 이 단언이 조이지 않는다. 390에서는 띠를 꽉 채운다.
+    tester.view.physicalSize = const Size(844, 390);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(app());
