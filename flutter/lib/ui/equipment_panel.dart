@@ -6,6 +6,7 @@ import '../domain/balance_config.dart';
 import '../domain/equipment.dart';
 import '../domain/number_format.dart';
 import 'hud/game_popup.dart';
+import 'hud/pixel_icons.dart';
 import 'hud/pixel_ui.dart';
 
 /// 장비 화면 — 왼쪽은 입고 있는 것, 오른쪽은 가방.
@@ -120,6 +121,7 @@ class EquipmentPanel extends ConsumerWidget {
     showGamePopup(
       context,
       title: item.slot.label,
+      icon: PixelIcon.shield,
       heightFactor: 0.42,
       child: Row(
         children: [

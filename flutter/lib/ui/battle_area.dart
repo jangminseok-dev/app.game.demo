@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/game_controller.dart';
 import '../domain/upgrade.dart';
 import 'hud/battle_hud.dart';
+import 'hud/hud_metrics.dart';
 import 'hud/pixel_ui.dart';
 import 'stage/battle_stage_game.dart';
 
@@ -86,9 +87,9 @@ class _BattleAreaState extends ConsumerState<BattleArea> with SingleTickerProvid
             ),
           ),
         ),
-        // 하단 5칸(단추 54 + 라벨) 위 15px. textScaler·글꼴 메트릭으로 라벨이 자라도 겹치지 않게.
+        // 하단 5칸 위 15px. textScaler·글꼴 메트릭으로 라벨이 자라도 겹치지 않게.
         Positioned(
-          left: 0, right: 0, bottom: 84,
+          left: 0, right: 0, bottom: bottomBarHeight + 15,
           child: IgnorePointer(
             child: Center(child: MonsterLine(state: state, monster: monster, captureLine: captureLine())),
           ),

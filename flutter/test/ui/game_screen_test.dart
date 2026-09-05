@@ -8,6 +8,8 @@ import 'package:idle_fantasy/domain/offline_reward.dart';
 import 'package:idle_fantasy/ui/battle_area.dart';
 import 'package:idle_fantasy/ui/game_screen.dart';
 import 'package:idle_fantasy/ui/hud/game_popup.dart';
+import 'package:idle_fantasy/ui/hud/hud_metrics.dart';
+import 'package:idle_fantasy/ui/hud/pixel_icons.dart';
 
 import '../support/catalog.dart';
 import '../support/in_memory_save_repository.dart';
@@ -169,5 +171,50 @@ void main() {
     await tester.pump();
     expect(find.textContaining('준비 중'), findsWidgets);
     expect(find.byType(GamePopup), findsNothing, reason: '잠금 단추는 팝업을 열지 않는다');
+  });
+
+  testWidgets('팝업이 하단 HUD 자리를 비운다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('장비').first);
+    await tester.pumpAndSettle();
+
+    final body = tester.getRect(find.byKey(const Key('popup-body')));
+    expect(body.bottom, lessThanOrEqualTo(720 - hudBottomInset),
+        reason: '팝업 아래로 하단 바와 우하단 스킬칸 자리가 남아야 한다 (스펙 4.6)');
+  });
+
+  testWidgets('좁은 화면에서도 팝업이 화면 안에 들어간다', (tester) async {
+    tester.view.physicalSize = const Size(440, 300);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // 화면 전체가 아니라 팝업 하나만 띄운다 — 좁은 폭에서 HUD가 겹치는 것은 별개 문제(백로그 D4-2)다.
+    await tester.pumpWidget(const MaterialApp(
+      home: GamePopup(title: '장비', icon: PixelIcon.shield, child: SizedBox()),
+    ));
+
+    final body = tester.getRect(find.byKey(const Key('popup-body')));
+    expect(body.left, greaterThanOrEqualTo(0));
+    expect(body.right, lessThanOrEqualTo(440));
+  });
+
+  testWidgets('제목 리본에 아이콘과 도움말이 있고 도움말이 열린다', (tester) async {
+    tester.view.physicalSize = const Size(1600, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
+
+    await tester.tap(find.text('장비').first);
+    await tester.pumpAndSettle();
+    expect(find.text('?'), findsWidgets, reason: '도움말 단추 (스펙 4.1)');
+
+    await tester.tap(find.text('?').first);
+    await tester.pumpAndSettle();
+    expect(find.text('장비 도움말'), findsWidgets, reason: '도움말 창이 열렸다');
+    expect(find.textContaining('가방을 눌러'), findsWidgets, reason: '장비 도움말 문구');
   });
 }

@@ -49,7 +49,8 @@ class PartyPortraits extends ConsumerWidget {
         _Portrait(
           label: state.pets.active?.grade.label ?? '펫',
           alert: state.hatchery.hasReady,
-          onTap: () => showGamePopup(context, title: '펫', child: const PetPanel()),
+          onTap: () => showGamePopup(context, title: '펫', icon: PixelIcon.egg,
+              help: '알을 부화하고 용을 탐험 보낸다. 둘 다 시간이 지나야 끝난다.', child: const PetPanel()),
           child: PixelIconView(PixelIcon.egg, size: 16),
         ),
         const SizedBox(width: 4),

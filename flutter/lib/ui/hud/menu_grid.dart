@@ -34,9 +34,10 @@ class _MenuGrid extends ConsumerWidget {
     );
   }
 
-  void _open(BuildContext context, String title, Widget child, {double heightFactor = 0.72}) {
+  void _open(BuildContext context, String title, PixelIcon icon, Widget child,
+      {String? help, double heightFactor = 0.72}) {
     Navigator.of(context).pop();
-    showGamePopup(context, title: title, heightFactor: heightFactor, child: child);
+    showGamePopup(context, title: title, icon: icon, help: help, heightFactor: heightFactor, child: child);
   }
 
   @override
@@ -47,7 +48,8 @@ class _MenuGrid extends ConsumerWidget {
     // 4열. 순서는 스펙 3절 그대로. 마지막 줄은 둘만 있다.
     final cells = <Widget>[
       HudButton(label: '콘텐츠', icon: PixelIcon.gate, badge: '${state.dungeon.tickets}',
-          onTap: () => _open(context, '콘텐츠', const ContentsPanel())),
+          onTap: () => _open(context, '콘텐츠', PixelIcon.gate, const ContentsPanel(),
+              help: '던전은 표를 쓴다. 층 이동은 깬 층까지 갈 수 있다.')),
       HudButton(label: '소환', icon: PixelIcon.spark, locked: true, onTap: () => _soon(context, '소환')),
       HudButton(label: '상점', icon: PixelIcon.shop, locked: true, onTap: () => _soon(context, '상점')),
       HudButton(label: '닫기', icon: PixelIcon.menu, onTap: () => Navigator.of(context).pop()),
@@ -58,11 +60,15 @@ class _MenuGrid extends ConsumerWidget {
       HudButton(label: '동료', icon: PixelIcon.egg, locked: true, onTap: () => _soon(context, '동료')),
 
       HudButton(label: '출석', icon: PixelIcon.check, alert: state.attendance.canClaim(epochDayOf(DateTime.now())),
-          onTap: () => _open(context, '출석부', const AttendancePanel(), heightFactor: 0.55)),
+          onTap: () => _open(context, '출석부', PixelIcon.check, const AttendancePanel(),
+              help: '하루 한 번 받는다. 빠져도 다음 칸부터 이어진다.', heightFactor: 0.55)),
       HudButton(label: '오늘', icon: PixelIcon.calendar, alert: anyDailyReady(state),
-          onTap: () => _open(context, '오늘 과제', const DailyPanel(), heightFactor: 0.5)),
+          onTap: () => _open(context, '오늘 과제', PixelIcon.calendar, const DailyPanel(),
+              help: '자정에 새로 시작한다. 셋을 따로 받는다.', heightFactor: 0.5)),
       HudButton(label: '랭킹', icon: PixelIcon.flag, locked: true, onTap: () => _soon(context, '랭킹')),
-      HudButton(label: '도감 $registered', icon: PixelIcon.book, onTap: () => _open(context, '도감', const CodexTab())),
+      HudButton(label: '도감 $registered', icon: PixelIcon.book,
+          onTap: () => _open(context, '도감', PixelIcon.book, const CodexTab(),
+              help: '만난 몬스터가 등록된다. 등록할수록 패시브가 오른다.')),
 
       HudButton(label: '도움말', icon: PixelIcon.book, locked: true, onTap: () => _soon(context, '도움말')),
       HudButton(label: '설정', icon: PixelIcon.pin, locked: true, onTap: () => _soon(context, '설정')),
