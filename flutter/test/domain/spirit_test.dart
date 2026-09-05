@@ -1,6 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/battle_engine.dart';
+import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/spirit.dart';
+import 'package:idle_fantasy/domain/upgrade.dart';
 
 void main() {
   const config = BalanceConfig();
@@ -86,6 +91,92 @@ void main() {
       final after = SpiritState.fromJson(burning.toJson());
       expect(after.burnLeft, 0);
       expect(after.slowLeft, 0);
+    });
+  });
+
+  group('전투 루프', () {
+    BattleEngine engine() => const BattleEngine(BalanceConfig());
+
+    // 이름을 `withSpirit` 으로 두지 마라 — 같은 파일에서 `stats.withSpirit(...)` 을 부른다.
+    GameState stateWith(SpiritId id, int stars) => GameState.initial(config).copyWith(
+          spirits: SpiritState(owned: {id: stars}, active: id),
+        );
+
+    test('게이지는 시간으로 찬다', () {
+      var s = stateWith(SpiritId.crystal, 1);
+      s = engine().tick(s, 9, Random(1));
+      expect(s.spirits.gauge, closeTo(9 / config.spiritGaugeSeconds, 0.02),
+          reason: '90초에 1이 되는 속도다');
+    });
+
+    test('데리고 다니는 정령이 없으면 안 찬다', () {
+      var s = GameState.initial(config);
+      s = engine().tick(s, 30, Random(1));
+      expect(s.spirits.gauge, 0);
+    });
+
+    test('가득 차면 나오고 게이지가 0으로 돌아간다', () {
+      var s = stateWith(SpiritId.crystal, 3).copyWith(
+        spirits: SpiritState(owned: const {SpiritId.crystal: 3}, active: SpiritId.crystal, gauge: 0.99),
+      );
+      final before = s.spirits.firedCount;
+      s = engine().tick(s, 2, Random(1));
+      expect(s.spirits.firedCount, before + 1, reason: '화면이 이 값으로 컷신을 띄운다');
+      expect(s.spirits.gauge, lessThan(0.2), reason: '나오면 0으로 돌아간다');
+    });
+
+    test('이끼는 주인공을 회복시킨다', () {
+      var s = stateWith(SpiritId.moss, 3);
+      final maxHp = s.maxHeroHp(config);
+      s = s.copyWith(
+        heroHp: maxHp * 0.3,
+        spirits: SpiritState(owned: const {SpiritId.moss: 3}, active: SpiritId.moss, gauge: 1),
+      );
+      s = engine().tick(s, 0.1, Random(1));
+      expect(s.heroHpOr(config), greaterThan(maxHp * 0.3));
+    });
+
+    test('잿불은 화상을, 서리는 둔화를 남긴다', () {
+      var burn = stateWith(SpiritId.ember, 2).copyWith(
+        spirits: SpiritState(owned: const {SpiritId.ember: 2}, active: SpiritId.ember, gauge: 1),
+      );
+      burn = engine().tick(burn, 0.1, Random(1));
+      expect(burn.spirits.burnLeft, greaterThan(0));
+      expect(burn.spirits.slowLeft, 0);
+
+      var slow = stateWith(SpiritId.frost, 2).copyWith(
+        spirits: SpiritState(owned: const {SpiritId.frost: 2}, active: SpiritId.frost, gauge: 1),
+      );
+      slow = engine().tick(slow, 0.1, Random(1));
+      expect(slow.spirits.slowLeft, greaterThan(0));
+      expect(slow.spirits.burnLeft, 0);
+    });
+
+    test('화상과 둔화는 시간이 지나면 사라진다', () {
+      var s = stateWith(SpiritId.ember, 1).copyWith(
+        spirits: const SpiritState(
+            owned: {SpiritId.ember: 1}, active: SpiritId.ember, burnLeft: 1, slowLeft: 1),
+      );
+      s = engine().tick(s, 2, Random(1));
+      expect(s.spirits.burnLeft, 0);
+      expect(s.spirits.slowLeft, 0);
+    });
+
+    test('평소 보정이 공격력에 걸린다', () {
+      const stats = Stats(attack: 100, attacksPerSecond: 2, critChance: 0.1, goldMultiplier: 1);
+      const none = SpiritState();
+      expect(stats.withSpirit(none, config).attack, 100);
+
+      const five = SpiritState(owned: {SpiritId.moss: 5}, active: SpiritId.moss);
+      expect(stats.withSpirit(five, config).attack, closeTo(100 * 1.10, 1e-6));
+    });
+
+    test('statsWith가 정령을 거친다 — 사슬에 붙어 있어야 한다', () {
+      final bare = GameState.initial(config);
+      final withIt = bare.copyWith(
+        spirits: const SpiritState(owned: {SpiritId.moss: 5}, active: SpiritId.moss),
+      );
+      expect(withIt.statsWith(config).attack, greaterThan(bare.statsWith(config).attack));
     });
   });
 }

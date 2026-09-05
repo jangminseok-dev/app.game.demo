@@ -220,7 +220,8 @@ class GameState {
   Stats statsWith(BalanceConfig config) => Stats.fromLevels(levels, config, passives)
       .scaledBy(equipment.powerWith(config))
       .withPet(pets)
-      .withRelics(summon, config);
+      .withRelics(summon, config)
+      .withSpirit(spirits, config);
 
   int levelOf(UpgradeType type) => levels[type] ?? 0;
 

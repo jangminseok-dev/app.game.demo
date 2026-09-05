@@ -13,6 +13,7 @@ import 'attendance.dart';
 import 'monster.dart';
 import 'monster_unit.dart';
 import 'pet.dart';
+import 'spirit.dart';
 import 'quest.dart';
 import 'skill.dart';
 import 'upgrade.dart';
@@ -100,6 +101,9 @@ class BattleEngine {
       s = _castSkill(s, stats, slot, rng);
     }
 
+    // 정령 — 게이지가 차고, 다 차면 스스로 나온다.
+    s = _spiritTick(s, stats, dt, rng);
+
     // 평타는 사거리 안에 있을 때만 나간다.
     final interval = 1 / stats.attacksPerSecond;
     var timer = s.attackTimer + dt;
@@ -126,6 +130,9 @@ class BattleEngine {
   /// 몬스터가 줄을 서서 한 마리씩 오는 것이 아니라 전부 동시에 달려든다.
   /// 겹치지 않게 서로 밀어내므로 주인공을 둘러싸는 모양이 된다.
   GameState _move(GameState s, double dt) {
+    // 서리의 둔화. 계수를 따로 두지 않는다 — 바꿀 이유가 없는 값이다.
+    final speed = config.monsterMoveSpeed * (s.spirits.slowLeft > 0 ? 0.5 : 1.0);
+
     var hx = s.heroX;
     var hy = s.heroY;
     final target = s.nearestMonster;
@@ -152,7 +159,7 @@ class BattleEngine {
         moved.add(m);
         continue;
       }
-      final (mx, my) = moveToward(m.x, m.y, tx, ty, min(config.monsterMoveSpeed * dt, gap));
+      final (mx, my) = moveToward(m.x, m.y, tx, ty, min(speed * dt, gap));
       final (cx, cy) = clampToField(mx, my);
       moved.add(m.copyWith(x: cx, y: cy));
     }
@@ -289,6 +296,60 @@ class BattleEngine {
       s = _onKill(s, unit, stats, rng);
     }
     return s.wave.isEmpty ? _refill(s, rng) : s;
+  }
+
+  /// 게이지를 채우고 지속 효과를 줄인다. 다 차면 정령을 부른다.
+  GameState _spiritTick(GameState s, Stats stats, double dt, Random rng) {
+    final sp = s.spirits;
+    if (sp.active == null || sp.activeStars <= 0) return s;
+
+    // 화상은 초당 들어간다. 둔화는 _move가 읽는다.
+    var next = sp.copyWith(
+      burnLeft: max(0.0, sp.burnLeft - dt),
+      slowLeft: max(0.0, sp.slowLeft - dt),
+    );
+    if (sp.burnLeft > 0 && s.wave.isNotEmpty) {
+      // 화상 총량은 한 방 피해의 절반이다. 계수를 따로 두지 않는다 —
+      // 한 방 피해가 바뀌면 화상도 따라가야 맞다.
+      final perSecond = stats.attack *
+          spiritDamageMultiplier(sp.activeStars, config) * 0.5 / config.spiritBurnSeconds;
+      s = _strike(s, stats, perSecond * dt, s.wave.length, rng);
+    }
+
+    // 몬스터가 없으면 안 찬다 — 빈 화면에서 게이지가 도는 것은 이상하다.
+    if (s.wave.isNotEmpty) {
+      final rate = (s.isBoss ? config.spiritBossGaugeRate : 1) / config.spiritGaugeSeconds;
+      next = next.copyWith(gauge: (next.gauge + dt * rate).clamp(0.0, 1.0));
+    }
+    s = s.copyWith(spirits: next);
+
+    if (!s.spirits.isReady || s.wave.isEmpty) return s;
+    return _fireSpirit(s, stats, rng);
+  }
+
+  /// 정령이 나온다. 종류마다 하는 일이 다르다(스펙 4.4).
+  GameState _fireSpirit(GameState s, Stats stats, Random rng) {
+    final sp = s.spirits;
+    final id = sp.active!;
+    final damage = stats.attack * spiritDamageMultiplier(sp.activeStars, config);
+    final all = s.wave.length;
+
+    var next = sp.copyWith(gauge: 0, firedCount: sp.firedCount + 1);
+    switch (id.effect) {
+      case SpiritEffect.healAll:
+        s = s.copyWith(
+          heroHp: min(s.maxHeroHp(config),
+              s.heroHpOr(config) + s.maxHeroHp(config) * config.spiritHealRatio),
+        );
+      case SpiritEffect.singleBig:
+        break;
+      case SpiritEffect.burnAll:
+        next = next.copyWith(burnLeft: config.spiritBurnSeconds);
+      case SpiritEffect.slowAll:
+        next = next.copyWith(slowLeft: config.spiritSlowSeconds);
+    }
+    final targets = id.effect == SpiritEffect.singleBig ? 1 : all;
+    return _strike(s.copyWith(spirits: next), stats, damage, targets, rng);
   }
 
   /// 한 마리를 잡았을 때의 보상과 기록. 다음 몬스터를 부르지는 않는다.
