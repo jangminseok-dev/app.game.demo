@@ -66,7 +66,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     final popped = await tester.binding.handlePopRoute();
     expect(popped, isTrue, reason: '시스템이 처리는 한다');
-    await tester.pump();
+    // 라우트 퇴장은 여러 프레임에 걸쳐 반영된다. 한 번에 시계를 점프시키면
+    // 오버레이 정리가 그 프레임에 안 잡혀서 막았을 때와 구분이 안 된다.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 25));
+    }
     expect(find.byType(SpiritGlow), findsOneWidget, reason: '컷신은 남아 있어야 한다');
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
