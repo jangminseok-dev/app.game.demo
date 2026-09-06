@@ -34,8 +34,8 @@ const viewHeight = 480.0;
 /// 붙어 따라다니면 걸음마다 배경이 흔들려 어지럽다.
 const cameraDeadZone = 80.0;
 
-/// 배경 그리기가 쓰는 무대 세로. 가로는 끝이 없다(field.dart).
-const stageHeight = fieldHeight;
+/// 먼 겹이 흐르는 속도. 1이면 카메라와 같이 붙어 움직여 평면으로 보인다.
+const farParallax = 0.35;
 
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
@@ -70,7 +70,7 @@ class BattleStageGame extends FlameGame {
   final _root = PositionComponent();
   final _actors = _ActorLayer();
   final _fx = PositionComponent(priority: 9000);
-  final _bg = _Background();
+  late final _bg = _Background(this);
   final _rng = math.Random();
 
   /// 몬스터 줄. 0번이 지금 싸우는 상대. [_keys]와 자리 번호가 같다.
@@ -89,6 +89,23 @@ class BattleStageGame extends FlameGame {
   static const bossPixelSize = _bossSize;
   static const heroPixelSize = _heroSize;
   static const petPixelSize = _petSize;
+
+  /// [left]~[right] 세계 구간을 덮는 타일들의 왼쪽 x. 타일 폭은 [viewWidth]다.
+  ///
+  /// [parallax]가 1이면 카메라와 같이 흐르고, 작을수록 천천히 흐른다.
+  /// 먼 것이 천천히 지나가야 깊이가 보인다 — 1로 두면 배경이 통째로 붙어 평면이 된다.
+  static List<double> backgroundTilesFor(double left, double right, double parallax) {
+    // 시차: 겹을 카메라 이동의 (1 - parallax)만큼 되끌어 준다.
+    final shift = left * (1 - parallax);
+    final first = ((left - shift) / viewWidth).floorToDouble() * viewWidth + shift;
+    final out = <double>[];
+    for (var x = first; x < right; x += viewWidth) {
+      out.add(x);
+    }
+    return out;
+  }
+
+  static const horizon = _Background.horizon;
   GameState? _last;
   double _hitStop = 0;
   bool _busy = false;
@@ -121,7 +138,7 @@ class BattleStageGame extends FlameGame {
     // 첫 프레임이 튀지 않게 제자리를 잡아 둔다. 이후는 _moveCamera가 이어받는다.
     camera.viewfinder.zoom = _zoom;
     // 주인공은 오른쪽으로만 가므로 카메라는 곧 주인공-80에 끌려간다. 시작부터 그 자리에 둔다.
-    camera.viewfinder.position = Vector2(-cameraDeadZone, stageHeight - camera.viewport.size.y / _zoom / 2);
+    camera.viewfinder.position = Vector2(-cameraDeadZone, fieldHeight - camera.viewport.size.y / _zoom / 2);
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
 
@@ -181,7 +198,7 @@ class BattleStageGame extends FlameGame {
 
     // 세로는 바닥에 붙인다. 땅이 항상 화면 아래에 오고,
     // 세로로 남는 자리는 하늘이 더 보이는 것으로 채워진다.
-    final camY = stageHeight - camera.viewport.size.y / zoom / 2;
+    final camY = fieldHeight - camera.viewport.size.y / zoom / 2;
     camera.viewfinder.position = Vector2(camX, camY);
   }
 
@@ -392,23 +409,23 @@ double monsterHueFor(Monster? m) {
 /// 히트스톱 대상 — 이 레이어의 시간만 멈춘다.
 class _ActorLayer extends PositionComponent with HasTimeScale {}
 
-/// 배경 원경 + 지면. 에셋이 없는 지역은 기존 그라데이션으로.
+/// 배경 — 먼 겹과 땅 겹. 가로로 끝없이 되풀이한다.
+///
+/// 한 장 걸러 좌우를 뒤집어 붙인다. 지금 그림은 좌우가 안 이어지므로 그냥 늘어놓으면
+/// 640마다 이음매가 보인다. 뒤집으면 이음매가 사라지고, 숲이라 뒤집혀도 어색하지 않다.
 class _Background extends PositionComponent {
-  _Background() : super(priority: -1000);
+  _Background(this.game) : super(priority: -1000);
 
-  /// 하늘이 차지하는 비율. 가로 화면에서 하늘이 절반을 넘으면 전투가 아래로 눌린다.
-  static const skyRatio = 0.3;
+  final BattleStageGame game;
 
-  /// 지평선 y. 무대 높이에서 계산한다 — 무대 비율이 바뀌면 같이 움직인다.
-  static final horizon = (stageHeight * skyRatio).roundToDouble();
+  /// 지평선 y. 하늘이 절반을 조금 넘는다 — 3/4 시점에서 땅이 좁으면 전투가 눌린다.
+  static const horizon = 250.0;
 
   final _pixel = Paint()
     ..filterQuality = FilterQuality.none
     ..isAntiAlias = false;
   String? region;
   ui.Image? _far, _ground;
-
-  /// 전용 배경이 없는 지역은 숲 배경 위에 지역색 덮개를 얹는다.
   Color? _veil;
 
   Future<void> setRegion(String? regionId, Images images) async {
@@ -428,7 +445,6 @@ class _Background extends PositionComponent {
       _ground = ground;
       _veil = own ? null : regionColors(regionId).last.withValues(alpha: 0.5);
     } on Object {
-      // 숲 배경조차 없으면 그라데이션으로 둔다.
       _far = null;
       _ground = null;
     }
@@ -436,36 +452,55 @@ class _Background extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
+    final vp = game.camera.viewport.size;
+    final zoom = game.camera.viewfinder.zoom;
+    final center = game.camera.viewfinder.position;
+    final halfW = vp.x / zoom / 2;
+    final left = center.x - halfW;
+    final right = center.x + halfW;
+
     final far = _far, ground = _ground;
     if (far == null || ground == null) {
-      final rect = Rect.fromLTWH(0, 0, viewWidth, stageHeight);
-      canvas.drawRect(rect, Paint()..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, regionColors(region)));
-      canvas.drawRect(
-        Rect.fromLTWH(0, horizon, viewWidth, stageHeight - horizon),
-        Paint()..color = Colors.black.withValues(alpha: 0.18),
-      );
+      _renderGradient(canvas, left, right);
       return;
     }
-    // 가로 무대는 배경 그림(far 360×110 + ground 360×160)보다 낮다. 늘리지 않고 잘라 쓴다 —
-    // 픽셀아트는 비정수 배율로 줄이면 계단이 뭉개진다.
-    // 하늘은 아래쪽(지평선에 가까운 쪽)을 남기고 꼭대기를 버린다.
-    final skyKeep = math.min(horizon, far.height.toDouble());
-    canvas.drawImageRect(
-      far,
-      Rect.fromLTWH(0, far.height - skyKeep, far.width.toDouble(), skyKeep),
-      Rect.fromLTWH(0, horizon - skyKeep, viewWidth, skyKeep),
-      _pixel,
-    );
-    // 땅은 위쪽(먼 땅)을 버리고 아래쪽을 남긴다. 캐릭터가 서는 곳이 아래다.
-    final groundNeed = stageHeight - horizon;
-    final groundKeep = math.min(groundNeed, ground.height.toDouble());
-    canvas.drawImageRect(
-      ground,
-      Rect.fromLTWH(0, ground.height - groundKeep, ground.width.toDouble(), groundKeep),
-      Rect.fromLTWH(0, stageHeight - groundKeep, viewWidth, groundKeep),
-      _pixel,
-    );
+    // 하늘은 지평선 위 전부, 땅은 지평선 아래 전부. 그림을 늘려 채운다 —
+    // 지금 그림(360×110·360×160)은 이 크기가 아니다. 새 타일이 오면 늘리기가 1대1이 된다.
+    _tile(canvas, far, BattleStageGame.backgroundTilesFor(left, right, farParallax), 0, horizon);
+    _tile(canvas, ground, BattleStageGame.backgroundTilesFor(left, right, 1.0), horizon, fieldHeight - horizon);
+
     final veil = _veil;
-    if (veil != null) canvas.drawRect(Rect.fromLTWH(0, 0, viewWidth, stageHeight), Paint()..color = veil);
+    if (veil != null) {
+      canvas.drawRect(Rect.fromLTWH(left, 0, right - left, fieldHeight), Paint()..color = veil);
+    }
+  }
+
+  /// 한 겹을 늘어놓는다. 한 장 걸러 좌우를 뒤집어 이음매를 없앤다.
+  void _tile(Canvas canvas, ui.Image image, List<double> xs, double top, double height) {
+    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    for (final x in xs) {
+      final flip = (x / viewWidth).round().isOdd;
+      canvas.save();
+      if (flip) {
+        canvas.translate(x + viewWidth, 0);
+        canvas.scale(-1, 1);
+        canvas.drawImageRect(image, src, Rect.fromLTWH(0, top, viewWidth, height), _pixel);
+      } else {
+        canvas.drawImageRect(image, src, Rect.fromLTWH(x, top, viewWidth, height), _pixel);
+      }
+      canvas.restore();
+    }
+  }
+
+  void _renderGradient(Canvas canvas, double left, double right) {
+    final rect = Rect.fromLTWH(left, 0, right - left, fieldHeight);
+    canvas.drawRect(
+      rect,
+      Paint()..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, regionColors(region)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(left, horizon, right - left, fieldHeight - horizon),
+      Paint()..color = Colors.black.withValues(alpha: 0.18),
+    );
   }
 }

@@ -250,4 +250,46 @@ void main() {
     expect(game.descendants().whereType<DamageText>(), isEmpty, reason: '연출은 수명이 끝나면 치워진다');
   });
 
+  group('배경', () {
+    test('지평선이 걷는 띠 위에 있다', () {
+      expect(BattleStageGame.horizon, lessThan(fieldTopY));
+      expect(BattleStageGame.horizon, greaterThan(fieldHeight * 0.4),
+          reason: '하늘이 너무 얇으면 3/4 시점이 안 산다');
+    });
+
+    test('주인공이 멀리 가도 배경이 그려진다 — 가로로 되풀이한다', () async {
+      final game = await bootAt(832, 610);
+      game.update(1 / 60);
+      game.hero!.pos.x = 12345;
+      game.hero!.target.x = 12345;
+      game.update(1 / 60);
+      // 카메라가 따라간 자리에서 배경이 덮는 가로 구간을 계산해 본다.
+      final camX = game.camera.viewfinder.position.x;
+      final half = 832 / game.camera.viewfinder.zoom / 2;
+      final tiles = BattleStageGame.backgroundTilesFor(camX - half, camX + half, 1.0);
+      expect(tiles, isNotEmpty);
+      expect(tiles.first, lessThanOrEqualTo(camX - half));
+      expect(tiles.last + viewWidth, greaterThanOrEqualTo(camX + half));
+    });
+
+    test('먼 겹은 카메라의 0.35만큼만 흐른다', () {
+      // 타일 첫 좌표는 640마다 뛰므로 그 자체를 비교하면 뜻이 없다.
+      // 화면에 대한 타일 격자의 위상(첫 타일 - 화면 왼쪽)이 카메라 이동에 얼마나 반응하는지 잰다.
+      // 이동을 100으로 두어 한 타일(640) 안에서 재고, 겹침(wrap)이 끼지 않게 한다.
+      double phase(double left, double p) => BattleStageGame.backgroundTilesFor(left, left + 640, p).first - left;
+      final nearShift = phase(100, 1.0) - phase(0, 1.0);
+      final farShift = phase(100, farParallax) - phase(0, farParallax);
+      expect(nearShift, closeTo(-100, 0.001), reason: '땅 겹은 카메라와 같이 흐른다');
+      expect(farShift, closeTo(-100 * farParallax, 0.001), reason: '먼 겹은 0.35만 흐른다');
+    });
+
+    test('음수 x에서도 타일이 왼쪽 끝을 floor로 덮는다', () {
+      // 카메라 시작 x가 -80이라 첫 화면의 보이는 구간은 음수를 포함한다.
+      // dart의 정수 나눗셈(~/)은 0쪽으로 버려서 -400 / 640 이 -1이 아니라 0이 되는 실수가 있다 —
+      // floorToDouble을 안 쓰면 이 구간에서 타일이 한 칸 밀린다.
+      final tiles = BattleStageGame.backgroundTilesFor(-400, 240, 1.0);
+      expect(tiles.first, -640.0);
+      expect(tiles.last + viewWidth, greaterThanOrEqualTo(240));
+    });
+  });
 }
