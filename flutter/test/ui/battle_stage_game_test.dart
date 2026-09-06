@@ -73,7 +73,9 @@ void main() {
     game.sync(s);
     await settle(game);
     // 도메인이 좌표를 정하고 무대가 따라간다.
-    for (var i = 0; i < 240; i++) {
+    // spawnAheadOfHero가 260으로 줄어 240틱쯤에는 무리가 막 한 마리로 줄어드는 경계에 걸린다 —
+    // 무리가 둘 이상 남아 있는 동안에 스냅샷을 뜨도록 200틱으로 당긴다.
+    for (var i = 0; i < 200; i++) {
       s = engine.tick(s, 1 / 60, rng);
       game.sync(s);
       await Future<void>.delayed(Duration.zero);

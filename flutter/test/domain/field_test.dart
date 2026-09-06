@@ -29,8 +29,8 @@ void main() {
     });
 
     test('나타나는 자리는 카메라 오른쪽 끝 바깥이다', () {
-      // 불감대 ±80 + 보이는 가로의 절반 320 = 주인공+400이 오른쪽 끝의 최댓값.
-      expect(spawnAheadOfHero, greaterThan(400));
+      // 카메라는 주인공−80에 끌려가고 보이는 가로의 절반이 320이니 오른쪽 끝은 주인공+240이다.
+      expect(spawnAheadOfHero, greaterThan(240));
     });
   });
 
