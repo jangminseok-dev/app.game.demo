@@ -31,11 +31,11 @@ void main() {
     test('몬스터는 화면 밖에서 시작해 주인공 쪽으로 온다', () {
       final start = GameState.initial(config);
       for (final m in start.wave) {
-        expect(m.x, greaterThanOrEqualTo(monsterSpawnX));
+        expect(m.x, greaterThanOrEqualTo(spawnAheadOfHero));
       }
       final later = run(start, 0.5);
       for (final m in later.wave) {
-        expect(m.x, lessThan(monsterSpawnX), reason: '전부 앞으로 나왔다');
+        expect(m.x, lessThan(spawnAheadOfHero), reason: '전부 앞으로 나왔다');
       }
     });
 
@@ -81,10 +81,10 @@ void main() {
       }
     });
 
-    test('아무도 없으면 제자리로 돌아간다', () {
+    test('아무도 없으면 제자리에 선다 — 돌아갈 집이 없다', () {
       var s = GameState.initial(config).copyWith(wave: const [], heroX: 300, heroY: fieldTopY);
       s = engine.tick(s, 0.1, rng);
-      expect(s.heroX, lessThan(300), reason: '집 쪽으로 간다');
+      expect(s.heroX, 300, reason: '가로가 끝이 없어 돌아갈 집이 없다');
     });
   });
 
@@ -159,10 +159,11 @@ void main() {
 
     test('체력이 다하면 쓰러지고 같은 층 처음부터 다시 한다', () {
       // 몬스터는 붙자마자가 아니라 공격 주기(약 1.7초)마다 때린다.
+      final before = doomed().heroX;
       final down = run(doomed(), 2);
       expect(down.isDown, isTrue);
       expect(down.killsOnStage, 0, reason: '층 진행이 초기화된다');
-      expect(down.heroX, heroHomeX, reason: '집으로 돌아간다');
+      expect(down.heroX, before, reason: '가로 자리는 그대로다');
       expect(down.isBoss, isFalse);
     });
 

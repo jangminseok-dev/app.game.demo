@@ -57,7 +57,7 @@ class MonsterUnit {
       id: (raw['id'] as num).toInt(),
       hp: (raw['hp'] as num).toDouble(),
       maxHp: (raw['maxHp'] as num).toDouble(),
-      x: (raw['x'] as num?)?.toDouble() ?? monsterSpawnX,
+      x: (raw['x'] as num?)?.toDouble() ?? spawnAheadOfHero,
       y: (raw['y'] as num?)?.toDouble() ?? heroHomeY,
     );
   }

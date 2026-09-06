@@ -152,7 +152,7 @@ List<MonsterUnit> _decodeWave(Map<String, dynamic> j) {
       id: (j['monsterId'] as num?)?.toInt() ?? 1,
       hp: hp,
       maxHp: maxHp,
-      x: monsterSpawnX,
+      x: spawnAheadOfHero,
       y: heroHomeY,
     ),
   ];

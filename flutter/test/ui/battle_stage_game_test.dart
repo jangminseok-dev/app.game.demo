@@ -61,7 +61,7 @@ void main() {
     final monsters = game.monsters;
     expect(monsters, isNotEmpty);
     for (final m in monsters) {
-      expect(m.pos.x, greaterThanOrEqualTo(monsterSpawnX), reason: '화면 밖에서 시작');
+      expect(m.pos.x, greaterThanOrEqualTo(spawnAheadOfHero), reason: '화면 밖에서 시작');
     }
   });
 
@@ -84,9 +84,9 @@ void main() {
     final withBars = game.monsters.where((a) => a.showHpBar).toList();
     expect(withBars.length, game.monsters.length, reason: '무리라 모두 HP 바를 단다');
     expect(withBars.length, greaterThan(1), reason: '일반 전투는 무리로 나온다');
-    expect(hero.pos.x, greaterThan(heroHomeX), reason: '집에서 앞으로 나왔다');
+    expect(hero.pos.x, greaterThan(0), reason: '집에서 앞으로 나왔다');
     for (final m in game.monsters) {
-      expect(m.pos.x, lessThan(stageWidth), reason: '화면 안으로 들어왔다');
+      expect(m.pos.x, lessThan(640), reason: '화면 안으로 들어왔다');
     }
   });
 
@@ -105,7 +105,7 @@ void main() {
     expect(game.descendants().whereType<DamageText>(), isNotEmpty);
 
     s = s.copyWith(
-      wave: const [MonsterUnit(key: 9, id: 2, hp: 30, maxHp: 30, x: heroHomeX + 20, y: heroHomeY)],
+      wave: const [MonsterUnit(key: 9, id: 2, hp: 30, maxHp: 30, x: 20, y: heroHomeY)],
       totalKills: 1,
     ); // 처치
     game.sync(s);
@@ -114,7 +114,7 @@ void main() {
 
     s = s.copyWith(
       isBoss: true,
-      wave: const [MonsterUnit(key: 20, id: 2, hp: 500, maxHp: 500, x: heroHomeX + 20, y: heroHomeY)],
+      wave: const [MonsterUnit(key: 20, id: 2, hp: 500, maxHp: 500, x: 20, y: heroHomeY)],
     ); // 보스
     game.sync(s);
     await settle(game);

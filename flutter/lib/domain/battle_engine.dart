@@ -136,10 +136,8 @@ class BattleEngine {
     var hx = s.heroX;
     var hy = s.heroY;
     final target = s.nearestMonster;
-    if (target == null) {
-      // 아무도 없으면 제자리로 돌아간다.
-      (hx, hy) = moveToward(hx, hy, heroHomeX, heroHomeY, config.heroMoveSpeed * dt);
-    } else {
+    // 아무도 없으면 제자리에 선다. 가로가 끝이 없어 돌아갈 집이 없다(스펙 4.3).
+    if (target != null) {
       final gap = distanceBetween(hx, hy, target.x, target.y) - config.heroAttackRange * 0.8;
       if (gap > 0) {
         (hx, hy) = moveToward(hx, hy, target.x, target.y, min(config.heroMoveSpeed * dt, gap));
@@ -160,8 +158,7 @@ class BattleEngine {
         continue;
       }
       final (mx, my) = moveToward(m.x, m.y, tx, ty, min(speed * dt, gap));
-      final (cx, cy) = clampToField(mx, my);
-      moved.add(m.copyWith(x: cx, y: cy));
+      moved.add(m.copyWith(x: mx, y: clampToBand(my)));
     }
     return s.copyWith(heroX: hx, heroY: hy, wave: _separate(moved));
   }
@@ -192,10 +189,8 @@ class BattleEngine {
         final push = (separationRadius - d) / 2;
         final nx = dx / d * push;
         final ny = dy / d * push;
-        final (ax, ay) = clampToField(a.x - nx, a.y - ny);
-        final (bx, by) = clampToField(b.x + nx, b.y + ny);
-        out[i] = a.copyWith(x: ax, y: ay);
-        out[j] = b.copyWith(x: bx, y: by);
+        out[i] = a.copyWith(x: a.x - nx, y: clampToBand(a.y - ny));
+        out[j] = b.copyWith(x: b.x + nx, y: clampToBand(b.y + ny));
       }
     }
     return out;
@@ -235,7 +230,7 @@ class BattleEngine {
     var next = s.dungeon.run == null ? s : s.copyWith(dungeon: s.dungeon.finish(cleared: false));
     next = next.copyWith(
       heroHp: 0,
-      heroX: heroHomeX,
+      // 가로 자리는 그대로 둔다 — 되돌아가면 지나온 맵을 다시 걷는다.
       heroY: heroHomeY,
       reviveLeft: config.heroReviveSeconds,
       killsOnStage: 0,
@@ -510,7 +505,8 @@ class BattleEngine {
     required int count,
     required bool isBoss,
   }) {
-    // 화면 밖 오른쪽에서 세로로 퍼져 들어온다. 한 줄로 서지 않게 x도 조금씩 어긋낸다.
+    // 주인공의 오른쪽 화면 밖에서 세로로 퍼져 들어온다. 맵이 끝이 없어 절대 좌표가 아니다.
+    // 한 줄로 서지 않게 x도 조금씩 어긋낸다.
     final span = fieldBottomY - fieldTopY;
     return s.copyWith(
       wave: [
@@ -520,7 +516,7 @@ class BattleEngine {
             id: id,
             hp: hp,
             maxHp: hp,
-            x: monsterSpawnX + (i % 3) * 26,
+            x: s.heroX + spawnAheadOfHero + (i % 3) * 26,
             y: count == 1 ? heroHomeY : fieldTopY + span * i / (count - 1),
           ),
       ],

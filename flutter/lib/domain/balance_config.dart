@@ -32,9 +32,10 @@ class BalanceConfig {
     this.heroMpPerLevel = 4,
     this.heroMpRegenPerSecond = 5,
     this.heroMoveSpeed = 100,
-    this.heroAttackRange = 42,
+    // 사거리는 몸 크기에 묶인다. 스프라이트가 절반이 되어 같이 절반이다(0.75몸 유지).
+    this.heroAttackRange = 21,
     this.monsterMoveSpeed = 160,
-    this.monsterAttackRange = 36,
+    this.monsterAttackRange = 18,
     this.monsterAttackBase = 2,
     this.monsterAttackGrowth = 1.15,
     this.monsterAttacksPerSecond = 0.6,

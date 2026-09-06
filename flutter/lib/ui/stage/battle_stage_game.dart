@@ -18,7 +18,8 @@ import 'sheet_loader.dart';
 import 'stage_actor.dart';
 
 /// 무대 가상 해상도. 기기 폭에 맞춰 통째로 확대한다.
-const stageWidth = fieldWidth;
+// 태스크 2가 배율 규칙으로 갈아 치운다. 지금은 컴파일만 유지한다.
+const stageWidth = 640.0;
 /// 가로 화면을 채우도록 약 16:9로 잡는다(2026-09-05 세로→가로 전환).
 /// 카메라가 cover라 기기 비율에 따라 잘리는 방향이 다르다 — 넓은 폰은 위아래, 태블릿은 좌우.
 /// 안전 영역은 가운데 269×162. 그 밖은 잘릴 수 있다.
@@ -95,7 +96,8 @@ class BattleStageGame extends FlameGame {
   double _juiceCool = 0;
   static const _juiceGap = 0.55;
 
-  static final _heroHome = Vector2(heroHomeX, heroHomeY);
+  // heroHomeX가 없어져 컴파일만 유지한다(주인공은 0에서 시작). 태스크 2가 갈아 치운다.
+  static final _heroHome = Vector2(0, heroHomeY);
 
   /// 무대가 화면을 덮는 최소 배율. 이보다 작으면 무대 밖 빈 곳이 보인다.
   double get _cover {

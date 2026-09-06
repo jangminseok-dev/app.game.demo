@@ -25,9 +25,10 @@ BalanceConfig balanceFromJson(Map<String, dynamic> j) => BalanceConfig(
       heroMpPerLevel: _d(j, 'heroMpPerLevel', 4),
       heroMpRegenPerSecond: _d(j, 'heroMpRegenPerSecond', 5),
       heroMoveSpeed: _d(j, 'heroMoveSpeed', 100),
-      heroAttackRange: _d(j, 'heroAttackRange', 34),
+      // 사거리는 몸 크기에 묶인다. 스프라이트가 절반이 되어 같이 절반이다(0.75몸 유지).
+      heroAttackRange: _d(j, 'heroAttackRange', 17),
       monsterMoveSpeed: _d(j, 'monsterMoveSpeed', 160),
-      monsterAttackRange: _d(j, 'monsterAttackRange', 28),
+      monsterAttackRange: _d(j, 'monsterAttackRange', 14),
       monsterAttackBase: _d(j, 'monsterAttackBase', 2),
       monsterAttackGrowth: _d(j, 'monsterAttackGrowth', 1.15),
       monsterAttacksPerSecond: _d(j, 'monsterAttacksPerSecond', 0.6),

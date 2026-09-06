@@ -117,7 +117,7 @@ void main() {
     });
 
     test('치명타는 피해 2배', () {
-      var s = GameState.initial(config).copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 100, maxHp: 100, x: heroHomeX + 20, y: heroHomeY)]);
+      var s = GameState.initial(config).copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 100, maxHp: 100, x: 20, y: heroHomeY)]);
       final alwaysCrit = _FixedRandom(0.0);
       s = engine.tick(s, 1.0, alwaysCrit);
       expect(s.monsterMaxHp - s.monsterHp, closeTo(20, 1e-9));

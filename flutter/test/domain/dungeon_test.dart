@@ -110,7 +110,7 @@ void main() {
     test('시간이 다 되면 실패하고 층은 그대로다', () {
       var s = engine.enterDungeon(ready(), DungeonType.goldCave, rng)!;
       // 몬스터가 안 죽을 만큼 체력을 키운다.
-      s = s.copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 1e18, maxHp: 1e18, x: heroHomeX + 20, y: heroHomeY)]);
+      s = s.copyWith(wave: [const MonsterUnit(key: 0, id: 1, hp: 1e18, maxHp: 1e18, x: 20, y: heroHomeY)]);
       s = run(s, seconds: config.dungeonTimeLimit + 5);
       expect(s.dungeon.run, isNull);
       expect(s.dungeon.clearedFloor(DungeonType.goldCave), 0, reason: '실패는 보상이 없다');

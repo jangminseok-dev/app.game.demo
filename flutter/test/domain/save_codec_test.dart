@@ -19,7 +19,7 @@ void main() {
       highestStage: 20,
       gold: 12345.678,
       levels: const {UpgradeType.attack: 5, UpgradeType.goldGain: 2},
-      wave: const [MonsterUnit(key: 3, id: 7, hp: 3.5, maxHp: 3.5, x: heroHomeX + 20, y: heroHomeY)],
+      wave: const [MonsterUnit(key: 3, id: 7, hp: 3.5, maxHp: 3.5, x: 20, y: heroHomeY)],
       waveSeq: 4,
       isBoss: true,
       bossTimeLeft: 12.3,

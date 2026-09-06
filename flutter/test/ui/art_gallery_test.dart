@@ -97,7 +97,10 @@ void main() {
     await snap('battle_stage');
     final vp = game.camera.viewport.size, z = game.camera.viewfinder.zoom;
     final camX = game.camera.viewfinder.position.x;
-    expect(game.hero!.pos.x, inInclusiveRange(camX - vp.x / 2 / z, camX + vp.x / 2 / z),
+    // 주인공이 이제 0에서 시작해 시야 왼쪽 끝에 딱 걸린다 — 부동소수점 오차만큼 여유를 둔다.
+    expect(game.hero!.pos.x, greaterThanOrEqualTo(camX - vp.x / 2 / z - 0.01),
+        reason: '주인공이 카메라 시야 안에 있다');
+    expect(game.hero!.pos.x, lessThanOrEqualTo(camX + vp.x / 2 / z + 0.01),
         reason: '주인공이 카메라 시야 안에 있다');
   });
 
