@@ -48,6 +48,120 @@ void main() {
     }
   }
 
+  Future<BattleStageGame> bootAt(double w, double h) async {
+    final game = BattleStageGame(catalog: loadBundledCatalog(), config: c, loader: _NoAssetLoader());
+    game.onGameResize(Vector2(w, h));
+    await game.onLoad();
+    game.onMount();
+    await game.ready();
+    game.update(0);
+    return game;
+  }
+
+  group('배율', () {
+    test('보이는 상자 640x480을 덮는 최소 배율이다', () async {
+      for (final (w, h) in const [(844.0, 390.0), (832.0, 610.0), (1280.0, 800.0)]) {
+        final game = await bootAt(w, h);
+        game.update(1 / 60);
+        expect(
+          game.camera.viewfinder.zoom,
+          closeTo(max(w / viewWidth, h / viewHeight), 0.001),
+          reason: '$w×$h',
+        );
+      }
+    });
+
+    test('배율은 1 아래로 안 내려간다 — 원본 픽셀이 버려진다', () async {
+      // 640×480보다 작은 창. 상자를 덮는 배율은 0.625지만 1로 묶여야 한다.
+      final game = await bootAt(400, 300);
+      game.update(1 / 60);
+      expect(game.camera.viewfinder.zoom, 1.0);
+    });
+
+    test('주인공이 화면 가로에서 차지하는 비율이 창 모양과 무관하다', () async {
+      // 이것이 사용자가 지적한 문제를 그대로 재는 테스트다.
+      // 셋 다 4:3보다 가로로 긴 창이라 가로가 배율을 정한다.
+      // 4:3보다 세로로 긴 창은 세로가 정하므로 이 목록에 넣으면 안 된다.
+      final ratios = <double>[];
+      for (final (w, h) in const [(844.0, 390.0), (832.0, 610.0), (1280.0, 800.0)]) {
+        final game = await bootAt(w, h);
+        game.update(1 / 60);
+        ratios.add(BattleStageGame.heroPixelSize * game.camera.viewfinder.zoom / w);
+      }
+      for (final r in ratios) {
+        expect(r, closeTo(0.044, 0.002), reason: '레퍼런스 실측 3.1~4.8% 안이어야 한다: $ratios');
+      }
+    });
+  });
+
+  group('불감대 카메라', () {
+    test('주인공이 상자 안에서 움직이면 카메라가 안 움직인다', () async {
+      final game = await bootAt(832, 610);
+      game.update(1 / 60);
+      final before = game.camera.viewfinder.position.x;
+      // 시작 카메라가 주인공(0)-80이라 이미 오른쪽 벽에 붙어 있다. 왼쪽으로 옮겨 안 움직임을 잰다.
+      game.hero!.pos.x = before + 5;
+      game.hero!.target.x = game.hero!.pos.x;
+      game.update(1 / 60);
+      expect(game.camera.viewfinder.position.x, closeTo(before, 0.01));
+    });
+
+    test('상자를 벗어나면 딱 그만큼 밀린다', () async {
+      final game = await bootAt(832, 610);
+      game.update(1 / 60);
+      final before = game.camera.viewfinder.position.x;
+      game.hero!.pos.x = before + cameraDeadZone + 40;
+      game.hero!.target.x = game.hero!.pos.x;
+      game.update(1 / 60);
+      expect(
+        game.camera.viewfinder.position.x,
+        closeTo(game.hero!.pos.x - cameraDeadZone, 0.01),
+        reason: '주인공이 상자 오른쪽 벽에 붙어 있어야 한다',
+      );
+    });
+
+    test('세로는 바닥에 붙는다 — 남는 자리는 하늘이 더 보인다', () async {
+      for (final (w, h) in const [(844.0, 390.0), (832.0, 610.0)]) {
+        final game = await bootAt(w, h);
+        game.update(1 / 60);
+        final visibleH = h / game.camera.viewfinder.zoom;
+        expect(
+          game.camera.viewfinder.position.y,
+          closeTo(fieldHeight - visibleH / 2, 0.01),
+          reason: '$w×$h — 아래 끝이 무대 바닥(480)에 닿아야 한다',
+        );
+      }
+    });
+
+    test('무리가 걸어 들어오는 동안에도 주인공이 화면 가운데 상자 안에 있다', () async {
+      // 사용자가 지적한 "캐릭터가 화면 밖으로 나간다"를 그대로 재는 테스트다.
+      // 고치기 전에는 카메라가 무대 가장자리에 묶여 주인공이 상자 밖으로 밀렸다.
+      final game = await bootAt(832, 610);
+      game.sync(GameState.initial(c));
+      await settle(game, frames: 30);
+      final camX = game.camera.viewfinder.position.x;
+      expect((game.hero!.pos.x - camX).abs(), lessThanOrEqualTo(cameraDeadZone + 1),
+          reason: '주인공 ${game.hero!.pos.x}, 카메라 $camX');
+    });
+
+    test('주인공이 아무리 멀리 가도 카메라가 따라간다 — 가장자리가 없다', () async {
+      final game = await bootAt(832, 610);
+      game.update(1 / 60);
+      game.hero!.pos.x = 10000;
+      game.hero!.target.x = 10000;
+      game.update(1 / 60);
+      expect(game.camera.viewfinder.position.x, closeTo(10000 - cameraDeadZone, 0.01));
+    });
+
+    test('시작 카메라는 주인공-80이다 — 첫 무리가 화면 밖에서 들어온다', () async {
+      final game = await bootAt(832, 610);
+      game.update(1 / 60);
+      expect(game.camera.viewfinder.position.x, closeTo(-cameraDeadZone, 0.01));
+      final rightEdge = game.camera.viewfinder.position.x + 832 / game.camera.viewfinder.zoom / 2;
+      expect(rightEdge, lessThan(spawnAheadOfHero), reason: '나타나는 자리($spawnAheadOfHero)가 보이는 끝($rightEdge) 바깥이어야 한다');
+    });
+  });
+
   test('무대가 뜨면 주인공과 펫이 서 있다', () async {
     final game = await boot();
     expect(actorsOf(game).length, 2, reason: '주인공 + 펫');
@@ -88,7 +202,11 @@ void main() {
     expect(withBars.length, greaterThan(1), reason: '일반 전투는 무리로 나온다');
     expect(hero.pos.x, greaterThan(0), reason: '집에서 앞으로 나왔다');
     for (final m in game.monsters) {
-      expect(m.pos.x, lessThan(640), reason: '화면 안으로 들어왔다');
+      expect(
+        m.pos.x,
+        lessThan(game.camera.viewfinder.position.x + game.camera.viewport.size.x / game.camera.viewfinder.zoom / 2),
+        reason: '화면 안으로 들어왔다',
+      );
     }
   });
 
@@ -132,57 +250,4 @@ void main() {
     expect(game.descendants().whereType<DamageText>(), isEmpty, reason: '연출은 수명이 끝나면 치워진다');
   });
 
-  test('카메라가 전투를 따라 움직인다', () async {
-    final game = await boot();
-    const engine = BattleEngine(c);
-    final rng = Random(2);
-    var s = GameState.initial(c);
-    game.sync(s);
-    await settle(game);
-    final start = game.camera.viewfinder.position.clone();
-
-    for (var i = 0; i < 180; i++) {
-      s = engine.tick(s, 1 / 60, rng);
-      game.sync(s);
-      await Future<void>.delayed(Duration.zero);
-      await game.ready();
-      game.update(1 / 60);
-    }
-    final now = game.camera.viewfinder.position;
-    expect((now - start).length, greaterThan(1), reason: '붙박이가 아니다');
-
-    // 무대 밖은 보이지 않는다. 보이는 폭은 확대율을 따라간다.
-    final zoom = game.camera.viewfinder.zoom;
-    final vp = game.camera.viewport.size;
-    final halfW = vp.x / 2 / zoom;
-    final halfH = vp.y / 2 / zoom;
-    expect(now.x, greaterThanOrEqualTo(halfW - 0.01));
-    expect(now.x, lessThanOrEqualTo(stageWidth - halfW + 0.01));
-    expect(now.y, greaterThanOrEqualTo(halfH - 0.01));
-    expect(now.y, lessThanOrEqualTo(stageHeight - halfH + 0.01));
-  });
-
-  test('보스가 나오면 카메라가 물러난다', () async {
-    final game = await boot();
-    var s = GameState.initial(c);
-    game.sync(s);
-    await settle(game);
-    final normal = game.camera.viewfinder.zoom;
-
-    s = s.copyWith(
-      isBoss: true,
-      wave: const [MonsterUnit(key: 99, id: 1, hp: 500, maxHp: 500, x: 200, y: heroHomeY)],
-    );
-    game.sync(s);
-    for (var i = 0; i < 120; i++) {
-      await Future<void>.delayed(Duration.zero);
-      await game.ready();
-      game.update(1 / 60);
-    }
-    expect(game.camera.viewfinder.zoom, lessThan(normal), reason: '보스는 크니 물러난다');
-    final vp = game.camera.viewport.size;
-    final cover = max(vp.x / stageWidth, vp.y / stageHeight);
-    expect(game.camera.viewfinder.zoom, greaterThanOrEqualTo(cover - 1e-9),
-        reason: '보스 줌아웃이 cover 아래로 내려가면 무대 밖 빈 곳이 보인다');
-  });
 }

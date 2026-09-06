@@ -17,31 +17,35 @@ import 'effects.dart';
 import 'sheet_loader.dart';
 import 'stage_actor.dart';
 
-/// 무대 가상 해상도. 기기 폭에 맞춰 통째로 확대한다.
-// 태스크 2가 배율 규칙으로 갈아 치운다. 지금은 컴파일만 유지한다.
-const stageWidth = 640.0;
-/// 가로 화면을 채우도록 약 16:9로 잡는다(2026-09-05 세로→가로 전환).
-/// 카메라가 cover라 기기 비율에 따라 잘리는 방향이 다르다 — 넓은 폰은 위아래, 태블릿은 좌우.
-/// 안전 영역은 가운데 269×162. 그 밖은 잘릴 수 있다.
-const stageHeight = fieldHeight;
-// 무대 크기는 도메인(field.dart)이 정한다. 여기서 따로 숫자를 두면 둘이 갈라진다 —
-// 2026-09-05 가로 전환 때 실제로 갈라져 캐릭터가 무대 아래로 나갔다.
-
-/// 평소에 얼마나 당겨 두는가. cover 배율의 몇 배인지다.
+/// 화면에 반드시 보이는 세계의 크기. 배율은 이 상자를 덮는 최소값이다.
 ///
-/// 1.0이면 화면이 무대를 딱 덮어 카메라가 움직일 자리가 없다. 조금 당겨 두면
-/// 주인공과 몬스터 사이를 따라다니며 전투가 살아 있는 것처럼 보인다.
-/// 보스일 때는 1.0으로 돌아가 물러난다 — cover보다 더 물러나면 무대 밖이 보인다.
-const normalZoomFactor = 1.16;
+/// 이렇게 두면 **캐릭터가 화면 가로에서 차지하는 비율이 창 모양과 무관해진다**.
+/// 2026-09-05까지는 무대 전체를 채우는 방식(cover)이라 세로로 긴 창에서 배율이 3.50까지 튀어
+/// 보이는 가로가 238로 줄었고, 폭 360인 무대가 아예 안 들어와 캐릭터가 화면 밖으로 나갔다.
+///
+/// 640은 주인공 28픽셀이 가로에 22.9마리 들어가는 값이다(레퍼런스 실측 25~30마리).
+/// 480은 4:3 창까지 가로가 배율을 정하게 하는 값이다. 그보다 세로로 긴 창은 지원 범위 밖이다.
+const viewWidth = 640.0;
+const viewHeight = 480.0;
+
+/// 카메라가 안 움직이는 상자의 반지름. 보이는 가로 640의 25%다.
+///
+/// 주인공이 이 안에서 움직이면 카메라가 가만히 있고, 벗어나면 맵이 같이 밀린다.
+/// 붙어 따라다니면 걸음마다 배경이 흔들려 어지럽다.
+const cameraDeadZone = 80.0;
+
+/// 배경 그리기가 쓰는 무대 세로. 가로는 끝이 없다(field.dart).
+const stageHeight = fieldHeight;
 
 /// 지역별로 준비된 몬스터 기본 형태 수. 없는 지역은 숲 시트를 색만 바꿔 쓴다.
 const _sheetsPerRegion = <String, int>{'forest': 2};
 
 const _heroSheetId = 'warrior_1';
-const _heroSize = 56;
+const _heroSize = 28;
 const _bossSheetId = 'forest';
-const _bossSize = 96;
-const _monsterSize = 48;
+const _bossSize = 48;
+const _monsterSize = 24;
+const _petSize = 16;
 
 /// 배경 에셋이 있는 지역. 나머지는 기존 그라데이션으로 그린다.
 /// (Flame의 Images.load는 실패한 Future를 캐시에 남겨 비동기 예외가 새므로, 없는 파일은 아예 요청하지 않는다.)
@@ -83,6 +87,8 @@ class BattleStageGame extends FlameGame {
   List<StageActor> get monsters => List.unmodifiable(_queue);
   static const monsterPixelSize = _monsterSize;
   static const bossPixelSize = _bossSize;
+  static const heroPixelSize = _heroSize;
+  static const petPixelSize = _petSize;
   GameState? _last;
   double _hitStop = 0;
   bool _busy = false;
@@ -96,13 +102,13 @@ class BattleStageGame extends FlameGame {
   double _juiceCool = 0;
   static const _juiceGap = 0.55;
 
-  // heroHomeX가 없어져 컴파일만 유지한다(주인공은 0에서 시작). 태스크 2가 갈아 치운다.
   static final _heroHome = Vector2(0, heroHomeY);
 
-  /// 무대가 화면을 덮는 최소 배율. 이보다 작으면 무대 밖 빈 곳이 보인다.
-  double get _cover {
+  /// 보이는 상자를 덮는 최소 배율. 1 아래로 내려가지 않는다 —
+  /// 1 미만이면 원본 픽셀이 통째로 버려져 계단이 무너진다.
+  double get _zoom {
     final vp = camera.viewport.size;
-    return math.max(vp.x / stageWidth, vp.y / stageHeight);
+    return math.max(1.0, math.max(vp.x / viewWidth, vp.y / viewHeight));
   }
 
   @override
@@ -112,9 +118,10 @@ class BattleStageGame extends FlameGame {
   Future<void> onLoad() async {
     // 가운데를 기준으로 삼아야 따라다니기 좋다.
     camera.viewfinder.anchor = Anchor.center;
-    camera.viewfinder.position = Vector2(stageWidth / 2, stageHeight / 2);
-    // 첫 프레임이 튀지 않게 cover 배율로 시작한다. 이후는 _follow가 이어받는다.
-    camera.viewfinder.zoom = _cover * normalZoomFactor;
+    // 첫 프레임이 튀지 않게 제자리를 잡아 둔다. 이후는 _moveCamera가 이어받는다.
+    camera.viewfinder.zoom = _zoom;
+    // 주인공은 오른쪽으로만 가므로 카메라는 곧 주인공-80에 끌려간다. 시작부터 그 자리에 둔다.
+    camera.viewfinder.position = Vector2(-cameraDeadZone, stageHeight - camera.viewport.size.y / _zoom / 2);
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
 
@@ -126,10 +133,10 @@ class BattleStageGame extends FlameGame {
       walkSpeed: config.heroMoveSpeed * 1.6,
     );
     _pet = StageActor(
-      sheet: await _loader.load('pet', 'fire_baby', size: 32, color: Colors.deepOrange.shade300),
-      pixelSize: 32,
+      sheet: await _loader.load('pet', 'fire_baby', size: _petSize, color: Colors.deepOrange.shade300),
+      pixelSize: _petSize,
       facingRight: true,
-      at: _heroHome + Vector2(-24, 12),
+      at: _heroHome + Vector2(-12, 6),
       walkSpeed: 100,
     );
     await _actors.addAll([_hero!, _pet!]);
@@ -143,11 +150,11 @@ class BattleStageGame extends FlameGame {
       if (_hitStop <= 0) _actors.timeScale = 1;
     }
     if (_juiceCool > 0) _juiceCool -= dt;
-    _moveCamera(dt);
+    _moveCamera();
     if (_floaterCool > 0) _floaterCool -= dt;
     // 펫은 주인공을 따라간다. 주인공과 몬스터의 목표는 도메인이 정한다.
     final hero = _hero;
-    if (hero != null) _pet?.target.setValues(hero.pos.x - 26, hero.pos.y + 12);
+    if (hero != null) _pet?.target.setValues(hero.pos.x - 13, hero.pos.y + 6);
     for (final c in _fx.children.whereType<Expiring>().toList()) {
       if (c.expired) _fx.remove(c as Component);
     }
@@ -156,49 +163,33 @@ class BattleStageGame extends FlameGame {
     }
   }
 
-  /// 카메라를 전투 쪽으로 부드럽게 옮긴다.
+  /// 카메라를 주인공에 붙인다. 불감대 밖으로 나갈 때만 맵이 같이 밀린다.
   ///
-  /// 주인공과 가장 가까운 몬스터의 가운데를 본다. 한쪽만 따라가면 상대가 화면 밖으로 나가고,
-  /// 붙박이면 화면이 죽는다. 무대 밖이 보이지 않게 가장자리에서 멈춘다.
-  void _moveCamera(double dt) {
-    final hero = _hero;
-    if (hero == null) return;
+  /// 붙어 따라다니면 걸음마다 배경이 흔들린다. 상자 안에서는 주인공만 움직이고
+  /// 상자 벽에 닿을 때 비로소 맵이 흐른다. 가장자리에서 멈추는 처리는 없다 — 가로는 끝이 없다.
+  void _moveCamera() {
+    final target = _cameraTarget;
+    if (target == null) return;
 
-    // 화면을 덮는 최소 배율. 기기 비율이 바뀌면 같이 바뀐다.
-    final vp = camera.viewport.size;
-    // 보스는 크다. cover로 돌아가 전신이 들어오게 한다.
-    // cover보다 더 물러나면 무대 밖 빈 곳이 보이므로 이 아래로는 안 내려간다.
-    final wantedZoom = _cover * ((_last?.isBoss ?? false) ? 1.0 : normalZoomFactor);
-    final zoom = camera.viewfinder.zoom;
-    final nextZoom = zoom + (wantedZoom - zoom) * (1 - math.exp(-dt * 2.0));
-    camera.viewfinder.zoom = nextZoom;
+    final zoom = _zoom;
+    camera.viewfinder.zoom = zoom;
 
-    // 무대에 들어온 몬스터만 따라간다. 밖에서 걸어 들어오는 동안 중점을 잡으면
-    // 주인공이 프레임 밖으로 밀린다 — 웨이브마다 1초씩 그랬다.
-    StageActor? front;
-    for (final m in _queue) {
-      if (m.pos.x <= stageWidth) {
-        front = m;
-        break;
-      }
-    }
-    var targetX = front == null ? hero.pos.x : (hero.pos.x + front.pos.x) / 2;
-    var targetY = front == null ? hero.pos.y : (hero.pos.y + front.pos.y) / 2;
+    var camX = camera.viewfinder.position.x;
+    final x = target.pos.x;
+    if (x > camX + cameraDeadZone) camX = x - cameraDeadZone;
+    if (x < camX - cameraDeadZone) camX = x + cameraDeadZone;
 
-    // 무대 밖이 보이지 않게 자른다. 물러날수록 더 많이 보이므로 여유가 줄어든다.
-    final halfW = math.min(stageWidth / 2, vp.x / 2 / nextZoom);
-    final halfH = math.min(stageHeight / 2, vp.y / 2 / nextZoom);
-    targetX = targetX.clamp(halfW, stageWidth - halfW);
-    targetY = targetY.clamp(halfH, stageHeight - halfH);
-
-    // 지수 감쇠로 따라간다. 즉시 붙으면 몬스터가 걸어올 때 화면이 덜컹거린다.
-    final k = 1 - math.exp(-dt * 3.2);
-    final now = camera.viewfinder.position;
-    camera.viewfinder.position = Vector2(
-      (now.x + (targetX - now.x) * k).clamp(halfW, stageWidth - halfW),
-      (now.y + (targetY - now.y) * k).clamp(halfH, stageHeight - halfH),
-    );
+    // 세로는 바닥에 붙인다. 땅이 항상 화면 아래에 오고,
+    // 세로로 남는 자리는 하늘이 더 보이는 것으로 채워진다.
+    final camY = stageHeight - camera.viewport.size.y / zoom / 2;
+    camera.viewfinder.position = Vector2(camX, camY);
   }
+
+  /// 카메라가 따라가는 대상.
+  ///
+  /// 레퍼런스는 캐릭터가 셋이라 유저가 고른다. 우리는 아직 주인공 하나뿐이라 고를 것이 없다.
+  /// 파티가 셋이 되면(백로그 F절) 이 값만 갈아 끼우면 된다.
+  StageActor? get _cameraTarget => _hero;
 
   /// 새 상태를 받아 변화에 맞는 연출을 트리거한다. 매 틱 호출해도 싸다.
   ///
@@ -447,10 +438,10 @@ class _Background extends PositionComponent {
   void render(Canvas canvas) {
     final far = _far, ground = _ground;
     if (far == null || ground == null) {
-      final rect = Rect.fromLTWH(0, 0, stageWidth, stageHeight);
+      final rect = Rect.fromLTWH(0, 0, viewWidth, stageHeight);
       canvas.drawRect(rect, Paint()..shader = ui.Gradient.linear(rect.topCenter, rect.bottomCenter, regionColors(region)));
       canvas.drawRect(
-        Rect.fromLTWH(0, horizon, stageWidth, stageHeight - horizon),
+        Rect.fromLTWH(0, horizon, viewWidth, stageHeight - horizon),
         Paint()..color = Colors.black.withValues(alpha: 0.18),
       );
       return;
@@ -462,7 +453,7 @@ class _Background extends PositionComponent {
     canvas.drawImageRect(
       far,
       Rect.fromLTWH(0, far.height - skyKeep, far.width.toDouble(), skyKeep),
-      Rect.fromLTWH(0, horizon - skyKeep, stageWidth, skyKeep),
+      Rect.fromLTWH(0, horizon - skyKeep, viewWidth, skyKeep),
       _pixel,
     );
     // 땅은 위쪽(먼 땅)을 버리고 아래쪽을 남긴다. 캐릭터가 서는 곳이 아래다.
@@ -471,10 +462,10 @@ class _Background extends PositionComponent {
     canvas.drawImageRect(
       ground,
       Rect.fromLTWH(0, ground.height - groundKeep, ground.width.toDouble(), groundKeep),
-      Rect.fromLTWH(0, stageHeight - groundKeep, stageWidth, groundKeep),
+      Rect.fromLTWH(0, stageHeight - groundKeep, viewWidth, groundKeep),
       _pixel,
     );
     final veil = _veil;
-    if (veil != null) canvas.drawRect(Rect.fromLTWH(0, 0, stageWidth, stageHeight), Paint()..color = veil);
+    if (veil != null) canvas.drawRect(Rect.fromLTWH(0, 0, viewWidth, stageHeight), Paint()..color = veil);
   }
 }
