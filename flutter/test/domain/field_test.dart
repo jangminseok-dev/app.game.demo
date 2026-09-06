@@ -86,9 +86,8 @@ void main() {
     expect(GameState.initial(c).heroX, 0);
   });
 
-  test('저장을 읽으면 주인공은 0이다 — 절대 위치는 저장할 뜻이 없다', () {
-    // heroX는 지금 저장에 없다. 누가 넣으면 이 테스트가 잡는다.
+  test('저장 왕복에서 주인공의 가로 자리가 유지된다 — 무리와의 거리가 뜻이 있다', () {
     final json = encodeState(GameState.initial(c).copyWith(heroX: 777));
-    expect(decodeState(json)!.heroX, 0);
+    expect(decodeState(json)!.heroX, 777);
   });
 }

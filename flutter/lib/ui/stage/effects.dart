@@ -142,7 +142,9 @@ class DamageText extends PositionComponent implements Expiring {
     final alpha = p < 0.72 ? 1.0 : (1 - p) / 0.28;
     // 치명타는 더 크고, 더 세게 튀어나오고, 색과 기울기가 다르다.
     final pop = 1 + (crit ? 0.85 : 0.35) * math.max(0, 1 - p / (crit ? 0.22 : 0.16));
-    final size = (crit ? 11.0 : 7.5) * sizeScale * pop;
+    // 세계 좌표 배율이 3.5→1.3으로 내려가 이 크기를 그대로 두면 화면에서 26px→9.8px로 줄어 읽기 힘들다.
+    // 배율 1.3 기준 화면에서 다시 약 26px가 되도록 세계 크기를 7.5/11 → 20/29로 키운다(2026-09-06).
+    final size = (crit ? 29.0 : 20.0) * sizeScale * pop;
     final outline = crit ? const Color(0xFF6B1200) : Colors.black;
     final top = crit ? const Color(0xFFFFF3B0) : Colors.white;
     final bottom = crit ? const Color(0xFFFF6A00) : const Color(0xFFCFD8DC);

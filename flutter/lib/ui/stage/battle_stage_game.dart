@@ -105,6 +105,15 @@ class BattleStageGame extends FlameGame {
     return out;
   }
 
+  /// 타일 반전 패리티 — 겹 자체 공간의 타일 번호로 정한다.
+  ///
+  /// [x]는 [backgroundTilesFor]가 돌려준 화면 좌표, [left]·[parallax]는 그걸 만들 때 쓴
+  /// 카메라 왼쪽 끝과 시차다. 같은 겹-공간 점은 카메라가 어디 있어도 패리티가 같아야 한다.
+  static bool flippedAt(double x, double left, double parallax) {
+    final shift = left * (1 - parallax);
+    return ((x - shift) / viewWidth).round().isOdd;
+  }
+
   static const horizon = _Background.horizon;
   GameState? _last;
   double _hitStop = 0;
@@ -138,6 +147,8 @@ class BattleStageGame extends FlameGame {
     // 첫 프레임이 튀지 않게 제자리를 잡아 둔다. 이후는 _moveCamera가 이어받는다.
     camera.viewfinder.zoom = _zoom;
     // 주인공은 오른쪽으로만 가므로 카메라는 곧 주인공-80에 끌려간다. 시작부터 그 자리에 둔다.
+    // 여기서는 heroX=0을 가정한 상수다 — onLoad 시점엔 _hero가 아직 없어 실제 heroX(저장을 읽었으면
+    // 0이 아닐 수 있다, C1)를 못 쓴다. 다음 sync()가 즉시 바로잡으므로 첫 프레임만의 문제다.
     camera.viewfinder.position = Vector2(-cameraDeadZone, fieldHeight - camera.viewport.size.y / _zoom / 2);
     await world.add(_root);
     await _root.addAll([_bg, _actors, _fx]);
@@ -269,7 +280,7 @@ class BattleStageGame extends FlameGame {
         particle: scatter(
           count: 16,
           color: elementColor(catalog.byId(s.monsterId)?.element ?? MonsterElement.neutral),
-          speed: 110,
+          speed: 55, // 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
           lifespan: 0.6,
         ),
       ));
@@ -353,12 +364,14 @@ class BattleStageGame extends FlameGame {
     if (target == null) return;
 
     final center = target.pos + Vector2(0, -target.sizePx * 0.45);
-    _fx.add(SlashArc(center: center, radius: crit ? 58 : 44, color: const Color(0xFFB388FF), thickness: crit ? 13 : 9, life: 0.32, spin: -0.5));
-    _fx.add(SlashArc(center: center + Vector2(-6, 6), radius: crit ? 40 : 30, color: Colors.white, thickness: 7, life: 0.26, spin: 0.6));
+    // radius 44/58 → 22/29, thickness 9/13 → 5/7 — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
+    _fx.add(SlashArc(center: center, radius: crit ? 29 : 22, color: const Color(0xFFB388FF), thickness: crit ? 7 : 5, life: 0.32, spin: -0.5));
+    // radius 30/40 → 15/20, thickness 7 → 4, offset (-6,6) → (-3,3) — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
+    _fx.add(SlashArc(center: center + Vector2(-3, 3), radius: crit ? 20 : 15, color: Colors.white, thickness: 4, life: 0.26, spin: 0.6));
 
     target.play('hit');
     target.flash();
-    target.knockback(crit ? 12 : 6);
+    target.knockback(crit ? 6 : 3); // knockback 12/6 → 6/3 — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
 
     // 히트스톱은 치명타에만, 쿨다운을 두고 건다.
     if (crit && _juiceCool <= 0) {
@@ -374,7 +387,8 @@ class BattleStageGame extends FlameGame {
       if (floaters.length >= 4) _fx.remove(floaters.first);
       // 연속 타격이 한 점에 겹치지 않게 순번으로 부채꼴 배치한다.
       final seq = _floaterSeq++ % 4;
-      const fan = [Offset(-34, -4), Offset(-2, -26), Offset(34, 0), Offset(10, 14)];
+      // 오프셋 넷을 절반으로 — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
+      const fan = [Offset(-17, -2), Offset(-1, -13), Offset(17, 0), Offset(5, 7)];
       _fx.add(DamageText(
         text: formatNumber(amount),
         crit: crit,
@@ -382,10 +396,11 @@ class BattleStageGame extends FlameGame {
         sizeScale: 0.9 + _rng.nextDouble() * 0.25,
       ));
     }
-    _fx.add(ImpactStar(position: center, radius: crit ? 17 : 11));
+    _fx.add(ImpactStar(position: center, radius: crit ? 9 : 6)); // radius 17/11 → 9/6 — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
     _fx.add(Burst(
       position: center,
-      particle: scatter(count: crit ? 12 : 7, color: elementColor(element ?? MonsterElement.neutral), speed: 85),
+      // speed 85/110 → 43/55 — 스프라이트가 절반이 되어 같이 절반이다(2026-09-06).
+      particle: scatter(count: crit ? 12 : 7, color: elementColor(element ?? MonsterElement.neutral), speed: 43),
     ));
   }
 }
@@ -466,8 +481,8 @@ class _Background extends PositionComponent {
     }
     // 하늘은 지평선 위 전부, 땅은 지평선 아래 전부. 그림을 늘려 채운다 —
     // 지금 그림(360×110·360×160)은 이 크기가 아니다. 새 타일이 오면 늘리기가 1대1이 된다.
-    _tile(canvas, far, BattleStageGame.backgroundTilesFor(left, right, farParallax), 0, horizon);
-    _tile(canvas, ground, BattleStageGame.backgroundTilesFor(left, right, 1.0), horizon, fieldHeight - horizon);
+    _tile(canvas, far, BattleStageGame.backgroundTilesFor(left, right, farParallax), 0, horizon, left, farParallax);
+    _tile(canvas, ground, BattleStageGame.backgroundTilesFor(left, right, 1.0), horizon, fieldHeight - horizon, left, 1.0);
 
     final veil = _veil;
     if (veil != null) {
@@ -476,10 +491,10 @@ class _Background extends PositionComponent {
   }
 
   /// 한 겹을 늘어놓는다. 한 장 걸러 좌우를 뒤집어 이음매를 없앤다.
-  void _tile(Canvas canvas, ui.Image image, List<double> xs, double top, double height) {
+  void _tile(Canvas canvas, ui.Image image, List<double> xs, double top, double height, double left, double parallax) {
     final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     for (final x in xs) {
-      final flip = (x / viewWidth).round().isOdd;
+      final flip = BattleStageGame.flippedAt(x, left, parallax);
       canvas.save();
       if (flip) {
         canvas.translate(x + viewWidth, 0);

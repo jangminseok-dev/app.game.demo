@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_fantasy/domain/balance_config.dart';
+import 'package:idle_fantasy/domain/battle_engine.dart';
 import 'package:idle_fantasy/domain/field.dart';
 import 'package:idle_fantasy/domain/game_state.dart';
 import 'package:idle_fantasy/domain/monster_unit.dart';
@@ -9,6 +11,8 @@ import 'package:idle_fantasy/domain/save_codec.dart';
 import 'package:idle_fantasy/domain/spirit.dart';
 import 'package:idle_fantasy/domain/summon.dart';
 import 'package:idle_fantasy/domain/upgrade.dart';
+
+import '../support/catalog.dart';
 
 void main() {
   const config = BalanceConfig();
@@ -104,5 +108,32 @@ void main() {
     final back = decodeState(encodeState(state))!;
     expect(back.spirits.starsOf(SpiritId.frost), 4);
     expect(back.spirits.active, SpiritId.frost);
+  });
+
+  test('40층 저장을 읽으면 3초 안에 무리와 만난다 — heroX가 살아야 거리가 맞는다(2026-09-06 전체 리뷰)', () {
+    // 실측 시나리오: heroX 16457, 무리 x 16700대. heroX를 저장에 안 넣으면 로드 직후
+    // heroX=0이 되어 무리(16700대)까지 64초를 빈 맵으로 걸어야 한다.
+    final engine = BattleEngine(config, catalog: loadBundledCatalog());
+    final saved = GameState.initial(config).copyWith(
+      stage: 40,
+      heroX: 16457,
+      heroY: heroHomeY,
+      wave: const [
+        MonsterUnit(key: 0, id: 1, hp: 10, maxHp: 10, x: 16717, y: heroHomeY),
+        MonsterUnit(key: 1, id: 1, hp: 10, maxHp: 10, x: 16743, y: heroHomeY),
+        MonsterUnit(key: 2, id: 1, hp: 10, maxHp: 10, x: 16769, y: heroHomeY),
+        MonsterUnit(key: 3, id: 1, hp: 10, maxHp: 10, x: 16717, y: heroHomeY),
+      ],
+    );
+
+    var s = decodeState(encodeState(saved))!;
+    var met = false;
+    for (var i = 0; i < 60 && !met; i++) {
+      s = engine.tick(s, 0.05, Random(1));
+      met = s.wave.any(
+        (m) => distanceBetween(s.heroX, s.heroY, m.x, m.y) <= config.heroAttackRange * 0.8 + 1,
+      );
+    }
+    expect(met, isTrue, reason: '3초(60틱) 안에 무리 중 하나가 주인공 사거리 안에 들어와야 한다');
   });
 }

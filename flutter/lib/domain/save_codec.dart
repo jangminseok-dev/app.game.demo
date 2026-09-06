@@ -62,6 +62,10 @@ Map<String, dynamic> encodeState(GameState s) => {
       'waveSeq': s.waveSeq,
       'heroHp': s.heroHp,
       'heroMp': s.heroMp,
+      // 절대 위치는 뜻이 없지만 무리와의 상대 위치는 뜻이 있다 — 0으로 되돌리면 저장된 무리가
+      // 절대 좌표에 남아 걷는 시간이 헛되이 생긴다(2026-09-06 전체 리뷰 C1). heroY는 안 담는다 —
+      // 걷는 띠 안에서 리셋되는 게 맞다.
+      'heroX': s.heroX,
       'stageTimeLeft': s.stageTimeLeft,
       'stageFailCount': s.stageFailCount,
       'killLog': {'normal': _encodeIntMap(s.killLog), 'boss': _encodeIntMap(s.bossKillLog)},
@@ -100,6 +104,8 @@ GameState? decodeState(Map<String, dynamic> j) {
       // 없으면 -1 — 다음 틱에 최대치로 채워진다.
       heroHp: (j['heroHp'] as num?)?.toDouble() ?? -1,
       heroMp: (j['heroMp'] as num?)?.toDouble() ?? -1,
+      // 옛 저장에는 없으니 0 — 그런 저장은 무리도 절대 좌표 없이 기본값으로 다시 서므로 안전하다.
+      heroX: (j['heroX'] as num?)?.toDouble() ?? 0,
       stageTimeLeft: (j['stageTimeLeft'] as num?)?.toDouble() ?? -1,
       stageFailCount: (j['stageFailCount'] as num?)?.toInt() ?? 0,
       isBoss: j['isBoss'] as bool,

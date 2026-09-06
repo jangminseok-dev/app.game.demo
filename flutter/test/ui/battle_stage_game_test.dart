@@ -291,5 +291,17 @@ void main() {
       expect(tiles.first, -640.0);
       expect(tiles.last + viewWidth, greaterThanOrEqualTo(240));
     });
+
+    test('먼 겹의 반전 패리티는 겹-공간 좌표가 같으면 카메라가 움직여도 안 바뀐다', () {
+      // 고치기 전에는 flippedAt이 화면 좌표만 보고 판정해 카메라가 흐르면(약 10초마다) 뒤집혔다.
+      // 겹-공간 좌표 100에 해당하는 화면 좌표는 항상 100 + shift(left)다 — 그 타일 자체는 안 바뀐다.
+      bool? firstFlip;
+      for (var left = 0.0; left <= 3000; left += 1) {
+        final shift = left * (1 - farParallax);
+        final flip = BattleStageGame.flippedAt(100 + shift, left, farParallax);
+        firstFlip ??= flip;
+        expect(flip, firstFlip, reason: 'left=$left에서 겹-공간 좌표 100의 반전이 바뀌었다');
+      }
+    });
   });
 }
